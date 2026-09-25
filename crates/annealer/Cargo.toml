@@ -1,0 +1,29 @@
+[package]
+name = "annealer"
+version = "0.1.0"
+edition = "2024"
+description = "Reorders HTML/Vue attributes by semantic meaning using swappable YAML profiles."
+license = "MIT"
+authors = ["Logue <logue@hotmail.co.jp>"]
+keywords = ["html", "vue", "formatter", "attributes", "css"]
+categories = ["development-tools"]
+
+[features]
+default = ["cli"]
+cli = ["dep:clap"]
+
+[dependencies]
+clap = { version = "4", features = ["derive"], optional = true }
+malva = { version = "0.16", features = ["config_serde"] }
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+yaml_serde = "0.10"
+
+[[bin]]
+name = "anyl"
+path = "src/bin/anyl.rs"
+required-features = ["cli"]
+
+[dev-dependencies]
+jsonschema = "0.57.0"
+serde_json = "1.0.151"

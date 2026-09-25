@@ -1,0 +1,185 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "annealer profile",
+  "description": "Attribute ordering profile for annealer. Groups are listed in output priority order; each attribute goes to the group whose `match` pattern fits its normalized name most specifically (exact name beats the longest `prefix*`). Unmatched attributes go to the fallback group.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "name", "groups"],
+  "properties": {
+    "schemaVersion": {
+      "description": "Profile format version.",
+      "const": 1
+    },
+    "name": {
+      "description": "Profile name.",
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "description": "Human-readable summary of the profile.",
+      "type": "string"
+    },
+    "normalize": {
+      "description": "Attribute name rewrites applied before classification.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "directiveShorthand": {
+          "description": "Rewrite `v-bind:foo` to `:foo` and `v-on:click` to `@click`.",
+          "type": "boolean",
+          "default": false
+        },
+        "hyphenateComponentProps": {
+          "description": "Rewrite camelCase attribute names on component tags (PascalCase or hyphenated names, excluding native SVG/MathML elements) to kebab-case.",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "layout": {
+      "description": "Start-tag layout rules.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "closingBracketNewline": {
+          "description": "Put the closing bracket of a multiline start tag on its own line (like `vue/html-closing-bracket-newline`).",
+          "type": "boolean",
+          "default": false
+        },
+        "oneAttributePerLine": {
+          "description": "In a start tag whose attributes span several lines, put each attribute on its own line (like `vue/max-attributes-per-line` for multiline tags).",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "groups": {
+      "description": "Attribute groups in output priority order. Exactly one group must be the fallback.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/group" },
+      "contains": {
+        "type": "object",
+        "required": ["fallback"],
+        "properties": { "fallback": { "const": true } }
+      }
+    },
+    "stylesheet": {
+      "description": "Stylesheet formatting for `<style>` blocks and standalone stylesheets, delegated to malva. Omit this key to leave stylesheets untouched.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "declarationOrder": {
+          "description": "Property order. `smacss`: most important, flow-affecting properties first. `concentric`: from outside the box model inward. `alphabetical`: a-z.",
+          "enum": ["smacss", "concentric", "alphabetical"]
+        },
+        "declarationOrderGroupBy": {
+          "description": "How declarations are split into independently sorted runs.",
+          "enum": ["non-declaration", "non-declaration-and-empty-line"],
+          "default": "non-declaration"
+        },
+        "malva": { "$ref": "#/definitions/malvaOptions" }
+      }
+    }
+  },
+  "definitions": {
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "Unique group name.",
+          "type": "string",
+          "minLength": 1
+        },
+        "match": {
+          "description": "Patterns matched against normalized, lowercased attribute keys: an exact name, or a prefix ending in `*`. Keys are `foo` for `foo`/`:foo`/`v-bind:foo`, `v-on:click` for `@click`, `v-slot:name` for `#name`; modifiers are stripped.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[^*]+\\*?$|^\\*$"
+          }
+        },
+        "sort": {
+          "description": "Order within the group. `source`: as written. `alphabetical`: by key. `listed`: by the order of the `match` patterns.",
+          "enum": ["source", "alphabetical", "listed"],
+          "default": "source"
+        },
+        "fallback": {
+          "description": "Receives every attribute no pattern matches.",
+          "type": "boolean",
+          "default": false
+        },
+        "spreadSafe": {
+          "description": "Attributes in this group may be moved across a `v-bind=\"object\"` spread (only for compile-time directives that never merge with the spread object).",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "if": {
+        "required": ["fallback"],
+        "properties": { "fallback": { "const": true } }
+      },
+      "then": {},
+      "else": {
+        "required": ["match"],
+        "properties": { "match": { "minItems": 1 } }
+      }
+    },
+    "preferSingleLine": { "type": "boolean" },
+    "malvaOptions": {
+      "description": "Other malva options (https://malva.netlify.app/config/). `declarationOrder` and `declarationOrderGroupBy` belong to `stylesheet` itself.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "printWidth": { "type": "integer", "minimum": 1, "default": 80 },
+        "useTabs": { "type": "boolean", "default": false },
+        "indentWidth": { "type": "integer", "minimum": 0, "default": 2 },
+        "lineBreak": { "enum": ["lf", "crlf"], "default": "lf" },
+        "hexCase": { "enum": ["ignore", "lower", "upper"], "default": "lower" },
+        "hexColorLength": { "enum": ["short", "long"] },
+        "quotes": {
+          "enum": ["always-double", "always-single", "prefer-double", "prefer-single"],
+          "default": "always-double"
+        },
+        "attrSelector.quotes": {
+          "enum": ["always-double", "always-single", "prefer-double", "prefer-single"]
+        },
+        "operatorLineBreak": { "enum": ["before", "after"], "default": "after" },
+        "blockSelectorLineBreak": {
+          "enum": ["always", "consistent", "wrap"],
+          "default": "consistent"
+        },
+        "omitNumberLeadingZero": { "type": "boolean", "default": false },
+        "trailingComma": { "type": "boolean", "default": false },
+        "formatComments": { "type": "boolean", "default": false },
+        "alignComments": { "type": "boolean", "default": true },
+        "lineBreakInPseudoParens": { "type": "boolean", "default": false },
+        "singleLineBlockThreshold": { "type": "integer", "minimum": 0 },
+        "keyframeSelectorNotation": { "enum": ["keyword", "percentage"] },
+        "attrValueQuotes": { "enum": ["always", "ignore"], "default": "always" },
+        "preferSingleLine": { "type": "boolean", "default": false },
+        "selectors.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
+        "functionArgs.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
+        "sassContentAtRule.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
+        "sassIncludeAtRule.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
+        "sassMap.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
+        "sassModuleConfig.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
+        "sassParams.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
+        "lessImportOptions.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
+        "lessMixinArgs.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
+        "lessMixinParams.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
+        "singleLineTopLevelDeclarations": { "type": "boolean", "default": false },
+        "fontFamilyNames": { "enum": ["consistent", "wrap"], "default": "consistent" },
+        "nthPlusSpacing": { "type": "boolean", "default": false },
+        "selectorOverrideCommentDirective": {
+          "type": "string",
+          "default": "malva-selector-override"
+        },
+        "ignoreCommentDirective": { "type": "string", "default": "malva-ignore" },
+        "ignoreFileCommentDirective": { "type": "string", "default": "malva-ignore-file" }
+      }
+    }
+  }
+}

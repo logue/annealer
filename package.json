@@ -1,17 +1,19 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "rstack-library-starter",
-  "version": "1.2.1",
+  "name": "annealer",
+  "version": "0.0.0",
   "private": true,
   "description": "Rstack Library Starter Template",
-  "keywords": [],
-  "homepage": "https://github.com/logue/rstack-library-starter",
+  "keywords": [
+    "formatter"
+  ],
+  "homepage": "https://github.com/logue/annealer",
   "bugs": {
-    "url": "https://github.com/logue/rstack-library-starter/issues"
+    "url": "https://github.com/logue/annealer/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:logue/rstack-library-starter.git"
+    "url": "git@github.com:logue/annealer.git"
   },
   "license": "MIT",
   "author": {

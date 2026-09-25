@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=../schema/profile.schema.json
+# annealer built-in profile: plain HTML.
+#
+# Groups are listed in output priority order. Each attribute is assigned to the
+# group whose `match` pattern fits its normalized name most specifically
+# (exact name > longest `prefix*`). Unmatched attributes go to the fallback group.
+schemaVersion: 1
+name: html
+description: Semantic attribute order for plain HTML.
+
+layout:
+  closingBracketNewline: true
+  oneAttributePerLine: true
+
+groups:
+  # 1. Global awareness
+  - name: global
+    match: [id]
+
+  # 2. Class (static `class` and bound `:class` cluster together)
+  - name: class
+    match: [class]
+
+  # 3. Semantic: what the element points at / is
+  - name: semantic
+    match: [type, href, src, srcset]
+    sort: listed
+
+  # State-bearing attributes (width, height, disabled, name, value, ...)
+  - name: other
+    fallback: true
+
+  # Meaning-supplementing attributes for a human reader
+  - name: supplementary
+    match: [alt, title, placeholder]
+    sort: listed
+
+  # 4. ARIA: role -> name -> description -> property -> state
+  - name: aria-role
+    match: [role]
+  - name: aria-name
+    match: [aria-label, aria-labelledby]
+    sort: listed
+  - name: aria-description
+    match: [aria-describedby, aria-description, aria-details]
+    sort: listed
+  - name: aria-property
+    match: ["aria-*"]
+  - name: aria-state
+    match:
+      - aria-busy
+      - aria-checked
+      - aria-current
+      - aria-disabled
+      - aria-expanded
+      - aria-grabbed
+      - aria-hidden
+      - aria-invalid
+      - aria-pressed
+      - aria-selected
+
+  # 5. Data (no semantic order is possible)
+  - name: data
+    match: ["data-*"]
+    sort: alphabetical
+
+  # 6. Events
+  - name: events
+    match: ["on*"]
+
+# Passed to malva for <style> blocks and standalone stylesheets.
+stylesheet:
+  declarationOrder: smacss

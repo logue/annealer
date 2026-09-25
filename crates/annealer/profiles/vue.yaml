@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=../schema/profile.schema.json
+# annealer built-in profile: Vue 3 SFC templates.
+#
+# Tiers follow eslint-plugin-vue's `vue/attributes-order` default order, so the
+# output always satisfies that rule. Within the "other attributes" tier,
+# annealer adds same-name clustering and the HTML profile's semantic/ARIA
+# sub-ordering.
+#
+# Matching runs on normalized keys: `:foo`/`v-bind:foo` -> `foo`,
+# `@click`/`v-on:click` -> `v-on:click`, `#item`/`v-slot:item` -> `v-slot:item`,
+# modifiers stripped.
+#
+# Attributes are never moved across a `v-bind="object"` spread, except for
+# groups marked `spreadSafe` (compile-time directives that never merge with
+# the spread object).
+schemaVersion: 1
+name: vue
+description: Semantic attribute order for Vue 3 templates (superset of vue/attributes-order).
+
+normalize:
+  directiveShorthand: true
+  hyphenateComponentProps: true
+
+layout:
+  closingBracketNewline: true
+  oneAttributePerLine: true
+
+groups:
+  - name: definition
+    match: [is, v-is]
+    spreadSafe: true
+  - name: list-rendering
+    match: [v-for]
+    spreadSafe: true
+  - name: conditionals
+    match: [v-if, v-else-if, v-else, v-show, v-cloak]
+    spreadSafe: true
+  - name: render-modifiers
+    match: [v-pre, v-once]
+    spreadSafe: true
+  - name: global
+    match: [id]
+  - name: unique
+    match: [ref, key, slot, "v-slot*"]
+  - name: two-way-binding
+    match: ["v-model*"]
+  - name: other-directives
+    match: ["v-*"]
+    spreadSafe: true
+
+  # --- Other attributes tier (vue/attributes-order: OTHER_ATTR) ---
+  - name: class
+    match: [class]
+  - name: semantic
+    match: [type, href, src, srcset]
+    sort: listed
+  - name: other
+    fallback: true
+  - name: supplementary
+    match: [alt, title, placeholder]
+    sort: listed
+  - name: aria-role
+    match: [role]
+  - name: aria-name
+    match: [aria-label, aria-labelledby]
+    sort: listed
+  - name: aria-description
+    match: [aria-describedby, aria-description, aria-details]
+    sort: listed
+  - name: aria-property
+    match: ["aria-*"]
+  - name: aria-state
+    match:
+      - aria-busy
+      - aria-checked
+      - aria-current
+      - aria-disabled
+      - aria-expanded
+      - aria-grabbed
+      - aria-hidden
+      - aria-invalid
+      - aria-pressed
+      - aria-selected
+  - name: data
+    match: ["data-*"]
+    sort: alphabetical
+  # --- end of other attributes tier ---
+
+  - name: events
+    match: ["v-on*"]
+  - name: content
+    match: [v-html, v-text]
+
+stylesheet:
+  declarationOrder: smacss

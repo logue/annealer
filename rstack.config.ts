@@ -23,7 +23,7 @@ import prettierPlugin from 'eslint-config-prettier';
  *   const myLibrary = window.umdName;
  * </script>
  */
-const umdName = 'RstackLibrary'; // CHANGE THIS to your library's global variable name.
+const umdName = 'annealer'; // CHANGE THIS to your library's global variable name.
 
 /** Parse package.json content */
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8')) as {
@@ -77,6 +77,8 @@ const IGNORE_PATTERNS = [
   '**/demo/**',
   '**/dist-ssr/**',
   '**/dist/**',
+  // Rust build output.
+  '**/target/**',
   '**/docs/**',
   '**/storybook-static/**',
   // Grit (Biome Rules) source artifacts.
