@@ -30,7 +30,7 @@ mod html_profile {
             html(
                 r#"<img alt="Logo" onload="f()" data-x="1" width="10" src="a.png" class="c" id="i">"#
             ),
-            r#"<img id="i" class="c" src="a.png" width="10" alt="Logo" data-x="1" onload="f()">"#
+            r#"<img id="i" class="c" alt="Logo" src="a.png" width="10" data-x="1" onload="f()">"#
         );
     }
 
@@ -53,10 +53,26 @@ mod html_profile {
     }
 
     #[test]
+    fn separates_key_value_dimensions_and_state() {
+        assert_eq!(
+            html(r#"<input disabled height="20" value="v" width="80" type="image" name="n">"#),
+            r#"<input type="image" name="n" value="v" width="80" height="20" disabled>"#
+        );
+    }
+
+    #[test]
+    fn treats_meta_content_as_key_value() {
+        assert_eq!(
+            html(r#"<meta content="A page" id="m" name="description">"#),
+            r#"<meta id="m" name="description" content="A page">"#
+        );
+    }
+
+    #[test]
     fn keeps_source_order_within_fallback_group() {
         assert_eq!(
-            html(r#"<input value="v" name="n" disabled>"#),
-            r#"<input value="v" name="n" disabled>"#
+            html(r#"<input required readonly disabled>"#),
+            r#"<input required readonly disabled>"#
         );
     }
 
@@ -64,7 +80,7 @@ mod html_profile {
     fn preserves_case_quotes_and_unquoted_values() {
         assert_eq!(
             html("<DIV Title='x' ID=main hidden>"),
-            "<DIV ID=main hidden Title='x'>"
+            "<DIV ID=main Title='x' hidden>"
         );
     }
 
@@ -91,7 +107,7 @@ mod html_profile {
     fn puts_each_attribute_on_its_own_line_in_multiline_tags() {
         assert_eq!(
             html("<a\n  title=\"t\" href=\"/\"\n  id=\"i\">x</a>"),
-            "<a\n  id=\"i\"\n  href=\"/\"\n  title=\"t\"\n>x</a>"
+            "<a\n  id=\"i\"\n  title=\"t\"\n  href=\"/\"\n>x</a>"
         );
     }
 

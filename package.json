@@ -61,7 +61,7 @@
     "@rsdoctor/cli": "^1.6.4",
     "@rsdoctor/rspack-plugin": "^1.6.4",
     "@tsconfig/node-lts": "^24.0.1",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.3",
     "cross-env": "^10.1.0",
     "eslint-config-prettier": "^10.1.8",
     "happy-dom": "^20.14.5",

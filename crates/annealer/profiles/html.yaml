@@ -21,19 +21,29 @@ groups:
   - name: class
     match: [class]
 
+  # Meaning-supplementing attributes for a human reader
+  - name: supplementary
+    match: [alt, title, placeholder]
+    sort: listed
+
   # 3. Semantic: what the element points at / is
   - name: semantic
     match: [type, href, src, srcset]
     sort: listed
 
-  # State-bearing attributes (width, height, disabled, name, value, ...)
+  # Key-value pair carried by the element (form data, <param>, <meta name content>)
+  - name: key-value
+    match: [name, value, content]
+    sort: listed
+
+  # Rendered size
+  - name: dimensions
+    match: [width, height]
+    sort: listed
+
+  # State-bearing attributes (disabled, checked, readonly, ...)
   - name: other
     fallback: true
-
-  # Meaning-supplementing attributes for a human reader
-  - name: supplementary
-    match: [alt, title, placeholder]
-    sort: listed
 
   # 4. ARIA: role -> name -> description -> property -> state
   - name: aria-role

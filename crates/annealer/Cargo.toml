@@ -25,5 +25,5 @@ path = "src/bin/anyl.rs"
 required-features = ["cli"]
 
 [dev-dependencies]
-jsonschema = "0.57.0"
-serde_json = "1.0.151"
+jsonschema = "0.58"
+serde_json = "1.0"

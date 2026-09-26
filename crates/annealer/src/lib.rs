@@ -6,7 +6,7 @@
 //!
 //! let config = Config::for_language(Language::Html);
 //! let output = format(r#"<a title="Home" href="/" id="home">Home</a>"#, &config).unwrap();
-//! assert_eq!(output, r#"<a id="home" href="/" title="Home">Home</a>"#);
+//! assert_eq!(output, r#"<a id="home" title="Home" href="/">Home</a>"#);
 //! ```
 
 mod attribute;

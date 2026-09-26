@@ -40,13 +40,17 @@
 
 ## Decisions made during implementation (please confirm)
 
-1. **Fallback group placement (HTML profile).** Unmatched attributes
-   (`width`, `disabled`, `name`, …) had no tier in the plan's table. They go
-   after `semantic` and before a new `supplementary` group (`alt`, `title`,
-   `placeholder`). This follows the Background's order: state-bearing →
-   meaning-supplementing → meaning-propagating. So the order is
-   id → class → semantic (`type`, `href`, `src`, `srcset`) → other →
-   supplementary → ARIA → data → events.
+1. **HTML profile order (agreed).** The plan's table had no place for
+   unmatched attributes or for `alt`/`title`. The order is
+   id → class → supplementary (`alt`, `title`, `placeholder`) → semantic
+   (`type`, `href`, `src`, `srcset`) → key-value (`name`, `value`, `content`)
+   → dimensions (`width`, `height`) → other (state: `disabled`, `checked`, …)
+   → ARIA → data → events.
+   - Supplementary attributes describe the element, so they follow `id`/`class`
+     (kept together as the common idiom).
+   - ARIA stays near the end: it carries extra metadata that `alt`/`title`
+     can't express, rather than the primary description.
+   - The Vue profile uses the same order inside its other-attributes tier.
 2. **Cluster order: static before bound applies to `class` only.** For other
    names, the source order is kept inside the cluster. Vue merges `style`
    with the later declaration winning, and for other duplicate names it keeps

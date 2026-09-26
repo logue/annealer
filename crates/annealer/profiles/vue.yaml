@@ -51,14 +51,20 @@ groups:
   # --- Other attributes tier (vue/attributes-order: OTHER_ATTR) ---
   - name: class
     match: [class]
-  - name: semantic
-    match: [type, href, src, srcset]
-    sort: listed
-  - name: other
-    fallback: true
   - name: supplementary
     match: [alt, title, placeholder]
     sort: listed
+  - name: semantic
+    match: [type, href, src, srcset]
+    sort: listed
+  - name: key-value
+    match: [name, value, content]
+    sort: listed
+  - name: dimensions
+    match: [width, height]
+    sort: listed
+  - name: other
+    fallback: true
   - name: aria-role
     match: [role]
   - name: aria-name
