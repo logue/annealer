@@ -30,7 +30,7 @@ mod html_profile {
             html(
                 r#"<img alt="Logo" onload="f()" data-x="1" width="10" src="a.png" class="c" id="i">"#
             ),
-            r#"<img id="i" class="c" alt="Logo" src="a.png" width="10" data-x="1" onload="f()">"#
+            r#"<img id="i" class="c" alt="Logo" src="a.png" width="10" data-x="1" onload="f()" />"#
         );
     }
 
@@ -56,7 +56,7 @@ mod html_profile {
     fn separates_key_value_dimensions_and_state() {
         assert_eq!(
             html(r#"<input disabled height="20" value="v" width="80" type="image" name="n">"#),
-            r#"<input type="image" name="n" value="v" width="80" height="20" disabled>"#
+            r#"<input type="image" name="n" value="v" width="80" height="20" disabled />"#
         );
     }
 
@@ -64,7 +64,7 @@ mod html_profile {
     fn treats_meta_content_as_key_value() {
         assert_eq!(
             html(r#"<meta content="A page" id="m" name="description">"#),
-            r#"<meta id="m" name="description" content="A page">"#
+            r#"<meta id="m" name="description" content="A page" />"#
         );
     }
 
@@ -72,7 +72,7 @@ mod html_profile {
     fn keeps_source_order_within_fallback_group() {
         assert_eq!(
             html(r#"<input required readonly disabled>"#),
-            r#"<input required readonly disabled>"#
+            r#"<input required readonly disabled />"#
         );
     }
 
@@ -172,7 +172,7 @@ mod vue_profile {
     fn does_not_cluster_v_model_with_value() {
         assert_eq!(
             vue(&sfc(r#"<input value="x" v-model="y">"#)),
-            sfc(r#"<input v-model="y" value="x">"#)
+            sfc(r#"<input v-model="y" value="x" />"#)
         );
     }
 
@@ -209,7 +209,7 @@ mod vue_profile {
                 r#"<MyComp :itemCount="n" maxLength="3" @updateValue="u"><input maxLength="3"><svg><clipPath clipPathUnits="x"/></svg></MyComp>"#
             )),
             sfc(
-                r#"<MyComp :item-count="n" max-length="3" @updateValue="u"><input maxLength="3"><svg><clipPath clipPathUnits="x"/></svg></MyComp>"#
+                r#"<MyComp :item-count="n" max-length="3" @updateValue="u"><input maxLength="3" /><svg><clipPath clipPathUnits="x" /></svg></MyComp>"#
             )
         );
     }
@@ -256,6 +256,83 @@ mod vue_profile {
             "<style lang=\"less\">\na { color: red; display: block; }\n</style>\n",
         );
         assert_eq!(vue(input), input);
+    }
+}
+
+mod self_closing {
+    use super::*;
+
+    #[test]
+    fn self_closes_void_elements_in_html() {
+        assert_eq!(
+            html(r#"<br><img src="a.png"><hr/><input type="text" ><BR>"#),
+            r#"<br /><img src="a.png" /><hr /><input type="text" /><BR />"#
+        );
+    }
+
+    #[test]
+    fn keeps_empty_normal_elements_in_html() {
+        let input = "<div></div><my-el></my-el><span />";
+        assert_eq!(html(input), input);
+    }
+
+    #[test]
+    fn puts_self_closing_bracket_of_multiline_void_on_its_own_line() {
+        assert_eq!(
+            html("<img\n  alt=\"a\"\n  src=\"b\">"),
+            "<img\n  alt=\"a\"\n  src=\"b\"\n/>"
+        );
+    }
+
+    #[test]
+    fn self_closes_empty_elements_and_components_in_vue() {
+        assert_eq!(
+            vue(&sfc(
+                "<div></div><MyComp :a=\"b\">\n</MyComp><p> x </p><Link></Link><link>"
+            )),
+            sfc("<div /><MyComp :a=\"b\" /><p> x </p><Link /><link />")
+        );
+    }
+
+    #[test]
+    fn keeps_significant_whitespace_and_mismatched_end_tags() {
+        let input = sfc("<textarea> </textarea><pre>\n</pre><MyComp></mycomp>");
+        assert_eq!(vue(&input), input);
+        assert_eq!(vue(&sfc("<textarea></textarea>")), sfc("<textarea />"));
+    }
+
+    #[test]
+    fn self_closes_empty_nested_templates() {
+        assert_eq!(
+            vue(&sfc(
+                "<List><template #empty></template><template #item><b></b></template></List>"
+            )),
+            sfc("<List><template #empty /><template #item><b /></template></List>")
+        );
+    }
+
+    #[test]
+    fn leaves_sfc_top_level_blocks_alone() {
+        let input =
+            "<template>\n  <div />\n</template>\n<script setup></script>\n<style></style>\n";
+        assert_eq!(vue(input), input);
+    }
+
+    #[test]
+    fn expands_self_closing_with_never() {
+        let profile = Profile::from_yaml(
+            "schemaVersion: 1\nname: x\nlayout:\n  selfClosing:\n    void: never\n    normal: never\n    component: never\ngroups:\n  - name: rest\n    fallback: true\n",
+        )
+        .unwrap();
+        let config = Config::new(Language::Vue, profile);
+        assert_eq!(
+            format(
+                &sfc("<MyComp a=\"b\" /><div/><br /><img src=\"a\"/>"),
+                &config
+            )
+            .unwrap(),
+            sfc("<MyComp a=\"b\"></MyComp><div></div><br><img src=\"a\">")
+        );
     }
 }
 

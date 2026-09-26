@@ -47,6 +47,38 @@ pub struct Layout {
     /// In a start tag whose attributes span several lines, put each attribute on its own line.
     #[serde(default)]
     pub one_attribute_per_line: bool,
+    /// Self-closing style per element kind.
+    #[serde(default)]
+    pub self_closing: SelfClosingRules,
+}
+
+/// Whether an element is written self-closing (`<br />`, `<MyComp />`).
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum SelfClosing {
+    /// Always self-close (`<br />`); empty elements lose their end tag.
+    Always,
+    /// Never self-close (`<br>`, `<MyComp></MyComp>`).
+    Never,
+    /// Keep whatever the source uses.
+    #[default]
+    Preserve,
+}
+
+/// Self-closing style per element kind, mirroring `vue/html-self-closing`.
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SelfClosingRules {
+    /// Void elements (`br`, `img`, `input`, …).
+    #[serde(default)]
+    pub void: SelfClosing,
+    /// Empty non-void HTML/SVG elements. Vue templates only: in plain HTML,
+    /// `<div />` is an unclosed start tag.
+    #[serde(default)]
+    pub normal: SelfClosing,
+    /// Empty components. Vue templates only.
+    #[serde(default)]
+    pub component: SelfClosing,
 }
 
 #[derive(Deserialize)]

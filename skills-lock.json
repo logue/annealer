@@ -30,6 +30,12 @@
       "sourceType": "github",
       "skillPath": "skills/rstest-best-practices/SKILL.md",
       "computedHash": "2657c33744b26c4d2cde2c238a6ad52e92532f240f345d0f798b3252a729fcbb"
+    },
+    "rust-best-practices": {
+      "source": "apollographql/skills",
+      "sourceType": "github",
+      "skillPath": "skills/rust-best-practices/SKILL.md",
+      "computedHash": "0ac6606adb27e64a31bdc8c1ed34e446ae0c14bff1c7648867c46e106adc048f"
     }
   }
 }

@@ -132,6 +132,12 @@ Given a stylesheet (CSS/SCSS/Sass/Less), delegate property ordering to `malva`.
 - Vue 2 compatibility (`.sync`, `.native`, and other deprecated syntax are not
   targeted).
 - General-purpose HTML/CSS validation.
+- Handling deprecated or obsolete markup (`<xmp>`, `<center>`, `<font>`,
+  `<marquee>`, presentational attributes such as `bgcolor`, …). annealer never
+  warns about, removes, or replaces it. Such markup is parsed only as far as
+  formatting the surrounding document correctly requires (e.g. `<xmp>` content
+  is raw text, so tags inside it are left untouched). Detecting it is the job of
+  a linter or validator.
 
 ## Architecture
 

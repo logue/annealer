@@ -50,6 +50,25 @@
           "description": "In a start tag whose attributes span several lines, put each attribute on its own line (like `vue/max-attributes-per-line` for multiline tags).",
           "type": "boolean",
           "default": false
+        },
+        "selfClosing": {
+          "description": "Self-closing style per element kind (like `vue/html-self-closing`).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "void": {
+              "description": "Void elements (`br`, `img`, `input`, …): `always` → `<br />`, `never` → `<br>`.",
+              "$ref": "#/definitions/selfClosing"
+            },
+            "normal": {
+              "description": "Empty non-void elements: `always` → `<div />`. Applied in Vue templates only, because `<div />` is an unclosed start tag in plain HTML.",
+              "$ref": "#/definitions/selfClosing"
+            },
+            "component": {
+              "description": "Empty components: `always` → `<MyComp />`. Applied in Vue templates only.",
+              "$ref": "#/definitions/selfClosing"
+            }
+          }
         }
       }
     },
@@ -57,11 +76,17 @@
       "description": "Attribute groups in output priority order. Exactly one group must be the fallback.",
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/definitions/group" },
+      "items": {
+        "$ref": "#/definitions/group"
+      },
       "contains": {
         "type": "object",
         "required": ["fallback"],
-        "properties": { "fallback": { "const": true } }
+        "properties": {
+          "fallback": {
+            "const": true
+          }
+        }
       }
     },
     "stylesheet": {
@@ -78,7 +103,9 @@
           "enum": ["non-declaration", "non-declaration-and-empty-line"],
           "default": "non-declaration"
         },
-        "malva": { "$ref": "#/definitions/malvaOptions" }
+        "malva": {
+          "$ref": "#/definitions/malvaOptions"
+        }
       }
     }
   },
@@ -119,67 +146,174 @@
       },
       "if": {
         "required": ["fallback"],
-        "properties": { "fallback": { "const": true } }
+        "properties": {
+          "fallback": {
+            "const": true
+          }
+        }
       },
       "then": {},
       "else": {
         "required": ["match"],
-        "properties": { "match": { "minItems": 1 } }
+        "properties": {
+          "match": {
+            "minItems": 1
+          }
+        }
       }
     },
-    "preferSingleLine": { "type": "boolean" },
+    "preferSingleLine": {
+      "type": "boolean"
+    },
     "malvaOptions": {
       "description": "Other malva options (https://malva.netlify.app/config/). `declarationOrder` and `declarationOrderGroupBy` belong to `stylesheet` itself.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "printWidth": { "type": "integer", "minimum": 1, "default": 80 },
-        "useTabs": { "type": "boolean", "default": false },
-        "indentWidth": { "type": "integer", "minimum": 0, "default": 2 },
-        "lineBreak": { "enum": ["lf", "crlf"], "default": "lf" },
-        "hexCase": { "enum": ["ignore", "lower", "upper"], "default": "lower" },
-        "hexColorLength": { "enum": ["short", "long"] },
+        "printWidth": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 80
+        },
+        "useTabs": {
+          "type": "boolean",
+          "default": false
+        },
+        "indentWidth": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 2
+        },
+        "lineBreak": {
+          "enum": ["lf", "crlf"],
+          "default": "lf"
+        },
+        "hexCase": {
+          "enum": ["ignore", "lower", "upper"],
+          "default": "lower"
+        },
+        "hexColorLength": {
+          "enum": ["short", "long"]
+        },
         "quotes": {
-          "enum": ["always-double", "always-single", "prefer-double", "prefer-single"],
+          "enum": [
+            "always-double",
+            "always-single",
+            "prefer-double",
+            "prefer-single"
+          ],
           "default": "always-double"
         },
         "attrSelector.quotes": {
-          "enum": ["always-double", "always-single", "prefer-double", "prefer-single"]
+          "enum": [
+            "always-double",
+            "always-single",
+            "prefer-double",
+            "prefer-single"
+          ]
         },
-        "operatorLineBreak": { "enum": ["before", "after"], "default": "after" },
+        "operatorLineBreak": {
+          "enum": ["before", "after"],
+          "default": "after"
+        },
         "blockSelectorLineBreak": {
           "enum": ["always", "consistent", "wrap"],
           "default": "consistent"
         },
-        "omitNumberLeadingZero": { "type": "boolean", "default": false },
-        "trailingComma": { "type": "boolean", "default": false },
-        "formatComments": { "type": "boolean", "default": false },
-        "alignComments": { "type": "boolean", "default": true },
-        "lineBreakInPseudoParens": { "type": "boolean", "default": false },
-        "singleLineBlockThreshold": { "type": "integer", "minimum": 0 },
-        "keyframeSelectorNotation": { "enum": ["keyword", "percentage"] },
-        "attrValueQuotes": { "enum": ["always", "ignore"], "default": "always" },
-        "preferSingleLine": { "type": "boolean", "default": false },
-        "selectors.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
-        "functionArgs.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
-        "sassContentAtRule.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
-        "sassIncludeAtRule.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
-        "sassMap.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
-        "sassModuleConfig.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
-        "sassParams.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
-        "lessImportOptions.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
-        "lessMixinArgs.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
-        "lessMixinParams.preferSingleLine": { "$ref": "#/definitions/preferSingleLine" },
-        "singleLineTopLevelDeclarations": { "type": "boolean", "default": false },
-        "fontFamilyNames": { "enum": ["consistent", "wrap"], "default": "consistent" },
-        "nthPlusSpacing": { "type": "boolean", "default": false },
+        "omitNumberLeadingZero": {
+          "type": "boolean",
+          "default": false
+        },
+        "trailingComma": {
+          "type": "boolean",
+          "default": false
+        },
+        "formatComments": {
+          "type": "boolean",
+          "default": false
+        },
+        "alignComments": {
+          "type": "boolean",
+          "default": true
+        },
+        "lineBreakInPseudoParens": {
+          "type": "boolean",
+          "default": false
+        },
+        "singleLineBlockThreshold": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "keyframeSelectorNotation": {
+          "enum": ["keyword", "percentage"]
+        },
+        "attrValueQuotes": {
+          "enum": ["always", "ignore"],
+          "default": "always"
+        },
+        "preferSingleLine": {
+          "type": "boolean",
+          "default": false
+        },
+        "selectors.preferSingleLine": {
+          "$ref": "#/definitions/preferSingleLine"
+        },
+        "functionArgs.preferSingleLine": {
+          "$ref": "#/definitions/preferSingleLine"
+        },
+        "sassContentAtRule.preferSingleLine": {
+          "$ref": "#/definitions/preferSingleLine"
+        },
+        "sassIncludeAtRule.preferSingleLine": {
+          "$ref": "#/definitions/preferSingleLine"
+        },
+        "sassMap.preferSingleLine": {
+          "$ref": "#/definitions/preferSingleLine"
+        },
+        "sassModuleConfig.preferSingleLine": {
+          "$ref": "#/definitions/preferSingleLine"
+        },
+        "sassParams.preferSingleLine": {
+          "$ref": "#/definitions/preferSingleLine"
+        },
+        "lessImportOptions.preferSingleLine": {
+          "$ref": "#/definitions/preferSingleLine"
+        },
+        "lessMixinArgs.preferSingleLine": {
+          "$ref": "#/definitions/preferSingleLine"
+        },
+        "lessMixinParams.preferSingleLine": {
+          "$ref": "#/definitions/preferSingleLine"
+        },
+        "singleLineTopLevelDeclarations": {
+          "type": "boolean",
+          "default": false
+        },
+        "fontFamilyNames": {
+          "enum": ["consistent", "wrap"],
+          "default": "consistent"
+        },
+        "nthPlusSpacing": {
+          "type": "boolean",
+          "default": false
+        },
         "selectorOverrideCommentDirective": {
           "type": "string",
           "default": "malva-selector-override"
         },
-        "ignoreCommentDirective": { "type": "string", "default": "malva-ignore" },
-        "ignoreFileCommentDirective": { "type": "string", "default": "malva-ignore-file" }
+        "ignoreCommentDirective": {
+          "type": "string",
+          "default": "malva-ignore"
+        },
+        "ignoreFileCommentDirective": {
+          "type": "string",
+          "default": "malva-ignore-file"
+        }
       }
+    },
+    "selfClosing": {
+      "enum": ["always", "never", "preserve"],
+      "default": "preserve"
     }
   }
 }

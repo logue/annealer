@@ -6,10 +6,23 @@
 use crate::attribute::{is_component, key_of, normalize_name};
 use crate::error::{FormatError, line_col};
 use crate::order::attribute_order;
-use crate::profile::Profile;
+use crate::profile::{Profile, SelfClosing};
 use crate::stylesheet::{self, StyleLang};
 
+/// Elements that never have content or an end tag.
+const VOID_ELEMENTS: &[&str] = &[
+    "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
+    "track", "wbr",
+];
+
+/// Elements where whitespace-only content is significant.
+const WHITESPACE_SENSITIVE: &[&str] = &["pre", "textarea"];
+
 /// Elements whose content is raw text and must not be scanned for tags.
+///
+/// Obsolete elements (`xmp`, `noembed`, `noframes`) are listed only because
+/// browsers still parse their content as raw text. Warning about or removing
+/// deprecated markup is out of scope (see the Non-goals in PLAN.md).
 const RAW_TEXT_ELEMENTS: &[&str] = &[
     "script", "style", "textarea", "title", "xmp", "iframe", "noembed", "noframes",
 ];
@@ -31,6 +44,24 @@ struct StartTag<'a> {
     /// Whitespace between the last attribute and the closing bracket.
     trailing: &'a str,
     self_closing: bool,
+    /// The element is complete after this tag: self-closing, or its end tag was emitted with it.
+    closed: bool,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ElementKind {
+    Void,
+    Normal,
+    Component,
+}
+
+/// How the start tag's closing is rewritten.
+#[derive(Clone, Copy, Default)]
+struct Closing {
+    /// A self-closing rule decided the closing; normalize the space before it.
+    governed: bool,
+    /// Also emit `</name>` right after the start tag.
+    end_tag: bool,
 }
 
 impl StartTag<'_> {
@@ -111,8 +142,8 @@ impl<'a> Scanner<'a> {
             } else if self.at("<!") || self.at("<?") || self.at("</") {
                 self.skip_past(">");
             } else if self.at_start_tag() {
-                let tag = self.start_tag()?;
-                if tag.self_closing {
+                let tag = self.start_tag(false)?;
+                if tag.closed {
                     continue;
                 }
                 let name = tag.name.to_ascii_lowercase();
@@ -164,8 +195,8 @@ impl<'a> Scanner<'a> {
                 }
                 self.skip_past(">");
             } else if self.at_start_tag() {
-                let tag = self.start_tag()?;
-                if tag.self_closing {
+                let tag = self.start_tag(true)?;
+                if tag.closed {
                     continue;
                 }
                 let name = tag.name.to_ascii_lowercase();
@@ -237,15 +268,113 @@ impl<'a> Scanner<'a> {
     }
 
     /// Tokenizes the start tag at `self.pos`, rewrites it, and advances past it.
-    fn start_tag(&mut self) -> Result<StartTag<'a>, FormatError> {
-        let tag = self.parse_start_tag(self.pos)?;
-        self.pos = tag.end;
-        if let Some(text) = self.rewrite(&tag)
-            && text != self.src[tag.start..tag.end]
-        {
-            self.replace(tag.start, tag.end, &text);
+    /// With `self_closing_rules`, applies the profile's self-closing style.
+    fn start_tag(&mut self, self_closing_rules: bool) -> Result<StartTag<'a>, FormatError> {
+        let mut tag = self.parse_start_tag(self.pos)?;
+        let mut end = tag.end;
+        let closing = if self_closing_rules {
+            self.apply_self_closing(&mut tag, &mut end)
+        } else {
+            Closing::default()
+        };
+        self.pos = end;
+        let text = self.rewrite(&tag, closing);
+        if text != self.src[tag.start..end] {
+            self.replace(tag.start, end, &text);
         }
         Ok(tag)
+    }
+
+    fn element_kind(&self, name: &str) -> ElementKind {
+        // Vue treats `<Link>` as a component, so its void check is case-sensitive.
+        let void = if self.vue {
+            VOID_ELEMENTS.contains(&name)
+        } else {
+            VOID_ELEMENTS
+                .iter()
+                .any(|void| void.eq_ignore_ascii_case(name))
+        };
+        if void {
+            ElementKind::Void
+        } else if self.vue && is_component(name) {
+            ElementKind::Component
+        } else {
+            ElementKind::Normal
+        }
+    }
+
+    /// Decides the closing style; may extend `end` over an empty element's end tag.
+    fn apply_self_closing(&self, tag: &mut StartTag<'a>, end: &mut usize) -> Closing {
+        let rules = &self.profile.layout.self_closing;
+        let kind = self.element_kind(tag.name);
+        let policy = match kind {
+            ElementKind::Void => rules.void,
+            // `<div />` is an unclosed start tag in plain HTML.
+            _ if !self.vue => SelfClosing::Preserve,
+            ElementKind::Normal => rules.normal,
+            ElementKind::Component => rules.component,
+        };
+        let governed = Closing {
+            governed: true,
+            end_tag: false,
+        };
+        match (policy, kind, tag.self_closing) {
+            (SelfClosing::Preserve, ..) => Closing::default(),
+            (SelfClosing::Always, ElementKind::Void, _) => {
+                tag.self_closing = true;
+                tag.closed = true;
+                governed
+            }
+            (SelfClosing::Never, ElementKind::Void, _) => {
+                tag.self_closing = false;
+                governed
+            }
+            (SelfClosing::Always, _, true) => governed,
+            (SelfClosing::Always, _, false) => match self.empty_element_end(tag, kind) {
+                Some(end_tag_end) => {
+                    *end = end_tag_end;
+                    tag.self_closing = true;
+                    tag.closed = true;
+                    governed
+                }
+                None => Closing::default(),
+            },
+            (SelfClosing::Never, _, true) => {
+                tag.self_closing = false;
+                Closing {
+                    governed: true,
+                    end_tag: true,
+                }
+            }
+            (SelfClosing::Never, _, false) => Closing::default(),
+        }
+    }
+
+    /// If the element has no content, returns the offset just past its end tag.
+    fn empty_element_end(&self, tag: &StartTag<'_>, kind: ElementKind) -> Option<usize> {
+        let whitespace_ok = kind == ElementKind::Component
+            || !WHITESPACE_SENSITIVE
+                .iter()
+                .any(|name| name.eq_ignore_ascii_case(tag.name));
+        let close = if whitespace_ok {
+            self.skip_whitespace(tag.end)
+        } else {
+            tag.end
+        };
+        let name_start = close + 2;
+        let name_end = self.name_end(name_start);
+        let name = self.src.get(name_start..name_end)?;
+        let same_name = match kind {
+            ElementKind::Component => name == tag.name,
+            _ => name.eq_ignore_ascii_case(tag.name),
+        };
+        let gt = self.skip_whitespace(name_end);
+        (self.at_offset(close, "</") && same_name && self.bytes.get(gt) == Some(&b'>'))
+            .then_some(gt + 1)
+    }
+
+    fn at_offset(&self, offset: usize, prefix: &str) -> bool {
+        self.bytes[offset..].starts_with(prefix.as_bytes())
     }
 
     fn parse_start_tag(&self, start: usize) -> Result<StartTag<'a>, FormatError> {
@@ -264,6 +393,7 @@ impl<'a> Scanner<'a> {
             attributes: Vec::new(),
             trailing: "",
             self_closing: false,
+            closed: false,
         };
 
         let mut i = name_end;
@@ -286,6 +416,7 @@ impl<'a> Scanner<'a> {
                 Some(b'/') => {
                     tag.trailing = &src[separator_start..i];
                     tag.self_closing = true;
+                    tag.closed = true;
                     tag.end = i + 2;
                     return Ok(tag);
                 }
@@ -352,11 +483,8 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    /// Builds the rewritten start tag, or `None` when there is nothing to do.
-    fn rewrite(&self, tag: &StartTag<'_>) -> Option<String> {
-        if tag.attributes.is_empty() {
-            return None;
-        }
+    /// Builds the rewritten start tag (plus the end tag when `closing` asks for it).
+    fn rewrite(&self, tag: &StartTag<'_>, closing: Closing) -> String {
         let profile = self.profile;
         let component = is_component(tag.name);
         let names: Vec<String> = tag
@@ -400,11 +528,19 @@ impl<'a> Scanner<'a> {
         if profile.layout.closing_bracket_newline && multiline {
             text.push_str(if text.contains("\r\n") { "\r\n" } else { "\n" });
             text.push_str(line_indent(self.src, tag.start));
+        } else if closing.governed && !tag.trailing.contains('\n') {
+            // `<br />`, `<br>`: exactly one space before `/>`, none before `>`.
+            text.push_str(if tag.self_closing { " " } else { "" });
         } else {
             text.push_str(tag.trailing);
         }
         text.push_str(if tag.self_closing { "/>" } else { ">" });
-        Some(text)
+        if closing.end_tag {
+            text.push_str("</");
+            text.push_str(tag.name);
+            text.push('>');
+        }
+        text
     }
 }
 

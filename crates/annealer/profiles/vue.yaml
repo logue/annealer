@@ -24,6 +24,14 @@ normalize:
 layout:
   closingBracketNewline: true
   oneAttributePerLine: true
+  selfClosing:
+    # `<br />`. Note: vue/html-self-closing defaults to `never` for void
+    # elements; set `html.void: always` there if you use that rule.
+    void: always
+    # `<div></div>` -> `<div />`, `<MyComp></MyComp>` -> `<MyComp />`
+    # (vue/html-self-closing defaults).
+    normal: always
+    component: always
 
 groups:
   - name: definition

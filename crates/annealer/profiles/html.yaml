@@ -11,6 +11,10 @@ description: Semantic attribute order for plain HTML.
 layout:
   closingBracketNewline: true
   oneAttributePerLine: true
+  selfClosing:
+    # `<br />`: makes the element's end explicit in the source.
+    void: always
+    # `normal`/`component` only apply to Vue templates.
 
 groups:
   # 1. Global awareness

@@ -28,6 +28,12 @@
 - [x] Tests keep schema and loader in agreement (valid and invalid cases,
       malva key list). Two rules draft-07 can't express (exactly one fallback
       group, unique group names) are enforced only by the loader.
+- [x] `layout.selfClosing` (`void` / `normal` / `component`: `always` | `never` | `preserve`)
+  - Both profiles: `void: always` (`<br />`). Vue profile also sets `normal` and
+    `component` to `always` (`<div />`, `<MyComp />`).
+  - `normal`/`component` apply in Vue templates only (`<div />` is an unclosed
+    start tag in plain HTML). Whitespace-only content counts as empty, except
+    in `pre`/`textarea`. SFC top-level blocks are never touched.
 - [ ] Publish the schema at a stable URL and set `$id` (needs the final repo URL)
 
 ## Phase 2: Next
@@ -37,6 +43,9 @@
 - [ ] WASM + npm wrapper built with the existing Rslib setup, and a demo page with Rsbuild
 - [ ] Fixture-based tests from real-world Vue/HTML projects
 - [ ] Svelte profile (follow-on)
+- [ ] Library-specific rule profiles, built on the same mechanisms (groups,
+      `layout.selfClosing`, normalize). Likely needs profile composition
+      (`extends`) and per-tag/per-component overrides.
 
 ## Decisions made during implementation (please confirm)
 
@@ -66,6 +75,10 @@
 5. **Vue tier 8 is split** into `other-directives` (before) and the other
    attribute groups, matching `vue/attributes-order`'s default
    `OTHER_DIRECTIVES` → `OTHER_ATTR`.
+
+6. **`void: always` differs from `vue/html-self-closing`'s default**
+   (`html.void: never`). Projects that keep that ESLint rule need
+   `html.void: always` there, or `void: never` in the annealer profile.
 
 ## Open questions resolved
 
