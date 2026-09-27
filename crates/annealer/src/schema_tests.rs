@@ -82,6 +82,11 @@ fn schema_and_loader_agree() {
         (profile_with("extra: 1\n"), false),
         (profile_with("normalize:\n  shorthand: true\n"), false),
         (
+            profile_with("stylesheet:\n  declarationOrder: smacss\n  vendorPrefix: start\n"),
+            true,
+        ),
+        (profile_with("stylesheet:\n  vendorPrefix: first\n"), false),
+        (
             profile_with("stylesheet:\n  declarationOrder: random\n"),
             false,
         ),

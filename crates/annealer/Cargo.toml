@@ -15,7 +15,13 @@ cli = ["dep:clap"]
 [dependencies]
 clap = { version = "4", features = ["derive"], optional = true }
 malva = { version = "0.16", features = ["config_serde"] }
+# Keep in lockstep with the raffia version malva depends on (malva 0.16 → raffia 0.12).
+# The vendor-prefix pass re-parses malva's output, so both must use the same
+# parser and AST; a mismatch would also bundle two raffia copies and break
+# sharing `malva::Syntax`. Upgrade together with malva, not before.
+raffia = { version = "0.12", features = ["serialize"] }
 serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 thiserror = "2"
 yaml_serde = "0.10"
 
@@ -26,4 +32,3 @@ required-features = ["cli"]
 
 [dev-dependencies]
 jsonschema = "0.58"
-serde_json = "1.0"

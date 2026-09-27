@@ -85,3 +85,6 @@ groups:
 # Passed to malva for <style> blocks and standalone stylesheets.
 stylesheet:
   declarationOrder: smacss
+  # Vendor-prefixed declarations go first, alphabetically (no grouping), so the
+  # standard property is declared last and wins where the prefixed one is an alias.
+  vendorPrefix: start

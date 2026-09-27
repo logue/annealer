@@ -34,6 +34,18 @@
   - `normal`/`component` apply in Vue templates only (`<div />` is an unclosed
     start tag in plain HTML). Whitespace-only content counts as empty, except
     in `pre`/`textarea`. SFC top-level blocks are never touched.
+- [x] `stylesheet.vendorPrefix: start` (both profiles): vendor-prefixed
+      declarations are treated as separate from standard properties (dialects,
+      often never standardized). They go before the other declarations of the
+      same run, in plain alphabetical order, with no grouping by property.
+  - Not `end`: prefixed properties are often aliases of the standard one and
+    the later declaration wins. Putting them last could let a dialect override
+    the standard value (e.g. `-webkit-border-radius` with two values). The
+    `start` position keeps "standard last", like Autoprefixer's output.
+  - malva has no such option (it sorts by the unprefixed name), so annealer
+    re-parses malva's output with raffia and moves only those declarations.
+    Runs match malva's own sort units. A run is left alone if a comment sits
+    between its declarations. Applies only when `declarationOrder` is set.
 - [ ] Publish the schema at a stable URL and set `$id` (needs the final repo URL)
 
 ## Phase 2: Next
@@ -42,6 +54,8 @@
 - [ ] Less and Sass (indented syntax) in `<style>` and standalone files
 - [ ] WASM + npm wrapper built with the existing Rslib setup, and a demo page with Rsbuild
 - [ ] Fixture-based tests from real-world Vue/HTML projects
+- [ ] Upgrade raffia to 0.13 when malva does (0.16 still uses raffia 0.12; see the
+      comment in `crates/annealer/Cargo.toml`)
 - [ ] Svelte profile (follow-on)
 - [ ] Library-specific rule profiles, built on the same mechanisms (groups,
       `layout.selfClosing`, normalize). Likely needs profile composition

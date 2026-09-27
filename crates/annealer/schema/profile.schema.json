@@ -103,6 +103,11 @@
           "enum": ["non-declaration", "non-declaration-and-empty-line"],
           "default": "non-declaration"
         },
+        "vendorPrefix": {
+          "description": "Where vendor-prefixed declarations (`-webkit-…`, `-moz-…`) go when `declarationOrder` is set. `alongside`: next to the unprefixed property (malva's behavior). `start`: before the other declarations of the same run, in simple alphabetical order, so the standard property is declared last and wins where the prefixed one is an alias.",
+          "enum": ["alongside", "start"],
+          "default": "alongside"
+        },
         "malva": {
           "$ref": "#/definitions/malvaOptions"
         }

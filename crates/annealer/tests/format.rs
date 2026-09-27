@@ -346,6 +346,45 @@ mod stylesheets {
             "a {\n  display: block;\n  color: red;\n}\n"
         );
     }
+
+    #[test]
+    fn moves_vendor_prefixed_declarations_first_alphabetically() {
+        assert_eq!(
+            run(
+                "a { -webkit-transition: x; transition: x; -moz-appearance: none; appearance: none; color: red; -webkit-appearance: none; }\n",
+                Language::Css
+            ),
+            "a {\n  -moz-appearance: none;\n  -webkit-appearance: none;\n  -webkit-transition: x;\n  appearance: none;\n  color: red;\n  transition: x;\n}\n"
+        );
+    }
+
+    #[test]
+    fn keeps_vendor_prefixes_within_their_run() {
+        // A nested rule splits the runs, as it does for malva's own sorting.
+        assert_eq!(
+            run(
+                "a {\n  -webkit-user-select: none;\n  display: block;\n  &:hover { -moz-opacity: 1; color: red; }\n  --x: 1;\n  -ms-zoom: 1;\n}\n",
+                Language::Scss
+            ),
+            "a {\n  -webkit-user-select: none;\n  display: block;\n  &:hover {\n    -moz-opacity: 1;\n    color: red;\n  }\n  -ms-zoom: 1;\n  --x: 1;\n}\n"
+        );
+    }
+
+    #[test]
+    fn leaves_runs_with_comments_alone() {
+        let input = "a {\n  transition: x; /* modern */\n  -webkit-transition: x;\n}\n";
+        let config = Config::for_language(Language::Css);
+        let output = format(input, &config).unwrap();
+        assert!(output.find("  transition").unwrap() < output.find("-webkit-transition").unwrap());
+    }
+
+    #[test]
+    fn orders_vendor_prefixes_in_style_blocks() {
+        assert_eq!(
+            vue("<style>\n.a { box-shadow: none; -webkit-box-shadow: none; }\n</style>\n"),
+            "<style>\n.a {\n  -webkit-box-shadow: none;\n  box-shadow: none;\n}\n</style>\n"
+        );
+    }
 }
 
 mod errors_and_profiles {

@@ -105,7 +105,31 @@ struct RawStylesheet {
     #[serde(default)]
     declaration_order_group_by: Option<DeclarationOrderGroupBy>,
     #[serde(default)]
+    vendor_prefix: VendorPrefix,
+    #[serde(default)]
     malva: Option<yaml_serde::Mapping>,
+}
+
+/// Where vendor-prefixed declarations (`-webkit-…`) go when declarations are sorted.
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum VendorPrefix {
+    /// Next to the unprefixed property (malva's behavior).
+    #[default]
+    Alongside,
+    /// Before all other declarations of the same run, in alphabetical order.
+    ///
+    /// Not at the end: prefixed properties are often aliases of the standard
+    /// one, and the later declaration wins. Keeping them first lets the
+    /// standard property win, as Autoprefixer's output does.
+    Start,
+}
+
+/// Stylesheet formatting options resolved from a profile.
+#[derive(Clone, Debug)]
+pub(crate) struct StylesheetOptions {
+    pub malva: FormatOptions,
+    pub vendor_prefix: VendorPrefix,
 }
 
 /// malva options accepted under `stylesheet.malva`. Kept in sync with
@@ -152,7 +176,7 @@ pub(crate) const MALVA_OPTIONS: &[&str] = &[
 
 impl RawStylesheet {
     /// Builds malva options, rejecting keys malva would silently ignore.
-    fn into_options(self) -> Result<FormatOptions, ProfileError> {
+    fn into_options(self) -> Result<StylesheetOptions, ProfileError> {
         let mut options = match self.malva {
             None => FormatOptions::default(),
             Some(mapping) => {
@@ -169,7 +193,10 @@ impl RawStylesheet {
         if let Some(group_by) = self.declaration_order_group_by {
             options.language.declaration_order_group_by = group_by;
         }
-        Ok(options)
+        Ok(StylesheetOptions {
+            malva: options,
+            vendor_prefix: self.vendor_prefix,
+        })
     }
 }
 
@@ -230,7 +257,7 @@ pub struct Profile {
     fallback: usize,
     pub(crate) normalize: Normalize,
     pub(crate) layout: Layout,
-    pub(crate) stylesheet: Option<FormatOptions>,
+    pub(crate) stylesheet: Option<StylesheetOptions>,
 }
 
 impl Profile {
@@ -412,7 +439,7 @@ mod tests {
     #[test]
     fn builds_stylesheet_options() {
         let yaml = "schemaVersion: 1\nname: x\ngroups:\n  - name: a\n    fallback: true\nstylesheet:\n  declarationOrder: concentric\n  malva:\n    indentWidth: 4\n    quotes: prefer-single\n";
-        let options = Profile::from_yaml(yaml).unwrap().stylesheet.unwrap();
+        let options = Profile::from_yaml(yaml).unwrap().stylesheet.unwrap().malva;
         assert!(matches!(
             options.language.declaration_order,
             Some(DeclarationOrder::Concentric)
