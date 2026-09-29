@@ -46,7 +46,7 @@
     re-parses malva's output with raffia and moves only those declarations.
     Runs match malva's own sort units. A run is left alone if a comment sits
     between its declarations. Applies only when `declarationOrder` is set.
-- [ ] Publish the schema at a stable URL and set `$id` (needs the final repo URL)
+- [x] Schema `$id`: `https://github.com/logue/annealer/raw/refs/heads/main/crates/annealer/schema/profile.schema.json`
 
 ## Phase 2: Next
 
@@ -57,6 +57,12 @@
 - [ ] Upgrade raffia to 0.13 when malva does (0.16 still uses raffia 0.12; see the
       comment in `crates/annealer/Cargo.toml`)
 - [ ] Svelte profile (follow-on)
+- [ ] Value ordering for static `class` attributes (profile-defined order), see
+      PLAN.md "Value ordering"
+  - [ ] Tailwind: built-in approximate order
+  - [ ] Bootstrap: draft profile + proposal to the Bootstrap project (v6), so
+        Bootstrap owns the order; needs a stable, documented profile format first
+- [ ] Opt-in value ordering for static `style` attributes via malva
 - [ ] Library-specific rule profiles, built on the same mechanisms (groups,
       `layout.selfClosing`, normalize). Likely needs profile composition
       (`extends`) and per-tag/per-component overrides.

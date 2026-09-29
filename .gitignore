@@ -18,7 +18,7 @@ reports/
 test-results/
 
 # Production / Build output
-/target/
+target/
 dist/
 docs/
 demo/
@@ -29,6 +29,8 @@ logs
 *.log
 
 # Runtime data
+.cargo/config.toml
+.pnpm/crates/
 .rstack
 .rspack-profile-*
 *.pid

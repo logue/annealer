@@ -120,6 +120,9 @@ Given a stylesheet (CSS/SCSS/Sass/Less), delegate property ordering to `malva`.
   wrap).
 - CSS/SCSS/Sass/Less property ordering, via delegation to `malva`
   (`format_text`), inside `<style>` blocks and standalone stylesheets.
+- Value ordering (planned, after the MVP): reordering the tokens inside a
+  static `class` attribute (and, opt-in, the declarations inside a static
+  `style` attribute) by a profile-defined order. See "Value ordering".
 - Svelte support is out of scope for the initial release (low priority; the
   HTML-first, profile-based architecture should make it a follow-on addition
   rather than a redesign).
@@ -210,6 +213,62 @@ is.
 9. Events (`v-on`/`@`)
 10. Content (`v-html`/`v-text`)
 
+## Value ordering (planned)
+
+Attribute order is one axis; the order of values inside an attribute is
+another. The demand is not specific to Tailwind: any class-based CSS framework
+(Bootstrap, Tailwind, a project's own utility set) benefits from a fixed,
+rule-based class order, for the same diff-stability reason as attributes.
+
+### Principles
+
+- **Static values only.** Bound attributes (`:class`, `:style`, `v-bind:*`) hold
+  expressions, not values; annealer never looks inside them. This differs from
+  `eslint-plugin-tailwindcss` (`classnames-order`) and
+  `prettier-plugin-tailwindcss`, which also sort string literals inside
+  `:class` expressions and `clsx()`-style calls.
+- **Library-agnostic mechanism, library-specific profiles.** The class order is
+  plain profile data, like attribute groups, not a code branch. This is the
+  first concrete case of library-specific rule profiles.
+- **Class order is owned by the library, not by annealer.** A framework's
+  canonical class order is a design decision of that framework. annealer
+  provides the mechanism and the profile format; for Bootstrap, the stance is to
+  propose the mechanism upstream (Bootstrap 6 is in development) with a draft
+  profile, so that Bootstrap itself defines and maintains the order. Tailwind's
+  order is already defined by Tailwind (its engine); annealer can ship a
+  YAML approximation of it.
+- **The profile format is a public contract.** Since third parties are meant to
+  author and ship profiles, `schemaVersion`, the JSON Schema, and documentation
+  of the format must be stable before the proposal. Profiles distributed outside
+  annealer also need a loading path (e.g. `extends` resolving a file shipped in
+  a package).
+- **Approximate, self-contained order.** The official Tailwind order is derived
+  from the project's own Tailwind build (v4 `@theme`/custom utilities, v3
+  `tailwind.config.js`), which only Tailwind itself can compute. annealer
+  defines the order in YAML instead: close to the official order for standard
+  utilities, but custom utilities are not known. No JS runtime is required.
+- **Never change meaning.** Reordering classes doesn't change CSS semantics.
+  Duplicate classes are kept (removing them is a lint concern), and unknown
+  classes are never dropped.
+
+### Sketch (to be designed)
+
+- `class` value: split on whitespace, classify each token with group patterns
+  (same idea as attribute groups), sort by group, then by the group's `sort`
+  mode, keeping source order as the tie-breaker.
+- Variants and breakpoints need their own axis:
+  - Tailwind uses prefixes (`md:`, `hover:`, `dark:`); the sort key is the base
+    class plus the variant order.
+  - Bootstrap uses infixes (`col-md-6`, `d-lg-none`, `mt-sm-3`); the breakpoint
+    is extracted from the middle of the name.
+- Patterns need more than a trailing `*`. For example, in Bootstrap
+  `text-center` (alignment) and `text-primary` (color) share a prefix. The
+  value-pattern syntax will be richer than the attribute patterns.
+- Static `style` attribute (opt-in, default off): wrap the value as a rule,
+  format with malva (property order and `vendorPrefix`), unwrap, keep it on one
+  line, and force quotes opposite to the attribute's quotes. Values that don't
+  parse as CSS (e.g. server-side template syntax) are left untouched.
+
 ## Open questions
 
 - Interaction between `v-model` and a same-named plain attribute (e.g.
@@ -221,3 +280,9 @@ is.
 - Whether `strictImportMetaEnv`-equivalent strictness is relevant to
   `annealer`'s own config validation (surfacing typos in profile YAML at
   parse time rather than silently ignoring unknown keys).
+- Value ordering: where unknown classes go (Tailwind's Prettier plugin puts
+  custom classes first; a `start`/`end` option?), and whether whitespace inside
+  a `class` value (multi-line class lists) is normalized to single spaces or
+  preserved.
+- Value ordering: how profiles compose (e.g. `extends: vue` plus a
+  `bootstrap` class order), which also serves library-specific attribute rules.

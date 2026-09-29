@@ -1,5 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/logue/annealer/raw/refs/heads/main/crates/annealer/schema/profile.schema.json",
   "title": "annealer profile",
   "description": "Attribute ordering profile for annealer. Groups are listed in output priority order; each attribute goes to the group whose `match` pattern fits its normalized name most specifically (exact name beats the longest `prefix*`). Unmatched attributes go to the fallback group.",
   "type": "object",
