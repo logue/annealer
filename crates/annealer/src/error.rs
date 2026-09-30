@@ -9,6 +9,13 @@ pub enum FormatError {
     #[error("unterminated attribute value at {line}:{column}")]
     UnterminatedAttributeValue { line: usize, column: usize },
 
+    #[error("invalid directive at {line}:{column}: {message}")]
+    Directive {
+        line: usize,
+        column: usize,
+        message: String,
+    },
+
     #[error("failed to format stylesheet starting at {line}:{column}: {message}")]
     Stylesheet {
         line: usize,

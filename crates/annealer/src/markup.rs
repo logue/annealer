@@ -4,6 +4,7 @@
 //! attribute lists. Everything else is copied through byte-for-byte.
 
 use crate::attribute::{is_component, key_of, normalize_name};
+use crate::directive::{self, Disabled};
 use crate::error::{FormatError, line_col};
 use crate::order::attribute_order;
 use crate::profile::{Profile, SelfClosing};
@@ -46,6 +47,9 @@ struct StartTag<'a> {
     self_closing: bool,
     /// The element is complete after this tag: self-closing, or its end tag was emitted with it.
     closed: bool,
+    /// An `annealer-disable*` directive covers this tag; leave it (and a
+    /// `<style>` element's content) untouched.
+    disabled: bool,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -82,6 +86,7 @@ pub(crate) struct Scanner<'a> {
     out: String,
     profile: &'a Profile,
     vue: bool,
+    disabled: Disabled,
 }
 
 impl<'a> Scanner<'a> {
@@ -94,6 +99,7 @@ impl<'a> Scanner<'a> {
             out: String::with_capacity(src.len()),
             profile,
             vue,
+            disabled: Disabled::new(src),
         }
     }
 
@@ -138,7 +144,7 @@ impl<'a> Scanner<'a> {
         while let Some(lt) = self.find("<", self.pos) {
             self.pos = lt;
             if self.at("<!--") {
-                self.skip_past("-->");
+                self.comment()?;
             } else if self.at("<!") || self.at("<?") || self.at("</") {
                 self.skip_past(">");
             } else if self.at_start_tag() {
@@ -152,8 +158,8 @@ impl<'a> Scanner<'a> {
                     "template" if lang.as_deref().is_none_or(|lang| lang == "html") => {
                         self.scan_markup(true)?;
                     }
-                    "style" => self.raw_text("style", lang.as_deref())?,
-                    _ => self.raw_text(&name, None)?,
+                    "style" if !tag.disabled => self.style_element(lang.as_deref())?,
+                    _ => self.raw_text(&name),
                 }
             } else {
                 self.pos += 1;
@@ -181,7 +187,7 @@ impl<'a> Scanner<'a> {
             } else if self.at("{") {
                 self.pos += 1;
             } else if self.at("<!--") {
-                self.skip_past("-->");
+                self.comment()?;
             } else if self.at("<!") || self.at("<?") {
                 self.skip_past(">");
             } else if self.at("</") {
@@ -202,11 +208,11 @@ impl<'a> Scanner<'a> {
                 let name = tag.name.to_ascii_lowercase();
                 if name == "template" {
                     template_depth += 1;
-                } else if name == "style" {
+                } else if name == "style" && !tag.disabled {
                     let lang = tag.attribute("lang").map(str::to_ascii_lowercase);
-                    self.raw_text("style", lang.as_deref())?;
+                    self.style_element(lang.as_deref())?;
                 } else if RAW_TEXT_ELEMENTS.contains(&name.as_str()) {
-                    self.raw_text(&name, None)?;
+                    self.raw_text(&name);
                 }
             } else {
                 self.pos += 1;
@@ -215,16 +221,39 @@ impl<'a> Scanner<'a> {
         Ok(())
     }
 
-    /// Skips raw text up to `</name`, formatting it first if it is a stylesheet.
-    fn raw_text(&mut self, name: &str, style_lang: Option<&str>) -> Result<(), FormatError> {
+    /// Skips a comment, recording any `annealer-*` directive in it.
+    fn comment(&mut self) -> Result<(), FormatError> {
         let start = self.pos;
-        let end =
-            find_ignore_case(self.src, &format!("</{name}"), start).unwrap_or(self.bytes.len());
-        self.pos = end;
-
-        if name != "style" {
-            return Ok(());
+        let content_start = start + "<!--".len();
+        let content_end = self.find("-->", content_start).unwrap_or(self.bytes.len());
+        self.pos = (content_end + "-->".len()).min(self.bytes.len());
+        match directive::parse(&self.src[content_start..content_end]) {
+            Ok(Some(directive)) => self.disabled.add(directive, self.pos),
+            Ok(None) => {}
+            Err(message) => {
+                let (line, column) = line_col(self.src, start);
+                return Err(FormatError::Directive {
+                    line,
+                    column,
+                    message,
+                });
+            }
         }
+        Ok(())
+    }
+
+    /// Skips raw text up to `</name`.
+    fn raw_text(&mut self, name: &str) {
+        self.pos =
+            find_ignore_case(self.src, &format!("</{name}"), self.pos).unwrap_or(self.bytes.len());
+    }
+
+    /// Skips a `<style>` element's content, formatting it as a stylesheet.
+    fn style_element(&mut self, style_lang: Option<&str>) -> Result<(), FormatError> {
+        let start = self.pos;
+        self.raw_text("style");
+        let end = self.pos;
+
         let (Some(options), Some(lang)) =
             (&self.profile.stylesheet, StyleLang::from_lang(style_lang))
         else {
@@ -271,6 +300,11 @@ impl<'a> Scanner<'a> {
     /// With `self_closing_rules`, applies the profile's self-closing style.
     fn start_tag(&mut self, self_closing_rules: bool) -> Result<StartTag<'a>, FormatError> {
         let mut tag = self.parse_start_tag(self.pos)?;
+        if self.disabled.covers(tag.start) {
+            tag.disabled = true;
+            self.pos = tag.end;
+            return Ok(tag);
+        }
         let mut end = tag.end;
         let closing = if self_closing_rules {
             self.apply_self_closing(&mut tag, &mut end)
@@ -394,6 +428,7 @@ impl<'a> Scanner<'a> {
             trailing: "",
             self_closing: false,
             closed: false,
+            disabled: false,
         };
 
         let mut i = name_end;

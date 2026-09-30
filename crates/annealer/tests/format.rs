@@ -336,6 +336,190 @@ mod self_closing {
     }
 }
 
+mod directives {
+    use super::*;
+
+    #[test]
+    fn disable_next_line_leaves_tags_on_that_line_alone() {
+        let input = concat!(
+            "<!-- annealer-disable-next-line: third-party snippet -->\n",
+            "<a title=\"t\" id=\"i\"><br></a>\n",
+            "<a title=\"t\" id=\"i\"><br></a>\n",
+        );
+        let expected = concat!(
+            "<!-- annealer-disable-next-line: third-party snippet -->\n",
+            "<a title=\"t\" id=\"i\"><br></a>\n",
+            "<a id=\"i\" title=\"t\"><br /></a>\n",
+        );
+        assert_eq!(html(input), expected);
+    }
+
+    #[test]
+    fn disable_next_line_covers_a_whole_multiline_tag() {
+        let input = sfc(concat!(
+            "<!-- annealer-disable-next-line -->\n",
+            "<Comp\n  title=\"t\" v-if=\"x\">\n",
+            "</Comp>",
+        ));
+        assert_eq!(vue(&input), input);
+    }
+
+    #[test]
+    fn disable_and_enable_bound_a_range() {
+        let input = concat!(
+            "<a title=\"t\" id=\"1\">\n",
+            "<!-- annealer-disable -->\n",
+            "<a title=\"t\" id=\"2\">\n",
+            "<style>a { color: red; display: block; }</style>\n",
+            "<!-- annealer-enable -->\n",
+            "<a title=\"t\" id=\"3\">\n",
+        );
+        let expected = concat!(
+            "<a id=\"1\" title=\"t\">\n",
+            "<!-- annealer-disable -->\n",
+            "<a title=\"t\" id=\"2\">\n",
+            "<style>a { color: red; display: block; }</style>\n",
+            "<!-- annealer-enable -->\n",
+            "<a id=\"3\" title=\"t\">\n",
+        );
+        assert_eq!(html(input), expected);
+    }
+
+    #[test]
+    fn disable_without_enable_covers_the_rest() {
+        let input = "<!-- annealer-disable -->\n<a title=\"t\" id=\"i\"><br><div></div>\n";
+        assert_eq!(html(input), input);
+        let input = "<!-- annealer-disable -->\n<template>\n<a title=\"t\" id=\"i\"><div></div>\n</template>\n";
+        assert_eq!(vue(input), input);
+    }
+
+    #[test]
+    fn ignores_ordinary_comments() {
+        assert_eq!(
+            html("<!-- see annealer-disable -->\n<a title=\"t\" id=\"i\">"),
+            "<!-- see annealer-disable -->\n<a id=\"i\" title=\"t\">"
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_markup_directives() {
+        let error = format(
+            "<p>\n  <!-- annealer-disabel -->",
+            &Config::for_language(Language::Html),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            error,
+            FormatError::Directive {
+                line: 2,
+                column: 3,
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn css_disable_next_line_keeps_declaration_verbatim_and_in_place() {
+        assert_eq!(
+            run(
+                concat!(
+                    "a {\n",
+                    "  color: red;\n",
+                    "  /* annealer-disable-next-line: legacy order */\n",
+                    "  -webkit-transition:x;\n",
+                    "  transition: x;\n",
+                    "  display: block;\n",
+                    "}\n",
+                ),
+                Language::Css
+            ),
+            concat!(
+                "a {\n",
+                "  color: red;\n",
+                "  /* annealer-disable-next-line: legacy order */\n",
+                "  -webkit-transition:x;\n",
+                "  display: block;\n",
+                "  transition: x;\n",
+                "}\n",
+            )
+        );
+    }
+
+    #[test]
+    fn css_disable_range_keeps_rules_verbatim() {
+        assert_eq!(
+            run(
+                concat!(
+                    "a { color: red; display: block; }\n",
+                    "/* annealer-disable */\n",
+                    "b { color: red;   display: block; }\n",
+                    "/* annealer-enable */\n",
+                    "c { color: red; display: block; }\n",
+                ),
+                Language::Css
+            ),
+            concat!(
+                "a {\n  display: block;\n  color: red;\n}\n",
+                "/* annealer-disable */\n",
+                "b { color: red;   display: block; }\n",
+                "/* annealer-enable */\n",
+                "c {\n  display: block;\n  color: red;\n}\n",
+            )
+        );
+    }
+
+    #[test]
+    fn css_enable_comment_stays_at_the_range_boundary() {
+        assert_eq!(
+            run(
+                "a {\n  /* annealer-disable */\n  top:0;\n  -webkit-x:1;\n  /* annealer-enable */\n  color: red; display: block;\n}\n",
+                Language::Scss
+            ),
+            "a {\n  /* annealer-disable */\n  top:0;\n  -webkit-x:1;\n  /* annealer-enable */\n  display: block;\n  color: red;\n}\n"
+        );
+    }
+
+    #[test]
+    fn css_disable_at_top_leaves_the_file_unchanged() {
+        let input = "/* annealer-disable */\na { color: red;   display: block; }\n\n\nb{top:0}\n";
+        assert_eq!(run(input, Language::Css), input);
+    }
+
+    #[test]
+    fn css_directives_work_in_style_blocks() {
+        assert_eq!(
+            vue(concat!(
+                "<style>\n",
+                ".a {\n",
+                "  /* annealer-disable-next-line */\n",
+                "  color:red;\n",
+                "  display: block;\n",
+                "}\n",
+                "</style>\n",
+            )),
+            concat!(
+                "<style>\n",
+                ".a {\n",
+                "  /* annealer-disable-next-line */\n",
+                "  color:red;\n",
+                "  display: block;\n",
+                "}\n",
+                "</style>\n",
+            )
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_css_directives() {
+        let error = format(
+            "a { color: red; /* annealer-disabel */ }\n",
+            &Config::for_language(Language::Css),
+        )
+        .unwrap_err();
+        assert!(matches!(error, FormatError::Stylesheet { .. }));
+    }
+}
+
 mod stylesheets {
     use super::*;
 

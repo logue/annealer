@@ -48,6 +48,15 @@
     between its declarations. Applies only when `declarationOrder` is set.
 - [x] Schema `$id`: `https://github.com/logue/annealer/raw/refs/heads/main/crates/annealer/schema/profile.schema.json`
 
+## Disable directives
+
+- [x] `annealer-disable` / `annealer-enable` / `annealer-disable-next-line: reason`
+      in `<!-- -->` (markup) and `/* */` (stylesheets); see PLAN.md
+- [x] Unknown `annealer-*` directives are errors
+- [x] CSS: covered statements are kept verbatim and in place via internal
+      markers passed to malva (`malva-ignore` can't take a reason and doesn't
+      stop sorting)
+
 ## Phase 2: Next
 
 - [ ] `vue/multiline-html-element-content-newline` equivalent (content on its own line)

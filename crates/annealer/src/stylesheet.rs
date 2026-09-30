@@ -6,7 +6,16 @@ use raffia::ParserBuilder;
 use raffia::ast::Stylesheet;
 use serde_json::Value;
 
+use crate::directive::{self, Disabled};
 use crate::profile::{StylesheetOptions, VendorPrefix};
+
+/// Internal at-rule inserted around disabled declarations so malva's sorting
+/// can't move them (a non-declaration statement ends a sort run). Removed
+/// from the output.
+const FENCE: &str = "@annealer-fence-5d1c;";
+/// Internal comment directive telling malva to print the next statement
+/// verbatim. Removed from the output.
+const VERBATIM: &str = "annealer-verbatim-5d1c";
 
 /// Stylesheet syntaxes annealer currently formats. Less and Sass (indented
 /// syntax) are deferred.
@@ -40,22 +49,202 @@ pub(crate) fn format(
     lang: StyleLang,
     options: &StylesheetOptions,
 ) -> Result<String, String> {
-    let formatted = malva::format_text(input, lang.syntax(), &options.malva)
-        .map_err(|error| error.to_string())?;
+    let protected = match protect_disabled(input, lang.syntax())? {
+        Protection::None => None,
+        Protection::All => return Ok(input.to_owned()),
+        Protection::Marked(marked) => Some(marked),
+    };
+    let formatted = match &protected {
+        None => malva::format_text(input, lang.syntax(), &options.malva),
+        Some(marked) => {
+            let mut malva_options = options.malva.clone();
+            malva_options.language.ignore_comment_directive = VERBATIM.to_owned();
+            malva::format_text(marked, lang.syntax(), &malva_options)
+        }
+    }
+    .map_err(|error| error.to_string())?;
+    let formatted = sort_vendor_prefixes(formatted, lang, options);
+    Ok(if protected.is_some() {
+        remove_markers(&formatted)
+    } else {
+        formatted
+    })
+}
+
+fn sort_vendor_prefixes(formatted: String, lang: StyleLang, options: &StylesheetOptions) -> String {
     let language = &options.malva.language;
     if options.vendor_prefix == VendorPrefix::Start && language.declaration_order.is_some() {
         let split_on_empty_line = matches!(
             language.declaration_order_group_by,
             DeclarationOrderGroupBy::NonDeclarationAndEmptyLine
         );
-        Ok(move_vendor_prefixed_first(
-            &formatted,
-            lang.syntax(),
-            split_on_empty_line,
-        ))
+        move_vendor_prefixed_first(&formatted, lang.syntax(), split_on_empty_line)
     } else {
-        Ok(formatted)
+        formatted
     }
+}
+
+enum Protection {
+    /// No `annealer-disable*` directive applies.
+    None,
+    /// Everything is disabled; return the input unchanged.
+    All,
+    /// The input with markers around disabled statements.
+    Marked(String),
+}
+
+/// Applies `/* annealer-disable* */` directives: marks every outermost
+/// statement they cover so malva prints it verbatim and in place.
+fn protect_disabled(css: &str, syntax: Syntax) -> Result<Protection, String> {
+    let mut comments = Vec::new();
+    let mut parser = ParserBuilder::new(css)
+        .syntax(syntax)
+        .comments(&mut comments)
+        .build();
+    // Syntax errors are left for malva to report.
+    let Ok(stylesheet) = parser.parse::<Stylesheet>() else {
+        return Ok(Protection::None);
+    };
+
+    let mut disabled = Disabled::new(css);
+    let mut enable_comments = Vec::new();
+    for comment in &comments {
+        if !matches!(comment.kind, raffia::token::CommentKind::Block) {
+            continue;
+        }
+        match directive::parse(comment.content) {
+            Ok(Some(directive)) => {
+                disabled.add(directive, comment.span.end);
+                if directive == directive::Directive::Enable {
+                    enable_comments.push(comment.span.end);
+                }
+            }
+            Ok(None) => {}
+            Err(message) => {
+                let line = disabled.line_of(comment.span.start) + 1;
+                return Err(format!("invalid directive on line {line}: {message}"));
+            }
+        }
+    }
+    if disabled.is_empty() {
+        return Ok(Protection::None);
+    }
+    if stylesheet
+        .statements
+        .first()
+        .is_some_and(|first| disabled.covers_rest(raffia::Spanned::span(first).start))
+    {
+        return Ok(Protection::All);
+    }
+
+    let Ok(ast) = serde_json::to_value(&stylesheet) else {
+        return Ok(Protection::None);
+    };
+    let mut targets = Vec::new();
+    find_disabled(&ast, &disabled, &mut targets);
+    if targets.is_empty() {
+        return Ok(Protection::None);
+    }
+
+    // (offset, text) insertions, applied in order.
+    let mut insertions: Vec<(usize, String)> = Vec::new();
+    for (start, end, declaration) in targets {
+        let before = if declaration {
+            // The newline keeps malva from treating the marker comment as a
+            // trailing comment of the fence.
+            format!("{FENCE}\n/* {VERBATIM} */ ")
+        } else {
+            format!("/* {VERBATIM} */ ")
+        };
+        insertions.push((start, before));
+        if declaration {
+            let after_spaces =
+                end + css[end..].len() - css[end..].trim_start_matches([' ', '\t']).len();
+            if css[after_spaces..].starts_with(';') {
+                insertions.push((after_spaces + 1, format!(" {FENCE}")));
+            } else {
+                insertions.push((end, format!("; {FENCE}")));
+            }
+        }
+    }
+    // malva attaches a comment to the following statement, which sorting may
+    // move; a fence after `annealer-enable` keeps the comment in place.
+    for end in enable_comments {
+        insertions.push((end, format!(" {FENCE}")));
+    }
+    insertions.sort_by_key(|&(offset, _)| offset);
+
+    let mut marked = String::with_capacity(css.len() + insertions.len() * 32);
+    let mut copied = 0;
+    for (offset, text) in insertions {
+        marked.push_str(&css[copied..offset]);
+        marked.push_str(&text);
+        copied = offset;
+    }
+    marked.push_str(&css[copied..]);
+    Ok(Protection::Marked(marked))
+}
+
+/// Collects `(start, end, is_declaration)` of the outermost disabled statements.
+fn find_disabled(node: &Value, disabled: &Disabled, targets: &mut Vec<(usize, usize, bool)>) {
+    match node {
+        Value::Object(map) => {
+            for (key, value) in map {
+                match (key.as_str(), value) {
+                    ("statements", Value::Array(statements)) => {
+                        for statement in statements {
+                            let span =
+                                |key: &str| statement["span"][key].as_u64().map(|n| n as usize);
+                            match (span("start"), span("end")) {
+                                (Some(start), Some(end)) if disabled.covers(start) => {
+                                    let declaration = statement["type"] == "Declaration";
+                                    targets.push((start, end, declaration));
+                                }
+                                _ => find_disabled(statement, disabled, targets),
+                            }
+                        }
+                    }
+                    _ => find_disabled(value, disabled, targets),
+                }
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                find_disabled(item, disabled, targets);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Removes the internal markers inserted by [`protect_disabled`], dropping
+/// lines that held nothing else.
+fn remove_markers(css: &str) -> String {
+    let comment = format!("/* {VERBATIM} */");
+    let mut out = String::with_capacity(css.len());
+    for line in css.split_inclusive('\n') {
+        if !line.contains(FENCE) && !line.contains(&comment) {
+            out.push_str(line);
+            continue;
+        }
+        let stripped = line
+            .replace(&format!("{FENCE} "), "")
+            .replace(&format!(" {FENCE}"), "")
+            .replace(FENCE, "")
+            .replace(&format!("{comment} "), "")
+            .replace(&comment, "");
+        if !stripped.trim().is_empty() {
+            out.push_str(&stripped);
+        }
+    }
+    out
+}
+
+/// Whether malva printed this statement verbatim (it follows the marker).
+fn is_verbatim(css: &str, start: usize) -> bool {
+    css[..start]
+        .trim_end()
+        .ends_with(&format!("/* {VERBATIM} */"))
 }
 
 /// Formats the content of a `<style>` element, keeping it indented relative to
@@ -156,7 +345,8 @@ fn collect_edits(
             if let Some(Value::Array(statements)) = map.get("statements") {
                 let mut run: Vec<Declaration<'_>> = Vec::new();
                 for statement in statements {
-                    let declaration = literal_declaration(statement, css);
+                    let declaration = literal_declaration(statement, css)
+                        .filter(|declaration| !is_verbatim(css, declaration.start));
                     let continues = declaration.as_ref().is_some_and(|next| {
                         run.last().is_none_or(|previous| {
                             !split_on_empty_line
@@ -171,8 +361,19 @@ fn collect_edits(
                 }
                 edits.extend(reorder_run(&run, css));
             }
-            for value in map.values() {
-                collect_edits(value, css, split_on_empty_line, edits);
+            for (key, value) in map {
+                if let ("statements", Value::Array(statements)) = (key.as_str(), value) {
+                    for statement in statements {
+                        let verbatim = statement["span"]["start"]
+                            .as_u64()
+                            .is_some_and(|start| is_verbatim(css, start as usize));
+                        if !verbatim {
+                            collect_edits(statement, css, split_on_empty_line, edits);
+                        }
+                    }
+                } else {
+                    collect_edits(value, css, split_on_empty_line, edits);
+                }
             }
         }
         Value::Array(items) => {

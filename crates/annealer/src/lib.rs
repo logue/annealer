@@ -10,6 +10,7 @@
 //! ```
 
 mod attribute;
+mod directive;
 mod error;
 mod markup;
 mod order;

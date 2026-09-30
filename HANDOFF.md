@@ -123,6 +123,9 @@ Given a stylesheet (CSS/SCSS/Sass/Less), delegate property ordering to `malva`.
 - Value ordering (planned, after the MVP): reordering the tokens inside a
   static `class` attribute (and, opt-in, the declarations inside a static
   `style` attribute) by a profile-defined order. See "Value ordering".
+- Disable directives (`annealer-disable`, `annealer-enable`,
+  `annealer-disable-next-line`) in markup and stylesheet comments. See
+  "Disable directives".
 - Svelte support is out of scope for the initial release (low priority; the
   HTML-first, profile-based architecture should make it a follow-on addition
   rather than a redesign).
@@ -212,6 +215,42 @@ is.
    sub-ordering applied within this tier)
 9. Events (`v-on`/`@`)
 10. Content (`v-html`/`v-text`)
+
+## Disable directives
+
+Some code must keep its exact form (third-party snippets, deliberate legacy
+order). Comments switch annealer off:
+
+```html
+<!-- annealer-disable -->
+<!-- annealer-enable -->
+<!-- annealer-disable-next-line: [reason] -->
+```
+
+```css
+/* annealer-disable */
+/* annealer-enable */
+/* annealer-disable-next-line: [reason] */
+```
+
+- Only block comments. `//` is not supported because CSS has no line comments.
+- `annealer-disable` covers everything after it, up to `annealer-enable` or the
+  end of the document. At the top of a document it leaves the file unchanged.
+- `annealer-disable-next-line` covers the constructs that start on the next
+  line: a start tag (the whole tag, even if it spans several lines, and a
+  `<style>` element's content), or a CSS statement (a declaration or a whole
+  rule).
+- The reason after `:` is optional and ignored by annealer.
+- Covered code is kept verbatim and in place. In a stylesheet, covered
+  declarations also stay where they are when their neighbors are sorted.
+- Markup comments apply to markup (and whole `<style>` elements); CSS comments
+  apply inside the stylesheet they appear in.
+- A comment that starts with `annealer-` but is not a known directive (e.g. a
+  typo such as `annealer-disabel`) is an error, not silently ignored.
+- CSS implementation note: malva's own ignore comment (`malva-ignore`) can't be
+  reused. It rejects the `: reason` form, and sorting still moves the ignored
+  declaration. annealer marks covered statements with internal markers before
+  calling malva and removes the markers afterwards.
 
 ## Value ordering (planned)
 
