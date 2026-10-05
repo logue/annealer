@@ -3,7 +3,7 @@
 //! No DOM is built: the scanner only locates start tags and tokenizes their
 //! attribute lists. Everything else is copied through byte-for-byte.
 
-use crate::attribute::{is_component, key_of, normalize_name};
+use crate::attribute::{Key, is_component, key_of, normalize_name};
 use crate::directive::{self, Disabled};
 use crate::error::{FormatError, line_col};
 use crate::order::attribute_order;
@@ -33,6 +33,8 @@ struct Attribute<'a> {
     /// Everything after the name: `="value"`, including any spaces around `=`.
     rest: &'a str,
     value: Option<&'a str>,
+    /// Quote character around the value, if any.
+    quote: Option<char>,
 }
 
 struct StartTag<'a> {
@@ -50,6 +52,21 @@ struct StartTag<'a> {
     /// An `annealer-disable*` directive covers this tag; leave it (and a
     /// `<style>` element's content) untouched.
     disabled: bool,
+}
+
+/// An element whose end tag hasn't been seen yet.
+struct OpenElement<'a> {
+    name: &'a str,
+    /// Source offset of the start tag.
+    start: usize,
+    /// Offset in the output just past the start tag.
+    content_start: usize,
+    /// Indentation of the attribute lines of a multiline start tag.
+    attribute_indent: Option<String>,
+    /// Put the content on lines of its own if the element turns out multiline.
+    break_content: bool,
+    /// Inside an element `layout.contentNewline` ignores.
+    in_ignored: bool,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -87,6 +104,8 @@ pub(crate) struct Scanner<'a> {
     profile: &'a Profile,
     vue: bool,
     disabled: Disabled,
+    /// `layout.contentNewline` moved content onto a new line.
+    content_moved: bool,
 }
 
 impl<'a> Scanner<'a> {
@@ -100,17 +119,47 @@ impl<'a> Scanner<'a> {
             profile,
             vue,
             disabled: Disabled::new(src),
+            content_moved: false,
         }
     }
 
-    pub(crate) fn run(mut self) -> Result<String, FormatError> {
-        if self.vue {
-            self.scan_sfc()?;
-        } else {
-            self.scan_markup(false)?;
+    /// Formats `src`. Content moved onto a new line changes the indentation
+    /// of the line it starts, which other layout rules (the closing bracket of
+    /// a multiline tag) depend on, so it is formatted again until stable.
+    pub(crate) fn format(src: &str, profile: &Profile, vue: bool) -> Result<String, FormatError> {
+        const MAX_PASSES: usize = 4;
+        let mut text = src.to_owned();
+        for _ in 0..MAX_PASSES {
+            let mut scanner = Scanner::new(&text, profile, vue);
+            scanner.scan()?;
+            let moved = scanner.content_moved;
+            text = scanner.finish();
+            if !moved {
+                break;
+            }
         }
+        Ok(text)
+    }
+
+    fn finish(mut self) -> String {
         self.out.push_str(&self.src[self.copied..]);
-        Ok(self.out)
+        self.out
+    }
+
+    fn scan(&mut self) -> Result<(), FormatError> {
+        if self.vue {
+            self.scan_sfc()
+        } else {
+            self.scan_markup(false)
+        }
+    }
+
+    /// Copies the input up to `offset` to the output.
+    fn flush(&mut self, offset: usize) {
+        if offset > self.copied {
+            self.out.push_str(&self.src[self.copied..offset]);
+            self.copied = offset;
+        }
     }
 
     fn replace(&mut self, start: usize, end: usize, text: &str) {
@@ -172,6 +221,7 @@ impl<'a> Scanner<'a> {
     /// the enclosing SFC block.
     fn scan_markup(&mut self, in_template: bool) -> Result<(), FormatError> {
         let mut template_depth = 0usize;
+        let mut open: Vec<OpenElement<'a>> = Vec::new();
         while self.pos < self.bytes.len() {
             let Some(next) = self.bytes[self.pos..]
                 .iter()
@@ -199,13 +249,22 @@ impl<'a> Scanner<'a> {
                     }
                     template_depth -= 1;
                 }
+                self.end_tag(&mut open, name);
                 self.skip_past(">");
             } else if self.at_start_tag() {
+                self.flush(self.pos);
+                let tag_out_start = self.out.len();
                 let tag = self.start_tag(true)?;
                 if tag.closed {
                     continue;
                 }
                 let name = tag.name.to_ascii_lowercase();
+                if !RAW_TEXT_ELEMENTS.contains(&name.as_str())
+                    && !self.element_kind(tag.name).eq(&ElementKind::Void)
+                {
+                    self.flush(self.pos);
+                    open.push(self.open_element(&tag, tag_out_start, open.last()));
+                }
                 if name == "template" {
                     template_depth += 1;
                 } else if name == "style" && !tag.disabled {
@@ -219,6 +278,122 @@ impl<'a> Scanner<'a> {
             }
         }
         Ok(())
+    }
+
+    fn open_element(
+        &self,
+        tag: &StartTag<'a>,
+        tag_out_start: usize,
+        parent: Option<&OpenElement<'_>>,
+    ) -> OpenElement<'a> {
+        let rule = self.profile.layout.content_newline.as_ref();
+        let ignored = rule.is_some_and(|rule| {
+            let component = self.vue && is_component(tag.name);
+            rule.ignore
+                .iter()
+                .any(|name| name == tag.name || (!component && name.eq_ignore_ascii_case(tag.name)))
+        });
+        let in_ignored = ignored || parent.is_some_and(|parent| parent.in_ignored);
+        let tag_text = &self.out[tag_out_start..];
+        let attribute_indent = tag_text.find('\n').map(|newline| {
+            let line = &tag_text[newline + 1..];
+            line[..line.len() - line.trim_start_matches([' ', '\t']).len()].to_owned()
+        });
+        OpenElement {
+            name: tag.name,
+            start: tag.start,
+            content_start: self.out.len(),
+            attribute_indent,
+            break_content: rule.is_some() && !in_ignored && !tag.disabled,
+            in_ignored,
+        }
+    }
+
+    /// Closes the innermost open element named `name`, if any; elements
+    /// opened after it are implicitly closed.
+    fn end_tag(&mut self, open: &mut Vec<OpenElement<'a>>, name: &str) {
+        let matches = |element: &OpenElement<'_>| {
+            if self.vue && is_component(element.name) {
+                element.name == name
+            } else {
+                element.name.eq_ignore_ascii_case(name)
+            }
+        };
+        let Some(index) = open.iter().rposition(matches) else {
+            return;
+        };
+        open.truncate(index + 1);
+        let element = open.pop().expect("index is in bounds");
+        let end = self.pos;
+        if element.break_content
+            && self.src[element.start..end].contains('\n')
+            && !self.disabled.covers(end)
+        {
+            self.break_content(&element, end);
+        }
+    }
+
+    /// Puts the content of `element`, which ends at `end`, on lines of its own.
+    fn break_content(&mut self, element: &OpenElement<'_>, end: usize) {
+        let Some(rule) = &self.profile.layout.content_newline else {
+            return;
+        };
+        self.flush(end);
+        let content = &self.out[element.content_start..];
+        let body = content.trim_matches(is_html_whitespace);
+        if body.is_empty() {
+            return;
+        }
+        let leading =
+            &content[..content.len() - content.trim_start_matches(is_html_whitespace).len()];
+        let trailing = &content[content.trim_end_matches(is_html_whitespace).len()..];
+        let newline = if self.src.contains("\r\n") {
+            "\r\n"
+        } else {
+            "\n"
+        };
+        let tag_indent = line_indent(self.src, element.start);
+
+        let break_before = |space: &str, indent: &dyn Fn() -> String| match space.rfind('\n') {
+            Some(_) if rule.allow_empty_lines => space.to_owned(),
+            Some(last) => format!("{newline}{}", &space[last + 1..]),
+            None => format!("{newline}{}", indent()),
+        };
+        let content_indent = || {
+            element
+                .attribute_indent
+                .clone()
+                .or_else(|| {
+                    body.lines()
+                        .skip(1)
+                        .filter(|line| !line.trim().is_empty())
+                        .map(|line| {
+                            &line[..line.len() - line.trim_start_matches([' ', '\t']).len()]
+                        })
+                        .find(|indent| {
+                            indent.len() > tag_indent.len() && indent.starts_with(tag_indent)
+                        })
+                        .map(str::to_owned)
+                })
+                .unwrap_or_else(|| {
+                    let unit = if tag_indent.contains('\t') {
+                        "\t"
+                    } else {
+                        "  "
+                    };
+                    format!("{tag_indent}{unit}")
+                })
+        };
+        let text = format!(
+            "{}{body}{}",
+            break_before(leading, &content_indent),
+            break_before(trailing, &|| tag_indent.to_owned()),
+        );
+        if text != content {
+            self.content_moved |= !leading.contains('\n');
+            self.out.truncate(element.content_start);
+            self.out.push_str(&text);
+        }
     }
 
     /// Skips a comment, recording any `annealer-*` directive in it.
@@ -478,6 +653,7 @@ impl<'a> Scanner<'a> {
 
             // Optional `= value`.
             let mut value = None;
+            let mut value_quote = None;
             let after_name = self.skip_whitespace(i);
             if bytes.get(after_name) == Some(&b'=') {
                 let value_start = self.skip_whitespace(after_name + 1);
@@ -493,6 +669,7 @@ impl<'a> Scanner<'a> {
                             })?;
                         let value_end = value_start + 1 + close;
                         value = Some(&src[value_start + 1..value_end]);
+                        value_quote = Some(char::from(quote));
                         i = value_end + 1;
                     }
                     Some(_) => {
@@ -514,8 +691,18 @@ impl<'a> Scanner<'a> {
                 name,
                 rest: &src[name_start + name.len()..i],
                 value,
+                quote: value_quote,
             });
         }
+    }
+
+    /// The reordered value of a static `style` attribute, when enabled.
+    fn style_attribute(&self, attribute: &Attribute<'_>, key: &Key) -> Option<String> {
+        let options = self.profile.stylesheet.as_ref()?;
+        if !options.style_attribute || key.bound || !attribute.name.eq_ignore_ascii_case("style") {
+            return None;
+        }
+        stylesheet::format_style_attribute(attribute.value?, attribute.quote?, options)
     }
 
     /// Builds the rewritten start tag (plus the end tag when `closing` asks for it).
@@ -556,13 +743,31 @@ impl<'a> Scanner<'a> {
         for (separator, &index) in separators.iter().zip(&order) {
             text.push_str(separator);
             text.push_str(&names[index]);
-            text.push_str(tag.attributes[index].rest);
+            let attribute = &tag.attributes[index];
+            match self.style_attribute(attribute, &keys[index]) {
+                Some(value) => {
+                    let value_start = attribute
+                        .rest
+                        .find(attribute.quote.unwrap_or('"'))
+                        .map_or(0, |quote| quote + 1);
+                    text.push_str(&attribute.rest[..value_start]);
+                    text.push_str(&value);
+                    text.push_str(
+                        &attribute.rest[value_start + attribute.value.unwrap_or("").len()..],
+                    );
+                }
+                None => text.push_str(attribute.rest),
+            }
         }
 
         let multiline = text.contains('\n');
         if profile.layout.closing_bracket_newline && multiline {
             text.push_str(if text.contains("\r\n") { "\r\n" } else { "\n" });
             text.push_str(line_indent(self.src, tag.start));
+        } else if profile.layout.closing_bracket_newline && tag.trailing.contains('\n') {
+            // Attributes on one line: the bracket stays on that line, like
+            // `vue/html-closing-bracket-newline`'s `singleline: never`.
+            text.push_str(if tag.self_closing { " " } else { "" });
         } else if closing.governed && !tag.trailing.contains('\n') {
             // `<br />`, `<br>`: exactly one space before `/>`, none before `>`.
             text.push_str(if tag.self_closing { " " } else { "" });
@@ -584,6 +789,10 @@ fn line_indent(src: &str, offset: usize) -> &str {
     let line_start = src[..offset].rfind('\n').map_or(0, |i| i + 1);
     let line = &src[line_start..];
     &line[..line.len() - line.trim_start_matches([' ', '\t']).len()]
+}
+
+fn is_html_whitespace(c: char) -> bool {
+    matches!(c, ' ' | '\t' | '\n' | '\r' | '\x0C')
 }
 
 fn find_ignore_case(haystack: &str, needle: &str, from: usize) -> Option<usize> {

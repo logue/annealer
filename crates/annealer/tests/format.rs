@@ -112,6 +112,15 @@ mod html_profile {
     }
 
     #[test]
+    fn keeps_closing_bracket_of_single_line_tags_on_that_line() {
+        assert_eq!(
+            html("<a href=\"/\" title=\"t\"\n  >x</a><br\n/><p\n>y</p>"),
+            // `<p>` spans two lines in the input, so its content is broken too.
+            "<a title=\"t\" href=\"/\">x</a><br /><p>\n  y\n</p>"
+        );
+    }
+
+    #[test]
     fn keeps_crlf_line_endings() {
         assert_eq!(
             html("<a\r\n  title=\"t\"\r\n  id=\"i\">x</a>"),
@@ -253,9 +262,161 @@ mod vue_profile {
             "<script setup lang=\"ts\">\nconst s = '<a title=\"t\" id=\"i\">';\n</script>\n",
             "<i18n lang=\"json\">{ \"a\": \"<a title='t' id='i'>\" }</i18n>\n",
             "<template lang=\"pug\">\na(title=\"t\" id=\"i\")\n</template>\n",
-            "<style lang=\"less\">\na { color: red; display: block; }\n</style>\n",
+            "<style lang=\"stylus\">\na { color: red; display: block; }\n</style>\n",
         );
         assert_eq!(vue(input), input);
+    }
+}
+
+mod content_newline {
+    use super::*;
+
+    #[test]
+    fn breaks_content_of_elements_with_multiline_start_tags() {
+        assert_eq!(
+            vue(&sfc("<div\n  title=\"t\" id=\"i\">Hello {{ name }}</div>")),
+            sfc("<div\n  id=\"i\"\n  title=\"t\"\n>\n  Hello {{ name }}\n</div>")
+        );
+    }
+
+    #[test]
+    fn breaks_content_of_elements_with_multiline_content() {
+        assert_eq!(
+            vue(&sfc("  <section>text\n    more</section>")),
+            sfc("  <section>\n    text\n    more\n  </section>")
+        );
+    }
+
+    #[test]
+    fn leaves_single_line_and_empty_elements_alone() {
+        let input = sfc("<p>one</p>\n<p v-if=\"a\"><b>x</b></p>\n<textarea>\n</textarea>");
+        assert_eq!(vue(&input), input);
+        let input = "<div>\n</div>\n<div\n  id=\"i\"\n>\n</div>";
+        assert_eq!(html(input), input);
+    }
+
+    #[test]
+    fn collapses_empty_lines_around_content() {
+        assert_eq!(
+            vue(&sfc("<MyComp>\n\n\n  slot\n\n</MyComp>")),
+            sfc("<MyComp>\n  slot\n</MyComp>")
+        );
+    }
+
+    #[test]
+    fn leaves_pre_textarea_and_inline_elements_alone() {
+        let input = sfc(concat!(
+            "<pre\n  class=\"x\"\n>  keep  </pre>\n",
+            "<span\n  class=\"x\"\n>a <div>b\nc</div></span>\n",
+            "<a\n  href=\"/\"\n>x</a>",
+        ));
+        assert_eq!(vue(&input), input);
+    }
+
+    #[test]
+    fn breaks_content_around_nested_multiline_tags_idempotently() {
+        assert_eq!(
+            vue(&sfc(
+                "  <p>Inline <span\n    class=\"a\">kept</span> here</p>"
+            )),
+            sfc("  <p>\n    Inline <span\n    class=\"a\"\n    >kept</span> here\n  </p>")
+        );
+    }
+
+    #[test]
+    fn handles_implicitly_closed_html_elements() {
+        assert_eq!(html("<ul><li>a<li>b\n</ul>"), "<ul>\n  <li>a<li>b\n</ul>");
+    }
+
+    #[test]
+    fn respects_disable_directives() {
+        let input = sfc("<!-- annealer-disable-next-line -->\n<div\n  id=\"i\">x</div>");
+        assert_eq!(vue(&input), input);
+    }
+
+    #[test]
+    fn uses_the_profile_ignore_list_and_empty_line_option() {
+        let profile = Profile::from_yaml(
+            "schemaVersion: 1\nname: x\nlayout:\n  contentNewline:\n    ignore: [MyComp]\n    allowEmptyLines: true\ngroups:\n  - name: rest\n    fallback: true\n",
+        )
+        .unwrap();
+        let config = Config::new(Language::Vue, profile);
+        let input = sfc("<MyComp>a\nb</MyComp>\n<pre>a\nb</pre>\n<div>\n\n  c\n\n</div>");
+        assert_eq!(
+            format(&input, &config).unwrap(),
+            sfc("<MyComp>a\nb</MyComp>\n<pre>\n  a\nb\n</pre>\n<div>\n\n  c\n\n</div>")
+        );
+    }
+
+    #[test]
+    fn keeps_crlf_line_endings() {
+        assert_eq!(
+            html("<div\r\n  id=\"i\">x</div>"),
+            "<div\r\n  id=\"i\"\r\n>\r\n  x\r\n</div>"
+        );
+    }
+}
+
+mod style_attribute {
+    use super::*;
+
+    fn with_style_attribute(input: &str) -> String {
+        let yaml = include_str!("../profiles/html.yaml").replace(
+            "  vendorPrefix: start\n",
+            "  vendorPrefix: start\n  styleAttribute: true\n",
+        );
+        let config = Config::new(Language::Html, Profile::from_yaml(&yaml).unwrap());
+        let once = format(input, &config).unwrap();
+        assert_eq!(format(&once, &config).unwrap(), once, "not idempotent");
+        once
+    }
+
+    #[test]
+    fn is_off_by_default() {
+        let input = r#"<p style="color: red; display: block">"#;
+        assert_eq!(html(input), input);
+    }
+
+    #[test]
+    fn orders_declarations_and_vendor_prefixes() {
+        assert_eq!(
+            with_style_attribute(
+                r#"<p style="color: red; box-shadow:none; -webkit-box-shadow: none; display: block">"#
+            ),
+            r#"<p style="-webkit-box-shadow: none; display: block; box-shadow: none; color: red">"#
+        );
+    }
+
+    #[test]
+    fn keeps_trailing_semicolon_choice() {
+        assert_eq!(
+            with_style_attribute(r#"<p style="color: red; display: block;">"#),
+            r#"<p style="display: block; color: red;">"#
+        );
+    }
+
+    #[test]
+    fn uses_the_opposite_quote_for_css_strings() {
+        assert_eq!(
+            with_style_attribute(r#"<p style='font-family: "A B"; position: absolute'>"#),
+            r#"<p style='position: absolute; font-family: "A B"'>"#
+        );
+        assert_eq!(
+            with_style_attribute(r#"<p style="font-family: 'A B'; position: absolute">"#),
+            r#"<p style="position: absolute; font-family: 'A B'">"#
+        );
+    }
+
+    #[test]
+    fn leaves_template_syntax_comments_and_bound_styles_alone() {
+        let input = concat!(
+            r#"<p style="color: {{ c }}; display: block">"#,
+            r#"<p style="color: red; /* x */ display: block">"#,
+            r#"<p style="color: red; display:">"#,
+            r#"<p :style="{ color: c, display: d }">"#,
+            r#"<p style=color:red>"#,
+        );
+        assert_eq!(with_style_attribute(input), input);
     }
 }
 
@@ -567,6 +728,83 @@ mod stylesheets {
         assert_eq!(
             vue("<style>\n.a { box-shadow: none; -webkit-box-shadow: none; }\n</style>\n"),
             "<style>\n.a {\n  -webkit-box-shadow: none;\n  box-shadow: none;\n}\n</style>\n"
+        );
+    }
+}
+
+mod less_and_sass {
+    use super::*;
+
+    #[test]
+    fn formats_less() {
+        assert_eq!(
+            run(
+                "@w: 1px;\na { color: red; -webkit-box-shadow: none; .m(); display: block; width: @w; }\n",
+                Language::Less
+            ),
+            "@w: 1px;\na {\n  -webkit-box-shadow: none;\n  color: red;\n  .m();\n  display: block;\n  width: @w;\n}\n"
+        );
+    }
+
+    #[test]
+    fn formats_indented_sass() {
+        assert_eq!(
+            run(
+                "a\n  color: red\n  -webkit-transition: x\n  display: block\n  &:hover\n    top: 0\n    position: absolute\n",
+                Language::Sass
+            ),
+            "a\n  -webkit-transition: x\n  display: block\n  color: red\n  &:hover\n    position: absolute\n    top: 0\n"
+        );
+    }
+
+    #[test]
+    fn applies_directives_in_indented_sass() {
+        let input = concat!(
+            "a\n",
+            "  color: red\n",
+            "  /* annealer-disable-next-line */\n",
+            "  -webkit-x:  1\n",
+            "  display: block\n",
+            "  /* annealer-disable */\n",
+            "  z-index: 1\n",
+            "  /* annealer-enable */\n",
+            "  top: 0\n",
+            "  position: absolute\n",
+        );
+        assert_eq!(
+            run(input, Language::Sass),
+            concat!(
+                "a\n",
+                "  color: red\n",
+                "  /* annealer-disable-next-line */\n",
+                "  -webkit-x:  1\n",
+                "  display: block\n",
+                "  /* annealer-disable */\n",
+                "  z-index: 1\n",
+                "  /* annealer-enable */\n",
+                "  position: absolute\n",
+                "  top: 0\n",
+            )
+        );
+    }
+
+    #[test]
+    fn applies_directives_in_less() {
+        let input = "a {\n  color: red;\n  /* annealer-disable-next-line */\n  -webkit-x:1;\n  display: block;\n}\n";
+        assert_eq!(run(input, Language::Less), input);
+    }
+
+    #[test]
+    fn formats_less_and_sass_style_blocks() {
+        assert_eq!(
+            vue(concat!(
+                "<style lang=\"less\">\n.a { color: red; display: block; }\n</style>\n",
+                "<style lang=\"sass\">\n.a\n  color: red\n  display: block\n</style>\n",
+            )),
+            concat!(
+                "<style lang=\"less\">\n.a {\n  display: block;\n  color: red;\n}\n</style>\n",
+                "<style lang=\"sass\">\n.a\n  display: block\n  color: red\n</style>\n",
+            )
         );
     }
 }

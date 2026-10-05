@@ -57,21 +57,65 @@
       markers passed to malva (`malva-ignore` can't take a reason and doesn't
       stop sorting)
 
-## Phase 2: Next
+## Phase 2
 
-- [ ] `vue/multiline-html-element-content-newline` equivalent (content on its own line)
-- [ ] Less and Sass (indented syntax) in `<style>` and standalone files
-- [ ] WASM + npm wrapper built with the existing Rslib setup, and a demo page with Rsbuild
-- [ ] Fixture-based tests from real-world Vue/HTML projects
+- [x] `vue/multiline-html-element-content-newline` equivalent: `layout.contentNewline`
+  - An element is multiline when its end tag starts on a later line than its
+    start tag (the ESLint rule's definition). Its content then starts and ends
+    with exactly one line break (`allowEmptyLines: true` keeps blank lines).
+    Empty elements are left alone.
+  - `ignore` defaults to the rule's defaults: `pre`, `textarea` and inline
+    elements. Everything inside an ignored element is left alone too.
+  - Needs the end tag, so the scanner now keeps a stack of open elements.
+    Unclosed HTML elements (`<li>` without `</li>`) are closed implicitly by
+    an ancestor's end tag and are not touched.
+  - Only line breaks are added; indentation is not re-flowed (non-goal). The
+    new line takes the attribute indentation of a multiline start tag, else
+    the first deeper content line, else the tag's indentation plus two spaces
+    (a tab if the tag is indented with tabs).
+  - Moving content to a new line changes the indentation of the line that a
+    nested tag's closing bracket aligns to, so the document is formatted again
+    until stable (at most 4 passes; normally 2).
+  - With `closingBracketNewline`, a start tag whose attributes fit on one line
+    keeps `>` on that line (`singleline: never` of
+    `vue/html-closing-bracket-newline`), e.g. Prettier's `title="t"\n  >text`.
+    Whitespace inside a tag is never significant.
+- [x] Less and Sass (indented syntax) in `<style lang="less|sass">` and `.less`/`.sass` files
+  - Disable directives work in both. Sass has no `;`, so the internal markers
+    go on lines of their own there (malva only honors its ignore comment on
+    its own line in Sass).
+- [x] WASM + npm wrapper built with the existing Rslib setup, and a demo page with Rsbuild
+  - `wasm` Cargo feature (`wasm-bindgen`), built by `scripts/build-wasm.mjs`
+    (`wasm-pack --target web`, `wasm-release` profile: LTO, `opt-level = "s"`)
+    into `src/wasm/` (generated, git-ignored). `pnpm run build`/`dev`/`test`
+    run it first (about 2 s when nothing changed).
+  - The binary (1.3 MB, 0.65 MB gzipped in the demo bundle) is embedded as
+    base64, so `format()` is synchronous and works in Node.js, browsers and
+    the UMD build with no asset loading to configure. `init()` instantiates it
+    asynchronously ahead of time (optional).
+  - JS API: `format(input, { language, profile })`, `init()`,
+    `languageFromPath()`, `builtinProfile()`, plus `Language`,
+    `FormatOptions`, `Meta`. `profile` is a built-in name or YAML text.
+  - Demo: playground with language/profile selection and a custom YAML editor.
+- [x] Fixture-based tests: `tests/fixtures/<name>.<ext>` → `<name>.expected.<ext>`
+      with an idempotence check; `ANNEALER_UPDATE_FIXTURES=1` rewrites the
+      expected files.
+  - [ ] The current fixtures are hand-written in the style of typical projects
+        (Vue SFC, HTML page, SCSS, Less, Sass). Add samples from real projects.
+- [x] Opt-in value ordering for static `style` attributes via malva
+      (`stylesheet.styleAttribute`, off in both built-in profiles)
+  - Declarations stay on one line; CSS strings use the quote opposite to the
+    attribute's; a missing trailing `;` stays missing.
+  - Left as written: bound `:style`, unquoted values, values with template
+    syntax, comments, `{}`/`<`/`&`, or that don't parse as plain declarations.
 - [ ] Upgrade raffia to 0.13 when malva does (0.16 still uses raffia 0.12; see the
-      comment in `crates/annealer/Cargo.toml`)
+      comment in `crates/annealer/Cargo.toml`). Blocked on malva.
 - [ ] Svelte profile (follow-on)
 - [ ] Value ordering for static `class` attributes (profile-defined order), see
       PLAN.md "Value ordering"
   - [ ] Tailwind: built-in approximate order
   - [ ] Bootstrap: draft profile + proposal to the Bootstrap project (v6), so
         Bootstrap owns the order; needs a stable, documented profile format first
-- [ ] Opt-in value ordering for static `style` attributes via malva
 - [ ] Library-specific rule profiles, built on the same mechanisms (groups,
       `layout.selfClosing`, normalize). Likely needs profile composition
       (`extends`) and per-tag/per-component overrides.
@@ -108,6 +152,13 @@
 6. **`void: always` differs from `vue/html-self-closing`'s default**
    (`html.void: never`). Projects that keep that ESLint rule need
    `html.void: always` there, or `void: never` in the annealer profile.
+
+7. **`contentNewline` is on in the HTML profile too**, like the other layout
+   rules. Block-level content whitespace at the start and end of an element
+   is not rendered, and the ignore list covers the elements where it can be.
+8. **The npm package embeds the WebAssembly binary** (base64) instead of
+   shipping a separate `.wasm` file. Trade-off: about 33% more bytes before
+   compression, in exchange for a synchronous API and no bundler/loader setup.
 
 ## Open questions resolved
 

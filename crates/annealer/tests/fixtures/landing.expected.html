@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" />
+    <link href="/styles.css" rel="stylesheet" />
+    <title>Example</title>
+    <style>
+      body {
+        display: flex;
+        margin: 0;
+        color: #222;
+        font-family: system-ui, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <nav id="nav" class="nav" aria-label="Main">
+      <a class="nav__home" title="Home" href="/">Home</a>
+      <a class="nav__link" href="/docs" aria-current="page">Docs</a>
+    </nav>
+    <main id="main">
+      <h1 class="title">Welcome</h1>
+      <form id="subscribe" class="form" method="post" action="/subscribe">
+        <label for="email">Email</label>
+        <input id="email" class="form__input" placeholder="you@example.com" type="email" name="email" required aria-describedby="email-help" />
+        <small id="email-help" class="form__help">We never share it.</small>
+        <button class="btn btn--primary" type="submit" data-track="subscribe" onclick="track()">Subscribe</button>
+      </form>
+      <picture>
+        <source type="image/webp" srcset="/hero.webp" />
+        <img class="hero" alt="Hero" src="/hero.jpg" width="600" height="300" loading="lazy" />
+      </picture>
+      <svg class="icon" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M0 0h24v24H0z" fill="none"/></svg>
+      <!-- annealer-disable-next-line: third-party embed -->
+      <iframe title="Map" src="https://example.com/map" width="600" height="400" loading="lazy"></iframe>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

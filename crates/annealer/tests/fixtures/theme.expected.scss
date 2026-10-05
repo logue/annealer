@@ -1,0 +1,28 @@
+@use "sass:math";
+
+$radius: 4px;
+
+@mixin focus-ring {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.button {
+  -webkit-appearance: none;
+  display: inline-flex;
+  appearance: none;
+  position: relative;
+  padding: math.div($radius, 2) $radius;
+  border-radius: $radius;
+  background: var(--accent);
+  color: white;
+
+  &:focus-visible {
+    @include focus-ring;
+    z-index: 1;
+  }
+
+  /* annealer-disable-next-line: keep the legacy fallback where it is */
+  filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+  transition: background 0.2s;
+}

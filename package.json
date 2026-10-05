@@ -41,17 +41,18 @@
     "LICENSE"
   ],
   "scripts": {
-    "dev": "rs dev",
+    "dev": "pnpm run build:wasm && rs dev",
     "lint": "run-s 'lint:*' --",
     "lint:rslint": "rs lint . --fix",
     "lint:prettier": "rs fmt .",
-    "analyze": "RSDOCTOR=true rs lib",
-    "test": "rs test",
-    "test:watch": "rs test --watch",
-    "clean": "rimraf demo dist docs",
-    "clean:hard": "rimraf demo dist docs node_modules/.tmp node_modules/.cache",
-    "build": "rs lib",
-    "build:demo": "rs build",
+    "analyze": "pnpm run build:wasm && RSDOCTOR=true rs lib",
+    "test": "pnpm run build:wasm && rs test",
+    "test:watch": "pnpm run build:wasm && rs test --watch",
+    "clean": "rimraf demo dist docs src/wasm",
+    "clean:hard": "rimraf demo dist docs src/wasm node_modules/.tmp node_modules/.cache",
+    "build": "pnpm run build:wasm && rs lib",
+    "build:demo": "pnpm run build:wasm && rs build",
+    "build:wasm": "node scripts/build-wasm.mjs",
     "preview": "rs preview",
     "version": "auto-changelog -p && git add CHANGELOG.md"
   },
@@ -61,7 +62,7 @@
     "@rsdoctor/cli": "^1.6.4",
     "@rsdoctor/rspack-plugin": "^1.6.4",
     "@tsconfig/node-lts": "^24.0.1",
-    "@types/node": "^26.6.3",
+    "@types/node": "^26.6.4",
     "cross-env": "^10.1.0",
     "eslint-config-prettier": "^10.1.8",
     "happy-dom": "^20.14.5",
@@ -70,5 +71,5 @@
     "rstack": "^0.8.0",
     "typescript": "^7.0.2"
   },
-  "packageManager": "pnpm@12.8.1"
+  "packageManager": "pnpm@12.9.1"
 }

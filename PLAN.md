@@ -129,7 +129,6 @@ Given a stylesheet (CSS/SCSS/Sass/Less), delegate property ordering to `malva`.
 - Svelte support is out of scope for the initial release (low priority; the
   HTML-first, profile-based architecture should make it a follow-on addition
   rather than a redesign).
-- Less/Sass indented-syntax are deferred (minor usage).
 
 ## Non-goals
 
@@ -303,10 +302,11 @@ rule-based class order, for the same diff-stability reason as attributes.
 - Patterns need more than a trailing `*`. For example, in Bootstrap
   `text-center` (alignment) and `text-primary` (color) share a prefix. The
   value-pattern syntax will be richer than the attribute patterns.
-- Static `style` attribute (opt-in, default off): wrap the value as a rule,
-  format with malva (property order and `vendorPrefix`), unwrap, keep it on one
-  line, and force quotes opposite to the attribute's quotes. Values that don't
-  parse as CSS (e.g. server-side template syntax) are left untouched.
+- Static `style` attribute (opt-in, default off; implemented as
+  `stylesheet.styleAttribute`): wrap the value as a rule, format with malva
+  (property order and `vendorPrefix`), unwrap, keep it on one line, and force
+  quotes opposite to the attribute's quotes. Values that don't parse as CSS
+  (e.g. server-side template syntax) are left untouched.
 
 ## Open questions
 

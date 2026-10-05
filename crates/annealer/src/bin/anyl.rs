@@ -36,6 +36,8 @@ enum LanguageArg {
     Vue,
     Css,
     Scss,
+    Sass,
+    Less,
 }
 
 impl From<LanguageArg> for Language {
@@ -45,6 +47,8 @@ impl From<LanguageArg> for Language {
             LanguageArg::Vue => Self::Vue,
             LanguageArg::Css => Self::Css,
             LanguageArg::Scss => Self::Scss,
+            LanguageArg::Sass => Self::Sass,
+            LanguageArg::Less => Self::Less,
         }
     }
 }

@@ -12,6 +12,15 @@ const SCHEMA_VERSION: u32 = 1;
 const HTML_PROFILE: &str = include_str!("../profiles/html.yaml");
 const VUE_PROFILE: &str = include_str!("../profiles/vue.yaml");
 
+/// The YAML source of a built-in profile.
+pub(crate) fn builtin_yaml(name: &str) -> Option<&'static str> {
+    match name {
+        "html" => Some(HTML_PROFILE),
+        "vue" => Some(VUE_PROFILE),
+        _ => None,
+    }
+}
+
 /// How attributes that fall into the same group are ordered relative to each other.
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -50,6 +59,43 @@ pub struct Layout {
     /// Self-closing style per element kind.
     #[serde(default)]
     pub self_closing: SelfClosingRules,
+    /// Line breaks around the content of multiline elements. Off when absent.
+    #[serde(default)]
+    pub content_newline: Option<ContentNewline>,
+}
+
+/// Puts the content of a multiline element on lines of its own, like
+/// `vue/multiline-html-element-content-newline`.
+///
+/// An element is multiline when its end tag starts on a later line than its
+/// start tag. Elements without content are left alone.
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ContentNewline {
+    /// Elements left alone, together with everything inside them. Element
+    /// names match case-insensitively; component names match exactly.
+    #[serde(default = "default_content_newline_ignore")]
+    pub ignore: Vec<String>,
+    /// Keep empty lines before and after the content instead of collapsing
+    /// them to a single line break.
+    #[serde(default)]
+    pub allow_empty_lines: bool,
+}
+
+/// `vue/multiline-html-element-content-newline`'s default `ignores`: `pre`,
+/// `textarea`, and inline elements, where added whitespace can be visible.
+pub(crate) const CONTENT_NEWLINE_IGNORE: &[&str] = &[
+    "pre", "textarea", "a", "abbr", "audio", "b", "bdi", "bdo", "canvas", "cite", "code", "data",
+    "del", "dfn", "em", "i", "iframe", "ins", "kbd", "label", "map", "mark", "noscript", "object",
+    "output", "picture", "q", "ruby", "s", "samp", "small", "span", "strong", "sub", "sup", "svg",
+    "time", "u", "var", "video",
+];
+
+fn default_content_newline_ignore() -> Vec<String> {
+    CONTENT_NEWLINE_IGNORE
+        .iter()
+        .map(|&name| name.to_owned())
+        .collect()
 }
 
 /// Whether an element is written self-closing (`<br />`, `<MyComp />`).
@@ -107,6 +153,8 @@ struct RawStylesheet {
     #[serde(default)]
     vendor_prefix: VendorPrefix,
     #[serde(default)]
+    style_attribute: bool,
+    #[serde(default)]
     malva: Option<yaml_serde::Mapping>,
 }
 
@@ -130,6 +178,8 @@ pub enum VendorPrefix {
 pub(crate) struct StylesheetOptions {
     pub malva: FormatOptions,
     pub vendor_prefix: VendorPrefix,
+    /// Also order the declarations of static `style` attributes.
+    pub style_attribute: bool,
 }
 
 /// malva options accepted under `stylesheet.malva`. Kept in sync with
@@ -196,6 +246,7 @@ impl RawStylesheet {
         Ok(StylesheetOptions {
             malva: options,
             vendor_prefix: self.vendor_prefix,
+            style_attribute: self.style_attribute,
         })
     }
 }
@@ -320,11 +371,7 @@ impl Profile {
 
     /// Returns a built-in profile by name (`html` or `vue`).
     pub fn builtin(name: &str) -> Option<Self> {
-        let yaml = match name {
-            "html" => HTML_PROFILE,
-            "vue" => VUE_PROFILE,
-            _ => return None,
-        };
+        let yaml = builtin_yaml(name)?;
         Some(Self::from_yaml(yaml).expect("built-in profiles are valid"))
     }
 

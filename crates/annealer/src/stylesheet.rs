@@ -1,7 +1,7 @@
 //! Stylesheet property ordering, delegated to `malva`.
 
 use malva::Syntax;
-use malva::config::DeclarationOrderGroupBy;
+use malva::config::{DeclarationOrderGroupBy, Quotes};
 use raffia::ParserBuilder;
 use raffia::ast::Stylesheet;
 use serde_json::Value;
@@ -17,12 +17,14 @@ const FENCE: &str = "@annealer-fence-5d1c;";
 /// verbatim. Removed from the output.
 const VERBATIM: &str = "annealer-verbatim-5d1c";
 
-/// Stylesheet syntaxes annealer currently formats. Less and Sass (indented
-/// syntax) are deferred.
+/// Stylesheet syntaxes annealer formats.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum StyleLang {
     Css,
     Scss,
+    /// Indented Sass syntax.
+    Sass,
+    Less,
 }
 
 impl StyleLang {
@@ -31,6 +33,8 @@ impl StyleLang {
         match lang {
             None | Some("css" | "postcss" | "pcss") => Some(Self::Css),
             Some("scss") => Some(Self::Scss),
+            Some("sass") => Some(Self::Sass),
+            Some("less") => Some(Self::Less),
             Some(_) => None,
         }
     }
@@ -39,6 +43,8 @@ impl StyleLang {
         match self {
             Self::Css => Syntax::Css,
             Self::Scss => Syntax::Scss,
+            Self::Sass => Syntax::Sass,
+            Self::Less => Syntax::Less,
         }
     }
 }
@@ -146,21 +152,46 @@ fn protect_disabled(css: &str, syntax: Syntax) -> Result<Protection, String> {
         return Ok(Protection::None);
     }
 
+    // Indented Sass has no `;`: statements end at line breaks, so the markers
+    // go on lines of their own, at the statement's indentation.
+    let indented = syntax == Syntax::Sass;
+    let fence_after = |offset: usize| {
+        if indented {
+            format!(
+                "\n{}{}",
+                line_indent(css, offset),
+                &FENCE[..FENCE.len() - 1]
+            )
+        } else {
+            format!(" {FENCE}")
+        }
+    };
+
     // (offset, text) insertions, applied in order.
     let mut insertions: Vec<(usize, String)> = Vec::new();
     for (start, end, declaration) in targets {
-        let before = if declaration {
+        let before = match (declaration, indented) {
             // The newline keeps malva from treating the marker comment as a
             // trailing comment of the fence.
-            format!("{FENCE}\n/* {VERBATIM} */ ")
-        } else {
-            format!("/* {VERBATIM} */ ")
+            (true, false) => format!("{FENCE}\n/* {VERBATIM} */ "),
+            // malva only honors the comment on a line of its own here.
+            (true, true) => {
+                let indent = line_indent(css, start);
+                format!(
+                    "{}\n{indent}/* {VERBATIM} */\n{indent}",
+                    &FENCE[..FENCE.len() - 1]
+                )
+            }
+            (false, true) => format!("/* {VERBATIM} */\n{}", line_indent(css, start)),
+            (false, false) => format!("/* {VERBATIM} */ "),
         };
         insertions.push((start, before));
         if declaration {
             let after_spaces =
                 end + css[end..].len() - css[end..].trim_start_matches([' ', '\t']).len();
-            if css[after_spaces..].starts_with(';') {
+            if indented {
+                insertions.push((end, fence_after(start)));
+            } else if css[after_spaces..].starts_with(';') {
                 insertions.push((after_spaces + 1, format!(" {FENCE}")));
             } else {
                 insertions.push((end, format!("; {FENCE}")));
@@ -170,7 +201,7 @@ fn protect_disabled(css: &str, syntax: Syntax) -> Result<Protection, String> {
     // malva attaches a comment to the following statement, which sorting may
     // move; a fence after `annealer-enable` keeps the comment in place.
     for end in enable_comments {
-        insertions.push((end, format!(" {FENCE}")));
+        insertions.push((end, fence_after(end)));
     }
     insertions.sort_by_key(|&(offset, _)| offset);
 
@@ -217,13 +248,20 @@ fn find_disabled(node: &Value, disabled: &Disabled, targets: &mut Vec<(usize, us
     }
 }
 
+/// Leading whitespace of the line containing `offset`.
+fn line_indent(css: &str, offset: usize) -> &str {
+    let line_start = css[..offset].rfind('\n').map_or(0, |i| i + 1);
+    let line = &css[line_start..];
+    &line[..line.len() - line.trim_start_matches([' ', '\t']).len()]
+}
+
 /// Removes the internal markers inserted by [`protect_disabled`], dropping
 /// lines that held nothing else.
 fn remove_markers(css: &str) -> String {
     let comment = format!("/* {VERBATIM} */");
     let mut out = String::with_capacity(css.len());
     for line in css.split_inclusive('\n') {
-        if !line.contains(FENCE) && !line.contains(&comment) {
+        if !line.contains(&FENCE[..FENCE.len() - 1]) && !line.contains(&comment) {
             out.push_str(line);
             continue;
         }
@@ -231,6 +269,7 @@ fn remove_markers(css: &str) -> String {
             .replace(&format!("{FENCE} "), "")
             .replace(&format!(" {FENCE}"), "")
             .replace(FENCE, "")
+            .replace(&FENCE[..FENCE.len() - 1], "")
             .replace(&format!("{comment} "), "")
             .replace(&comment, "");
         if !stripped.trim().is_empty() {
@@ -245,6 +284,51 @@ fn is_verbatim(css: &str, start: usize) -> bool {
     css[..start]
         .trim_end()
         .ends_with(&format!("/* {VERBATIM} */"))
+}
+
+/// Orders the declarations of a static `style` attribute value quoted with
+/// `quote`. Returns `None` to leave the value as written: it doesn't parse as
+/// plain declarations (e.g. it holds template syntax or comments), or the
+/// result would need the attribute's quote character.
+pub(crate) fn format_style_attribute(
+    value: &str,
+    quote: char,
+    options: &StylesheetOptions,
+) -> Option<String> {
+    let value = value.trim();
+    if value.is_empty() || value.contains(['{', '}', '<', '&']) || value.contains("/*") {
+        return None;
+    }
+    let mut options = options.clone();
+    // One declaration per line, so each line is a whole declaration.
+    options.malva.layout.print_width = usize::MAX;
+    options.malva.language.quotes = if quote == '"' {
+        Quotes::AlwaysSingle
+    } else {
+        Quotes::AlwaysDouble
+    };
+    let formatted = format(&format!("a {{ {value} }}"), StyleLang::Css, &options).ok()?;
+    let mut lines = formatted.lines();
+    if lines.next() != Some("a {") {
+        return None;
+    }
+    let mut declarations = Vec::new();
+    for line in lines {
+        let line = line.trim();
+        match line {
+            "}" => break,
+            // malva tolerates a missing value (`display: ;`); keep the input then.
+            _ if line.ends_with(';') && !line[..line.len() - 1].trim_end().ends_with(':') => {
+                declarations.push(line);
+            }
+            _ => return None,
+        }
+    }
+    let mut text = declarations.join(" ");
+    if !value.ends_with(';') {
+        text.pop();
+    }
+    (!text.is_empty() && !text.contains(quote)).then_some(text)
 }
 
 /// Formats the content of a `<style>` element, keeping it indented relative to

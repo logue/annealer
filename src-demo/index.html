@@ -2,27 +2,81 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1" name="viewport" />
-    <meta content="light dark" name="color-scheme" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <link
-      crossorigin="anonymous"
+      rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.1.1/css/pico.min.css"
       integrity="sha256-+8mmP8n8n3LRL9f8mAbhH6n3euT5ytFGsnADoRGbo9s="
-      rel="stylesheet"
+      crossorigin="anonymous"
     />
-    <title>Hello world!</title>
+    <title>annealer playground</title>
+    <style>
+      textarea {
+        font-family: var(--pico-font-family-monospace);
+        font-size: 0.85rem;
+        min-height: 24rem;
+        white-space: pre;
+      }
+      #profile-yaml {
+        min-height: 16rem;
+      }
+      #error {
+        color: var(--pico-del-color);
+        white-space: pre-wrap;
+      }
+    </style>
   </head>
   <body>
     <main class="container">
-      <h1>Hello world!</h1>
-      <input aria-label="Input" id="input" placeholder="Input" type="number" />
-      <input
-        aria-label="Output"
-        id="output"
-        placeholder="Output"
-        readonly
-        type="number"
-      />
+      <hgroup>
+        <h1>annealer</h1>
+        <p>
+          Reorders HTML/Vue attributes and stylesheet declarations by semantic
+          meaning. <small id="version"></small>
+        </p>
+      </hgroup>
+      <div class="grid">
+        <label>
+          Language
+          <select id="language">
+            <option value="vue" selected>Vue</option>
+            <option value="html">HTML</option>
+            <option value="css">CSS</option>
+            <option value="scss">SCSS</option>
+            <option value="sass">Sass (indented)</option>
+            <option value="less">Less</option>
+          </select>
+        </label>
+        <label>
+          Profile
+          <select id="profile">
+            <option value="" selected>Default for the language</option>
+            <option value="html">html</option>
+            <option value="vue">vue</option>
+            <option value="custom">Custom YAML…</option>
+          </select>
+        </label>
+      </div>
+      <details id="profile-editor">
+        <summary>Custom profile (YAML)</summary>
+        <textarea
+          id="profile-yaml"
+          aria-label="Custom profile YAML"
+          spellcheck="false"
+        ></textarea>
+      </details>
+      <div class="grid">
+        <label>
+          Input
+          <textarea id="input" spellcheck="false"></textarea>
+        </label>
+        <label>
+          Output
+          <textarea id="output" readonly spellcheck="false"></textarea>
+        </label>
+      </div>
+      <p id="error" role="alert"></p>
     </main>
   </body>
 </html>

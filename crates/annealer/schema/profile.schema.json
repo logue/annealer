@@ -70,6 +70,68 @@
               "$ref": "#/definitions/selfClosing"
             }
           }
+        },
+        "contentNewline": {
+          "description": "Put the content of a multiline element (its end tag starts on a later line than its start tag) on lines of its own (like `vue/multiline-html-element-content-newline`). Elements without content are left alone. Omit this key to turn the rule off; `{}` turns it on with the defaults.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ignore": {
+              "description": "Elements left alone, together with everything inside them. Element names match case-insensitively; component names match exactly. Defaults to `pre`, `textarea`, and inline elements, where added whitespace could be visible.",
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "default": [
+                "pre",
+                "textarea",
+                "a",
+                "abbr",
+                "audio",
+                "b",
+                "bdi",
+                "bdo",
+                "canvas",
+                "cite",
+                "code",
+                "data",
+                "del",
+                "dfn",
+                "em",
+                "i",
+                "iframe",
+                "ins",
+                "kbd",
+                "label",
+                "map",
+                "mark",
+                "noscript",
+                "object",
+                "output",
+                "picture",
+                "q",
+                "ruby",
+                "s",
+                "samp",
+                "small",
+                "span",
+                "strong",
+                "sub",
+                "sup",
+                "svg",
+                "time",
+                "u",
+                "var",
+                "video"
+              ]
+            },
+            "allowEmptyLines": {
+              "description": "Keep empty lines before and after the content instead of collapsing them to a single line break.",
+              "type": "boolean",
+              "default": false
+            }
+          }
         }
       }
     },
@@ -108,6 +170,11 @@
           "description": "Where vendor-prefixed declarations (`-webkit-…`, `-moz-…`) go when `declarationOrder` is set. `alongside`: next to the unprefixed property (malva's behavior). `start`: before the other declarations of the same run, in simple alphabetical order, so the standard property is declared last and wins where the prefixed one is an alias.",
           "enum": ["alongside", "start"],
           "default": "alongside"
+        },
+        "styleAttribute": {
+          "description": "Also order the declarations of static `style` attributes (bound `:style` is never touched). The value stays on one line; CSS strings use the quote character opposite to the attribute's. Values that don't parse as plain declarations (template syntax, comments, character references) are left as written.",
+          "type": "boolean",
+          "default": false
         },
         "malva": {
           "$ref": "#/definitions/malvaOptions"

@@ -9,8 +9,27 @@ HTML (-ish) attribute and Stylesheet attribute formatter.
 
 ## Usage
 
+### CLI
+
 ```bash
-anyl example.html -o formatted.html
+anyl src/App.vue                 # print the result
+anyl --write src/**/*.vue        # format in place
+anyl --check index.html          # exit 1 if a file would change
+anyl --profile my-profile.yaml page.html
+```
+
+Supported inputs: `.html`, `.vue`, `.css`, `.scss`, `.sass`, `.less`.
+
+### JavaScript
+
+```ts
+import { format } from 'annealer';
+
+format('<a title="Home" href="/" id="home">Home</a>');
+// => '<a id="home" title="Home" href="/">Home</a>'
+
+format(source, { language: 'vue' });
+format(source, { language: 'html', profile: yamlText });
 ```
 
 ## License

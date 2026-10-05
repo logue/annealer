@@ -18,6 +18,8 @@ mod profile;
 #[cfg(test)]
 mod schema_tests;
 mod stylesheet;
+#[cfg(feature = "wasm")]
+mod wasm;
 
 use std::path::Path;
 
@@ -31,6 +33,9 @@ pub enum Language {
     Vue,
     Css,
     Scss,
+    /// Indented Sass syntax (`.sass`).
+    Sass,
+    Less,
 }
 
 impl Language {
@@ -42,6 +47,8 @@ impl Language {
             "vue" => Some(Self::Vue),
             "css" => Some(Self::Css),
             "scss" => Some(Self::Scss),
+            "sass" => Some(Self::Sass),
+            "less" => Some(Self::Less),
             _ => None,
         }
     }
@@ -50,7 +57,7 @@ impl Language {
     pub fn default_profile(self) -> &'static str {
         match self {
             Self::Vue => "vue",
-            Self::Html | Self::Css | Self::Scss => "html",
+            Self::Html | Self::Css | Self::Scss | Self::Sass | Self::Less => "html",
         }
     }
 }
@@ -88,9 +95,11 @@ pub fn format(input: &str, config: &Config) -> Result<String, FormatError> {
         None => Ok(input.to_owned()),
     };
     match config.language {
-        Language::Html => markup::Scanner::new(input, &config.profile, false).run(),
-        Language::Vue => markup::Scanner::new(input, &config.profile, true).run(),
+        Language::Html => markup::Scanner::format(input, &config.profile, false),
+        Language::Vue => markup::Scanner::format(input, &config.profile, true),
         Language::Css => stylesheet(stylesheet::StyleLang::Css),
         Language::Scss => stylesheet(stylesheet::StyleLang::Scss),
+        Language::Sass => stylesheet(stylesheet::StyleLang::Sass),
+        Language::Less => stylesheet(stylesheet::StyleLang::Less),
     }
 }

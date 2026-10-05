@@ -15,6 +15,11 @@ layout:
     # `<br />`: makes the element's end explicit in the source.
     void: always
     # `normal`/`component` only apply to Vue templates.
+  # Content of a multiline element goes on lines of its own
+  # (vue/multiline-html-element-content-newline). `pre`, `textarea` and inline
+  # elements (`a`, `span`, `strong`, …) are left alone by default, because the
+  # added whitespace could be visible there.
+  contentNewline: {}
 
 groups:
   # 1. Global awareness

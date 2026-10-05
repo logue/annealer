@@ -32,6 +32,11 @@ layout:
     # (vue/html-self-closing defaults).
     normal: always
     component: always
+  # Content of a multiline element goes on lines of its own
+  # (vue/multiline-html-element-content-newline). `pre`, `textarea` and inline
+  # elements (`a`, `span`, `strong`, …) are left alone by default, because the
+  # added whitespace could be visible there.
+  contentNewline: {}
 
 groups:
   - name: definition

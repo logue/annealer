@@ -1,3 +1,11 @@
 [workspace]
 resolver = "3"
 members = ["crates/annealer"]
+
+# Size-optimized build of the WebAssembly binary for the npm package
+# (`wasm-pack build --profile wasm-release`).
+[profile.wasm-release]
+inherits = "release"
+lto = true
+opt-level = "s"
+codegen-units = 1

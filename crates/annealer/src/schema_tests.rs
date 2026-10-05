@@ -79,6 +79,23 @@ fn schema_and_loader_agree() {
             profile_with_groups("  - name: all\n    match: ['*']\n"),
             true,
         ),
+        (profile_with("layout:\n  contentNewline: {}\n"), true),
+        (
+            profile_with(
+                "layout:\n  contentNewline:\n    ignore: [pre, MyComp]\n    allowEmptyLines: true\n",
+            ),
+            true,
+        ),
+        (profile_with("layout:\n  contentNewline: true\n"), false),
+        (
+            profile_with("layout:\n  contentNewline:\n    ignores: [pre]\n"),
+            false,
+        ),
+        (profile_with("stylesheet:\n  styleAttribute: true\n"), true),
+        (
+            profile_with("stylesheet:\n  styleAttribute: yes please\n"),
+            false,
+        ),
         (profile_with("extra: 1\n"), false),
         (profile_with("normalize:\n  shorthand: true\n"), false),
         (
