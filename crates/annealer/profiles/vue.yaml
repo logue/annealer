@@ -54,11 +54,11 @@ groups:
   - name: global
     match: [id]
   - name: unique
-    match: [ref, key, slot, "v-slot*"]
+    match: [ref, key, slot, 'v-slot*']
   - name: two-way-binding
-    match: ["v-model*"]
+    match: ['v-model*']
   - name: other-directives
-    match: ["v-*"]
+    match: ['v-*']
     spreadSafe: true
 
   # --- Other attributes tier (vue/attributes-order: OTHER_ATTR) ---
@@ -87,7 +87,7 @@ groups:
     match: [aria-describedby, aria-description, aria-details]
     sort: listed
   - name: aria-property
-    match: ["aria-*"]
+    match: ['aria-*']
   - name: aria-state
     match:
       - aria-busy
@@ -101,12 +101,12 @@ groups:
       - aria-pressed
       - aria-selected
   - name: data
-    match: ["data-*"]
+    match: ['data-*']
     sort: alphabetical
   # --- end of other attributes tier ---
 
   - name: events
-    match: ["v-on*"]
+    match: ['v-on*']
   - name: content
     match: [v-html, v-text]
 

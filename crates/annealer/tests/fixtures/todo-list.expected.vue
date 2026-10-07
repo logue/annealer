@@ -2,16 +2,30 @@
 import { computed, ref } from 'vue';
 import TodoItem from './TodoItem.vue';
 
-const props = defineProps<{ title: string; items: { id: number; text: string; done: boolean }[] }>();
+const props = defineProps<{
+  title: string;
+  items: { id: number; text: string; done: boolean }[];
+}>();
 const emit = defineEmits<{ (e: 'toggle', id: number): void }>();
 const filter = ref<'all' | 'open'>('all');
-const visible = computed(() => props.items.filter((item) => filter.value === 'all' || !item.done));
+const visible = computed(() =>
+  props.items.filter(item => filter.value === 'all' || !item.done)
+);
 </script>
 
 <template>
-  <section class="todo" :class="{ empty: !visible.length }" aria-labelledby="todo-title">
+  <section
+    class="todo"
+    :class="{ empty: !visible.length }"
+    aria-labelledby="todo-title"
+  >
     <h2 id="todo-title" class="todo__title">{{ title }}</h2>
-    <select v-model="filter" class="todo__filter" name="filter" aria-label="Filter">
+    <select
+      v-model="filter"
+      class="todo__filter"
+      name="filter"
+      aria-label="Filter"
+    >
       <option value="all">All</option>
       <option value="open">Open</option>
     </select>
@@ -26,10 +40,23 @@ const visible = computed(() => props.items.filter((item) => filter.value === 'al
       />
     </ul>
     <p v-else class="todo__empty">Nothing to do.</p>
-    <button class="btn" title="Show all" type="button" :disabled="filter === 'all'" @click="filter = 'all'">
+    <button
+      class="btn"
+      title="Show all"
+      type="button"
+      :disabled="filter === 'all'"
+      @click="filter = 'all'"
+    >
       Show all
     </button>
-    <img class="todo__icon" alt="" src="/check.svg" width="16" height="16" aria-hidden="true" />
+    <img
+      class="todo__icon"
+      alt=""
+      src="/check.svg"
+      width="16"
+      height="16"
+      aria-hidden="true"
+    />
     <slot name="footer" v-bind="$attrs" :count="visible.length" />
   </section>
 </template>

@@ -2,7 +2,10 @@
 
 $radius: 4px;
 
-@mixin focus-ring { outline: 2px solid currentColor; outline-offset: 2px; }
+@mixin focus-ring {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
 
 .button {
   color: white;
@@ -14,7 +17,10 @@ $radius: 4px;
   display: inline-flex;
   position: relative;
 
-  &:focus-visible { @include focus-ring; z-index: 1; }
+  &:focus-visible {
+    @include focus-ring;
+    z-index: 1;
+  }
 
   /* annealer-disable-next-line: keep the legacy fallback where it is */
   filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);

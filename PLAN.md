@@ -289,6 +289,23 @@ rule-based class order, for the same diff-stability reason as attributes.
   Duplicate classes are kept (removing them is a lint concern), and unknown
   classes are never dropped.
 
+### Library profile discovery
+
+- **Detected by `annealer.yaml` in the package.** A package provides a library
+  profile when its package root contains an `annealer.yaml`. The presence of
+  that file is the only signal. annealer does not use package-name conventions
+  or guess from the package contents.
+- **Transitive dependencies are out of scope by default.** Only the project's
+  direct dependencies are scanned. A transitive dependency is included only when
+  a library author opts in to it explicitly (e.g. a UI kit built on Bootstrap
+  declares in its own `annealer.yaml` that it carries Bootstrap's profile). A
+  package somewhere deep in the tree doesn't mean the project's markup uses its
+  classes.
+- **Detection and application are separate.** Detection only finds candidates
+  and reports them. A profile is applied only when the user names it explicitly
+  in their config. Installing or updating a dependency must never change
+  annealer's output by itself.
+
 ### Sketch (to be designed)
 
 - `class` value: split on whitespace, classify each token with group patterns

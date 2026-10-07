@@ -64,7 +64,7 @@ groups:
     match: [aria-describedby, aria-description, aria-details]
     sort: listed
   - name: aria-property
-    match: ["aria-*"]
+    match: ['aria-*']
   - name: aria-state
     match:
       - aria-busy
@@ -80,12 +80,12 @@ groups:
 
   # 5. Data (no semantic order is possible)
   - name: data
-    match: ["data-*"]
+    match: ['data-*']
     sort: alphabetical
 
   # 6. Events
   - name: events
-    match: ["on*"]
+    match: ['on*']
 
 # Passed to malva for <style> blocks and standalone stylesheets.
 stylesheet:
