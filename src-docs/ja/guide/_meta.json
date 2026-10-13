@@ -1,0 +1,22 @@
+[
+  {
+    "type": "dir-section-header",
+    "name": "start",
+    "label": "はじめに"
+  },
+  {
+    "type": "dir-section-header",
+    "name": "concepts",
+    "label": "基本概念"
+  },
+  {
+    "type": "dir-section-header",
+    "name": "features",
+    "label": "機能"
+  },
+  {
+    "type": "dir-section-header",
+    "name": "design",
+    "label": "設計とロードマップ"
+  }
+]

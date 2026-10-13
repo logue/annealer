@@ -33,16 +33,19 @@ const SAMPLES: Record<Language, string> = {
 `
 };
 
-const element = <T extends HTMLElement>(id: string): T =>
-  document.getElementById(id) as T;
+const element = (id: string): HTMLElement => {
+  const found = document.getElementById(id);
+  if (!found) throw new Error(`Missing element: ${id}`);
+  return found;
+};
 
-const language = element<HTMLSelectElement>('language');
-const profile = element<HTMLSelectElement>('profile');
-const profileEditor = element<HTMLDetailsElement>('profile-editor');
-const profileYaml = element<HTMLTextAreaElement>('profile-yaml');
-const input = element<HTMLTextAreaElement>('input');
-const output = element<HTMLTextAreaElement>('output');
-const error = element<HTMLParagraphElement>('error');
+const language = element('language') as HTMLSelectElement;
+const profile = element('profile') as HTMLSelectElement;
+const profileEditor = element('profile-editor') as HTMLDetailsElement;
+const profileYaml = element('profile-yaml') as HTMLTextAreaElement;
+const input = element('input') as HTMLTextAreaElement;
+const output = element('output') as HTMLTextAreaElement;
+const error = element('error') as HTMLParagraphElement;
 
 const render = (): void => {
   const spec =

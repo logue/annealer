@@ -6,7 +6,17 @@
   },
   {
     "type": "dir-section-header",
-    "name": "use-mdx",
-    "label": "Markdown & MDX"
+    "name": "concepts",
+    "label": "Core Concepts"
+  },
+  {
+    "type": "dir-section-header",
+    "name": "features",
+    "label": "Features"
+  },
+  {
+    "type": "dir-section-header",
+    "name": "design",
+    "label": "Design & Roadmap"
   }
 ]

@@ -1,1 +1,6 @@
-["index", "commands"]
+[
+  { "type": "file", "name": "index", "label": "Overview" },
+  "cli",
+  "javascript",
+  "profile"
+]

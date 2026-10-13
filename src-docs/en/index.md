@@ -1,44 +1,41 @@
 ---
-description: Rspress starter homepage with guide, MDX, search, AI, SSG, and theme customization links.
+description: annealer reorders HTML and Vue attributes, and stylesheet declarations, by semantic meaning using swappable YAML profiles.
 pageType: home
 
 hero:
-  name: My Site
-  text: A cool website!
-  tagline: This is the tagline
+  name: annealer
+  text: Attribute order by meaning
+  tagline: Reorders HTML/Vue attributes and stylesheet declarations by semantic meaning, using swappable YAML profiles.
   actions:
     - theme: brand
-      text: Quick Start
+      text: Introduction
       link: /guide/start/introduction
     - theme: alt
       text: GitHub
-      link: https://github.com/web-infra-dev/rspress
-  image:
-    src: /rspress-icon.png
-    alt: Logo
+      link: https://github.com/logue/annealer
 features:
-  - title: Blazing fast build speed
-    details: The core compilation module is based on the Rust front-end toolchain, providing a more ultimate development experience.
-    icon: 🏃🏻‍♀️
-    link: /guide/start/introduction
-  - title: Support for MDX content writing
-    details: MDX is a powerful way to write content, allowing you to use React components in Markdown.
-    icon: 📦
-    link: /guide/use-mdx/components
-  - title: Built-in full-text search
-    details: Automatically generates a full-text search index for you during construction, providing out-of-the-box full-text search capabilities.
+  - title: Semantic attribute order
+    details: Attributes are grouped by role (definition, state, supplementary meaning, ARIA, data, events) instead of alphabetically or as typed.
+    icon: 🧭
+    link: /guide/concepts/attribute-order
+  - title: Superset of vue/attributes-order
+    details: The Vue profile keeps eslint-plugin-vue's default order and adds same-name clustering, ARIA sub-ordering, plain HTML and stylesheets.
+    icon: 🧩
+    link: /guide/concepts/attribute-order
+  - title: Stylesheets via malva
+    details: Property order for CSS, SCSS, Sass and Less is delegated to malva, with vendor-prefixed declarations placed first.
     icon: 🎨
-    link: https://rspress.rs/guide/advanced/custom-search
-  - title: AI-friendly
-    details: Generate llms.txt and Markdown files compliant with the llms.txt specification through SSG-MD, making it easier for large language models to understand and use your documentation.
-    icon: 🤖
-    link: https://rspress.rs/guide/basic/ssg-md
-  - title: Static site generation
-    details: In production, it automatically builds into static HTML files, which can be easily deployed anywhere.
-    icon: 🌈
-    link: https://rspress.rs/guide/basic/ssg
-  - title: Providing multiple custom capabilities
-    details: Through its extension mechanism, you can easily extend theme UI and build process.
-    icon: 🔥
-    link: https://rspress.rs/guide/basic/custom-theme
+    link: /guide/concepts/stylesheets
+  - title: Swappable YAML profiles
+    details: Orders and layout rules are data, not code. Profiles are validated by a JSON Schema and reject unknown keys.
+    icon: 📄
+    link: /api/profile
+  - title: Rust core, CLI and WebAssembly
+    details: A pure Rust function with no file I/O, the anyl CLI, and an npm package with a synchronous format() API.
+    icon: 🦀
+    link: /api/
+  - title: Disable directives
+    details: annealer-disable, annealer-enable and annealer-disable-next-line comments keep selected code exactly as written.
+    icon: 🛑
+    link: /guide/features/disable-directives
 ---

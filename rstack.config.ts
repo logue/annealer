@@ -211,8 +211,14 @@ define.doc({
     {
       lang: 'en',
       label: 'English',
-      title: 'My Site',
-      description: 'My site description'
+      title: 'annealer',
+      description: 'Reorders HTML/Vue attributes by semantic meaning.'
+    },
+    {
+      lang: 'ja',
+      label: '日本語',
+      title: 'annealer',
+      description: 'HTML/Vue の属性を意味に基づいて並べ替えるフォーマッター'
     }
   ],
   // generate llms.txt

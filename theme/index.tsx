@@ -1,5 +1,3 @@
-// Learn how to customize the theme: https://rspress.rs/guide/basic/custom-theme
-// rslint-disable-next-line import/no-unresolved
-import './index.css';
-
+// Rspress v2: re-export from theme-original, then override Layout with ours
 export * from '@rspress/core/theme-original';
+export { Layout } from './Layout';
