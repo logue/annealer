@@ -1,0 +1,1007 @@
+---
+url: /annealer/ja/guide/start/introduction.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# はじめに
+
+annealer は、HTML と Vue テンプレートの属性を意味に基づいて並べ替えるフォーマッターです。スタイルシート（CSS・SCSS・Sass・Less）の宣言も並べ替えます。並び順はハードコードではなく、差し替え可能な YAML プロファイルで定義します。
+
+```html
+<!-- 入力 -->
+<a title="Home" href="/" id="home">Home</a>
+
+<!-- 出力（html プロファイル） -->
+<a id="home" title="Home" href="/">Home</a>
+```
+
+:::warning 開発中
+annealer は開発中です。npm パッケージは未公開で、プロファイル形式も安定版として宣言するまでは変更される可能性があります。
+:::
+
+## 属性順が重要な理由
+
+### 並び順は見た目の問題ではなく、コードレビューの問題
+
+複数の開発者が同じコンポーネントを時間をかけて編集すると、属性は追加・削除・書き換えされます。決まった規則がないと属性の並びが入れ替わり、実際には変わっていない行まで差分に含まれます。規則に基づく安定した並び順にすれば、差分は本当に変わった箇所だけになり、レビューの負担が減ります。
+
+### 属性ごとに意味の重みが違う
+
+HTML の属性は、順序のない文字列の集まりではありません。
+
+- 要素が**何であるか**を定義するもの（`is`、コンポーネント名）
+- **状態や振る舞い**を制御するもの（`v-if`、`v-model`、`disabled`、`width`/`height`）
+- 人間の読み手に向けて**意味を補足する**もの（`title`、`alt`）
+- 支援技術などの外部システムに**意味を伝える**もの（`aria-*`）
+
+アルファベット順や入力順のままでは、この構造が見えなくなります。annealer は要素の意味構造がソース上で読み取れるように属性を並べます。
+
+このグループ分けは恣意的な好みではありません。WAI-ARIA 仕様自体が `aria-*` 属性を _プロパティ_（使用中に変化しない）と _ステート_（使用中に変化する）に分けており、annealer はこの区別を利用しています。
+
+### スタイルシートも同じように扱う
+
+CSS のプロパティにも、レイアウト・外観・状態に応じた表示といった役割があります。「意味の順に並べる」という原則は宣言の順序にも当てはまります。
+
+## `vue/attributes-order` との関係
+
+Vue.js スタイルガイドはすでに属性の優先順位を定めており、eslint-plugin-vue がそれを `vue/attributes-order` として実装しています。annealer の Vue プロファイルは同じ既定順から始まるため、ESLint から移行するプロジェクトでも同じ結果が得られます。
+
+その上で annealer は次の点を追加します。
+
+- **同名クラスタリング**: 同じ属性の静的形式とバインド形式をまとめます（`class` の隣に `:class`）。
+- **ARIA の細分化**: WAI-ARIA のプロパティ／ステートの区別に従い、role → 名前 → 説明 → プロパティ → ステートの順に並べます。
+- **素の HTML への対応**: Vue テンプレートを使わないプロジェクトにも使えます。
+- **スタイルシートの宣言順**: [malva](https://github.com/g-plane/malva) に委譲します。
+
+annealer は `vue/attributes-order` と競合するものではなく、その設計を引き継いで拡張したものです。ESLint を rslint や oxlint に置き換えるチームにとっては、この機能を引き続き使うための後継になります。
+
+## 新しいツールが必要な理由
+
+Biome、rslint、oxlint、oxfmt、markup_fmt を検討しましたが、Vue/HTML の属性を意味に基づいて並べ替えるものはありませんでした。
+
+| ツール                               | 状況                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------- |
+| Biome（`useSortedAttributes`、HTML） | 分類が固定で文書化されていない。`id` などディレクティブ以外の属性を Vue スタイルガイドどおりに配置しない。既知の不具合（属性の重複・欠落）と基盤を共有している。 |
+| rslint                            | Vue に対応する予定がない（メンテナーの判断）。                                                             |
+| oxlint                            | Vue のルールは正しさの検査のみで、属性順のルールはない。                                                        |
+| oxfmt                             | 設計上、テンプレートのマークアップを扱えない。                                                               |
+| markup_fmt                        | Vue/Svelte/Astro のテンプレートを整形できるが、属性を並べ替えるオプションはない。                                     |
+
+CSS のプロパティ順だけは例外で、malva がすでに設定可能な `declarationOrder` を持っているため、annealer はそれに委譲します。**annealer が新たに提供するのは、意味に基づく属性のグループ化です。それ以外をゼロから作る必要はありません。**
+
+## 対象範囲
+
+- HTML と Vue 3 SFC の `<template>` ブロックにおける属性の並べ替え
+- 属性名の正規化: `v-bind:` → `:`、`v-on:` → `@`、コンポーネントの props の camelCase → kebab-case
+- 複数行タグのレイアウト規則（`vue/html-closing-bracket-newline`、`vue/max-attributes-per-line`（複数行）、`vue/html-self-closing`、`vue/multiline-html-element-content-newline` 相当）
+- `<style>` ブロックと単体ファイルにおける CSS/SCSS/Sass/Less の宣言順（malva 経由）
+- 静的な `style` 属性内の宣言順（オプトイン）
+- マークアップとスタイルシートのコメントによる[無効化ディレクティブ](/annealer/ja/guide/features/disable-directives.md)
+- 予定: 静的な `class` 属性の[値の並べ替え](/annealer/ja/guide/design/value-ordering.md)と[ライブラリプロファイル](/annealer/ja/guide/design/library-profiles.md)
+- Svelte は最初のリリースには含めません。プロファイルベースの設計なので、後から作り直しなしで追加できる見込みです。
+
+## 対象外
+
+- テキストやインデントの再整形。行幅とインデントは周辺のフォーマッター（`rs fmt`、Prettier など）に任せます。
+- Vue 2 の構文（`.sync`、`.native` など）
+- HTML/CSS の汎用的な検証
+- 非推奨・廃止されたマークアップ（`<xmp>`、`<center>`、`<font>`、`<marquee>`、`bgcolor` など）への対処。annealer は警告・削除・置換を一切しません。周囲の文書を正しく整形するのに必要な範囲でだけ解析します（たとえば `<xmp>` の中身は生テキストなので、中のタグには手を加えません）。検出はリンターやバリデーターの役割です。
+
+## 次のステップ
+
+- [使い方](/annealer/ja/guide/start/getting-started.md): CLI または JavaScript から annealer を実行します。
+- [属性順](/annealer/ja/guide/concepts/attribute-order.md): 属性の分類と並べ替えの仕組みです。
+
+
+
+---
+url: /annealer/ja/guide/start/getting-started.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# 使い方
+
+annealer には、同じ Rust コアを使う 3 つの入口があります。
+
+- **`anyl`**: コマンドラインツール
+- **`annealer`（npm）**: WebAssembly を使う JavaScript API
+- **`annealer`（Rust クレート）**: 純粋関数 `format()`
+
+## CLI
+
+リポジトリから CLI をビルドします（npm パッケージとクレートは未公開です）。
+
+```bash
+cargo install --path crates/annealer
+```
+
+ファイルを整形します。
+
+```bash
+anyl src/App.vue                 # 結果を出力
+anyl --write src/**/*.vue        # その場で上書き
+anyl --check index.html          # 変更が必要なファイルがあれば終了コード 1
+anyl --profile my-profile.yaml page.html
+```
+
+対応する入力は `.html`、`.htm`、`.vue`、`.css`、`.scss`、`.sass`、`.less` です。言語は拡張子から判定し、`--profile` を指定しない限り、言語に対応する組み込みプロファイルを使います。すべてのオプションは [CLI](/annealer/ja/api/cli.md) を参照してください。
+
+## JavaScript
+
+```ts
+import { format } from 'annealer';
+
+format('<a title="Home" href="/" id="home">Home</a>');
+// => '<a id="home" title="Home" href="/">Home</a>'
+
+format(source, { language: 'vue' });
+format(source, { language: 'html', profile: yamlText });
+```
+
+`format()` は同期関数です。WebAssembly バイナリはパッケージに埋め込まれているため、ローダーやバンドラーの設定は不要です。[JavaScript API](/annealer/ja/api/javascript.md) を参照してください。
+
+## 例
+
+入力:
+
+```html
+<nav aria-label="Main" class="nav" id="nav">
+  <a href="/docs" class="nav__link" aria-current="page">Docs</a>
+</nav>
+<input
+  required
+  placeholder="you@example.com"
+  name="email"
+  type="email"
+  id="email"
+  class="form__input"
+  aria-describedby="email-help"
+/>
+```
+
+`html` プロファイルでの出力:
+
+```html
+<nav id="nav" class="nav" aria-label="Main">
+  <a class="nav__link" href="/docs" aria-current="page">Docs</a>
+</nav>
+<input
+  id="email"
+  class="form__input"
+  placeholder="you@example.com"
+  type="email"
+  name="email"
+  required
+  aria-describedby="email-help"
+/>
+```
+
+- 先頭は `id` と `class`、続いて補足（`placeholder`）、意味（`type`）、キーと値（`name`）、状態（`required`）の属性、最後に ARIA です。
+- 複数行のタグは 1 行に 1 属性になり、閉じ括弧は独立した行に置かれます。
+- 空要素 `<input>` は `<input />` になります。
+
+## プロファイル
+
+組み込みプロファイルは 2 つです。
+
+| プロファイル | 用途                                     | 概要                                              |
+| ------ | -------------------------------------- | ----------------------------------------------- |
+| `html` | `.html`、`.css`、`.scss`、`.sass`、`.less` | 素の HTML 向けの意味に基づく順序                             |
+| `vue`  | `.vue`                                 | `vue/attributes-order` の階層に annealer の細分化を加えたもの |
+
+カスタマイズするときは、組み込みプロファイル（JavaScript では `builtinProfile('vue')`、または `crates/annealer/profiles/*.yaml`）をもとに YAML を書き、`--profile` または `profile` オプションで渡します。[プロファイルリファレンス](/annealer/ja/api/profile.md)を参照してください。
+
+
+
+---
+url: /annealer/ja/guide/concepts/attribute-order.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# 属性順
+
+## 字句解析: DOM を構築しない
+
+annealer は DOM や XML のツリーを構築しません。開始タグ（`<tagname` … `>` または `/>`）を見つけ、属性リストを名前と値の組に分割し、引用符の種類だけを記録します。
+
+この方式は素の HTML でも、XML に準拠しない Vue の構文（`@click`、`#default`、`v-bind:[dynamic]`）でも同じように動きます。また、DOM や XML ベースの解析で起こる、空白のまとめ込みやタグ名・属性名の小文字化といった副作用も避けられます。
+
+生テキスト要素、コメント、`{{ }}` の補間、SFC の `<script>` ブロック、カスタムブロック、HTML 以外の言語を指定した `<template lang="…">` は読み飛ばします。
+
+## 分類
+
+各属性は**正規化したキー**で分類します。
+
+| 書き方                        | キー            |
+| -------------------------- | ------------- |
+| `foo`、`:foo`、`v-bind:foo`  | `foo`         |
+| `@click`、`v-on:click`      | `v-on:click`  |
+| `#item`、`v-slot:item`      | `v-slot:item` |
+| `@click.stop`、`:foo.camel` | 修飾子を除去        |
+
+プロファイルは、出力順に並んだ**グループ**のリストです。各グループは `match` パターン（完全一致の名前、または `*` で終わるプレフィックス）を持ちます。属性は、**最も具体的に**一致するパターンのグループに入ります。完全一致はどのプレフィックスよりも優先され、長いプレフィックスは短いものより優先されます。どれにも一致しない属性は、ただ 1 つの**フォールバック**グループに入ります。
+
+グループ内の順序は `sort` で決まります。
+
+- `source`: 書かれた順（既定）
+- `alphabetical`: キーのアルファベット順
+- `listed`: `match` パターンの並び順
+
+## HTML プロファイル
+
+| #  | グループ             | 属性                                                                                                                                                   | ソート          |
+| -- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 1  | global           | `id`                                                                                                                                                 |              |
+| 2  | class            | `class`                                                                                                                                              |              |
+| 3  | supplementary    | `alt`、`title`、`placeholder`                                                                                                                          | listed       |
+| 4  | semantic         | `type`、`href`、`src`、`srcset`                                                                                                                         | listed       |
+| 5  | key-value        | `name`、`value`、`content`                                                                                                                             | listed       |
+| 6  | dimensions       | `width`、`height`                                                                                                                                     | listed       |
+| 7  | other（フォールバック）   | `disabled`、`checked`、`readonly` などの状態属性                                                                                                              | source       |
+| 8  | aria-role        | `role`                                                                                                                                               |              |
+| 9  | aria-name        | `aria-label`、`aria-labelledby`                                                                                                                       | listed       |
+| 10 | aria-description | `aria-describedby`、`aria-description`、`aria-details`                                                                                                 | listed       |
+| 11 | aria-property    | その他の `aria-*`                                                                                                                                        | source       |
+| 12 | aria-state       | `aria-busy`、`aria-checked`、`aria-current`、`aria-disabled`、`aria-expanded`、`aria-grabbed`、`aria-hidden`、`aria-invalid`、`aria-pressed`、`aria-selected` | source       |
+| 13 | data             | `data-*`                                                                                                                                             | alphabetical |
+| 14 | events           | `on*`                                                                                                                                                | source       |
+
+この順序にした理由:
+
+- **補足属性は `id`/`class` の直後に置きます。** 人間の読み手に向けて要素を説明する属性だからです。`id` と `class` は慣用的に並べて書かれるため、先頭にまとめます。
+- **ARIA は末尾近くに置きます。** `alt`/`title` では表現できない、支援技術向けの追加メタデータであり、要素の主たる説明ではないからです。
+- **ARIA の中は WAI-ARIA に従います**: role → アクセシブルな名前 → 説明 → プロパティ → ステート
+- **`data-*` はアルファベット順です。** 意味に基づく順序が存在しないためです。
+
+## Vue プロファイル
+
+Vue プロファイルは eslint-plugin-vue の `vue/attributes-order` の既定順に従うため、出力は常にそのルールを満たします。
+
+| #  | 階層          | 属性                                             |
+| -- | ----------- | ---------------------------------------------- |
+| 1  | 定義          | `is`、`v-is`                                    |
+| 2  | リストレンダリング   | `v-for`                                        |
+| 3  | 条件          | `v-if`、`v-else-if`、`v-else`、`v-show`、`v-cloak` |
+| 4  | レンダー修飾子     | `v-pre`、`v-once`                               |
+| 5  | グローバル       | `id`                                           |
+| 6  | 一意／スロット     | `ref`、`key`、`slot`、`v-slot*`                   |
+| 7  | 双方向バインディング  | `v-model*`                                     |
+| 8a | その他のディレクティブ | その他の `v-*`                                     |
+| 8b | その他の属性      | HTML プロファイルの `class` から `data` までのグループ（上記）     |
+| 9  | イベント        | `v-on*`（`@…`）                                  |
+| 10 | コンテンツ       | `v-html`、`v-text`                              |
+
+階層 8 は「その他のディレクティブ」→「その他の属性」の順に分かれています。これは `vue/attributes-order` の `OTHER_DIRECTIVES` → `OTHER_ATTR` に合わせたものです。HTML プロファイルの細分化は「その他の属性」の階層内で適用されます。
+
+```vue
+<!-- 入力 -->
+<MyItem
+  @click="select"
+  :class="{ active }"
+  class="item"
+  v-for="item in items"
+  :key="item.id"
+  aria-label="Item"
+  v-bind:title="item.name"
+  :itemName="item.name"
+/>
+
+<!-- 出力 -->
+<MyItem
+  v-for="item in items"
+  :key="item.id"
+  class="item"
+  :class="{ active }"
+  :title="item.name"
+  :item-name="item.name"
+  aria-label="Item"
+  @click="select"
+/>
+```
+
+## 同名クラスタリング
+
+分類は正規化したキーで行うため、同じ属性の静的形式とバインド形式は同じキーになり、まとまって並びます。キーが最初に現れた位置がそのクラスタの位置になります。特別な処理は必要ありません。
+
+- **`class`** は静的形式をバインド形式より前に置きます（`class="item" :class="{ active }"`）。
+- **その他の名前**はクラスタ内で書かれた順を保ちます。Vue は `style` を後の宣言が勝つ形でマージし、それ以外の重複した名前は一方しか残さないため、並べ替えると動作が変わるおそれがあるからです。
+- **`v-model` は同名の通常属性とクラスタにしません**（`value="x" v-model="y"`）。キーは `value` ではなく `v-model` であり、双方向バインディングは別の概念なので独自の階層に残ります。
+
+## `v-bind` スプレッド
+
+`v-bind="object"` は境界として扱います。オブジェクトのマージ時にどの値が勝つかが変わるおそれがあるため、属性をスプレッドをまたいで移動しません。
+
+例外は `spreadSafe` を指定したグループです。これはスプレッドオブジェクトとマージされることのないコンパイル時ディレクティブ（`is`、`v-for`、`v-if` など、`v-pre`/`v-once`、カスタムディレクティブ）なので、スプレッドをまたいで移動できます。それ以外はすべて自分のセグメント内に留まります。
+
+## 正規化
+
+Vue プロファイルでは 2 つの書き換えが有効で、分類の前に実行されます。
+
+- `directiveShorthand`: `v-bind:foo` → `:foo`、`v-on:click` → `@click`
+- `hyphenateComponentProps`: コンポーネントタグ上の camelCase の属性名 → kebab-case（`:itemName` → `:item-name`）。SVG や MathML のネイティブ要素は対象外です。
+
+
+
+---
+url: /annealer/ja/guide/concepts/stylesheets.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# スタイルシート
+
+annealer は CSS プロパティの並べ替えを自前で実装せず、設定可能な `declarationOrder` をすでに持つ [malva](https://github.com/g-plane/malva) に委譲します。プロファイルの `stylesheet` セクションでこれを制御します。
+
+整形の対象:
+
+- HTML と Vue の `<style>` ブロック（`<style lang="scss">`、`lang="less"`、`lang="sass"` を含む）
+- 単体の `.css`、`.scss`、`.sass`（インデント構文）、`.less` ファイル
+
+プロファイルに `stylesheet` セクションがなければ、スタイルシートには手を加えません。
+
+## 宣言順
+
+どちらの組み込みプロファイルも次の設定です。
+
+```yaml
+stylesheet:
+  declarationOrder: smacss
+  vendorPrefix: start
+```
+
+- `declarationOrder`: `smacss`（重要でレイアウトの流れに影響するプロパティが先）、`concentric`（ボックスモデルの外側から内側へ）、`alphabetical` のいずれか
+- `declarationOrderGroupBy`: 宣言を、個別にソートする区間にどう分けるか。`non-declaration`（既定）または `non-declaration-and-empty-line`
+
+```css
+/* 入力 */
+body {
+  color: #222;
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  display: flex;
+}
+
+/* 出力（smacss） */
+body {
+  display: flex;
+  margin: 0;
+  color: #222;
+  font-family: system-ui, sans-serif;
+}
+```
+
+## ベンダープレフィックス: `vendorPrefix: start` \{#vendor-prefixes-vendorprefix-start}
+
+ベンダープレフィックス付きの宣言（`-webkit-…`、`-moz-…`）は、標準プロパティとは別のものとして扱います。これらは方言であり、標準化されなかったものも多くあります。`start` を指定すると、同じ区間の他の宣言より**前**に、プロパティごとのグループ化をせず単純なアルファベット順で置きます。
+
+`end` ではなく `start` にした理由: プレフィックス付きのプロパティは標準プロパティの別名であることが多く、後に書いた宣言が勝ちます。プレフィックス付きを最後に置くと、方言が標準の値を上書きしてしまうおそれがあります（例: 値を 2 つ取る `-webkit-border-radius`）。`start` なら Autoprefixer の出力と同じく、標準プロパティが最後になります。
+
+malva にはこのオプションがありません（プレフィックスを除いた名前でソートします）。annealer は malva の出力を再解析し、プレフィックス付きの宣言だけを移動します。区間は malva のソート単位と一致します。宣言の間にコメントがある区間には手を加えません。このオプションは `declarationOrder` を設定したときだけ有効です。`alongside`（未指定時の既定）は malva の動作のままです。
+
+## 静的な `style` 属性（オプトイン） \{#static-style-attributes-opt-in}
+
+`stylesheet.styleAttribute: true` にすると、静的な `style` 属性内の宣言も並べ替えます。どちらの組み込みプロファイルでも無効です。
+
+- 値は 1 行のままです。
+- CSS の文字列には、属性の引用符と反対の引用符を使います。
+- 末尾の `;` がなければ、ないままにします。
+- バインドされた `:style` には一切手を加えません。
+- 引用符がない値、テンプレート構文・コメント・`{}`・`<`・`&` を含む値、通常の宣言として解析できない値は、書かれたとおりに残します。
+
+## その他の malva オプション
+
+その他の malva オプション（`printWidth`、`quotes`、`hexCase` など）は `stylesheet.malva` に書きます。未知のキーはエラーになるため、タイプミスが黙って無視されることはありません。[プロファイルリファレンス](/annealer/ja/api/profile.md#stylesheet)を参照してください。
+
+
+
+---
+url: /annealer/ja/guide/features/layout.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# レイアウト
+
+属性を並べ替えると、タグの元の行構成が崩れることがあります。プロファイルの `layout` セクションで、並べ替え後のタグのレイアウトを定めます。各規則は eslint-plugin-vue のルールに対応しているため、それらのルールを残しているプロジェクトでも結果が食い違いません。
+
+どちらの組み込みプロファイルでも、以下の規則はすべて有効です。
+
+## `closingBracketNewline`
+
+`vue/html-closing-bracket-newline` 相当です。複数行の開始タグでは、閉じ括弧を独立した行に置きます。属性が 1 行に収まる開始タグでは、`>` をその行に残します（`singleline: never`）。
+
+## `oneAttributePerLine`
+
+`vue/max-attributes-per-line` の複数行時の既定に相当します。属性が複数行にわたる開始タグでは、1 行に 1 属性を置きます。
+
+属性が元の行位置を保つと、並べ替えによって 1 行に 2 つの属性が並んでしまうことがあるため、この規則が必要です。
+
+<!-- prettier-ignore -->
+
+```html
+<!-- 入力 -->
+<div class="a"
+  id="x"></div>
+
+<!-- 出力 -->
+<div
+  id="x"
+  class="a"
+></div>
+```
+
+## `selfClosing`
+
+`vue/html-self-closing` 相当です。要素の種類ごとに `always`、`never`、`preserve` のいずれかを指定します。
+
+| 種類          | 例            | 組み込み `html` | 組み込み `vue` |
+| ----------- | ------------ | ----------- | ---------- |
+| `void`      | `<br />`     | `always`    | `always`   |
+| `normal`    | `<div />`    | –           | `always`   |
+| `component` | `<MyComp />` | –           | `always`   |
+
+- `normal` と `component` は Vue テンプレートでのみ適用します。素の HTML では `<div />` は閉じられていない開始タグになるためです。
+- 空白だけのコンテンツは空とみなします。ただし `pre` と `textarea` は除きます。
+- SFC のトップレベルブロック（`<template>`、`<script>`、`<style>`）には手を加えません。
+
+:::warning vue/html-self-closing との違い
+`void: always` は `vue/html-self-closing` の既定（`html.void: never`）と異なります。その ESLint ルールを残す場合は、そちらで `html.void: always` にするか、annealer のプロファイルで `void: never` にしてください。
+:::
+
+## `contentNewline`
+
+`vue/multiline-html-element-content-newline` 相当です。キーを省略すると無効、`{}` を指定すると既定値で有効になります。
+
+- 終了タグが開始タグより後の行で始まる要素を**複数行**の要素とみなします（ESLint ルールの定義と同じ）。その要素のコンテンツは、ちょうど 1 つの改行で始まり、1 つの改行で終わるようにします。
+- `allowEmptyLines: true` にすると、空行をまとめずに残します。
+- 空の要素には手を加えません。
+- `ignore` には、中身も含めて手を加えない要素を列挙します。既定はルールの既定と同じく `pre`、`textarea`、インライン要素（`a`、`span`、`strong` など）で、追加した空白が表示に影響しうる要素です。
+- 閉じられていない HTML 要素（`</li>` のない `<li>`）は祖先の終了タグで暗黙に閉じられたものとし、手を加えません。
+- 追加するのは改行だけで、インデントは整形し直しません。新しい行のインデントは、複数行の開始タグなら属性のインデント、そうでなければ最初の一段深いコンテンツ行、それもなければタグのインデントに空白 2 つ（タグがタブでインデントされていればタブ）を加えたものです。
+
+<!-- prettier-ignore -->
+
+```vue
+<!-- 入力 -->
+<template>
+  <div class="a"
+    id="x"><MyComp></MyComp></div>
+</template>
+
+<!-- 出力（vue プロファイル） -->
+<template>
+  <div
+    id="x"
+    class="a"
+  >
+    <MyComp />
+  </div>
+</template>
+```
+
+この規則は HTML プロファイルでも有効です。ブロックレベルのコンテンツの先頭と末尾の空白は表示されず、表示されうる要素は `ignore` リストで除外しているためです。
+
+コンテンツを新しい行に移すと、入れ子のタグの閉じ括弧がそろえるインデントが変わることがあります。そのため annealer は、結果が安定するまで文書を繰り返し整形します（最大 4 回、通常は 2 回）。
+
+
+
+---
+url: /annealer/ja/guide/features/disable-directives.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# 無効化ディレクティブ
+
+サードパーティのスニペットや、意図的に残している従来の並び順など、書かれたとおりの形を保つ必要があるコードもあります。コメントで、そのコードに対して annealer を無効にできます。
+
+```html
+<!-- annealer-disable -->
+<!-- annealer-enable -->
+<!-- annealer-disable-next-line: [理由] -->
+```
+
+```css
+/* annealer-disable */
+/* annealer-enable */
+/* annealer-disable-next-line: [理由] */
+```
+
+## 規則
+
+- **ブロックコメントのみです。** CSS には行コメントがないため、`//` には対応しません。
+- **`annealer-disable`** は、それ以降 `annealer-enable` または文書の末尾までのすべてを対象にします。文書の先頭に置けばファイル全体が変更されません。
+- **`annealer-disable-next-line`** は、次の行で始まる構文を対象にします。
+  - 開始タグ（複数行にわたる場合もタグ全体。`<style>` 要素ならその中身も）
+  - CSS の文（宣言、またはルール全体）
+- **`:` の後の理由は任意**で、annealer は内容を無視します。
+- **対象のコードは書かれたとおり、その位置のまま残します。** スタイルシートでは、周りの宣言がソートされても、対象の宣言は元の位置に留まります。
+- **適用範囲:** マークアップのコメントはマークアップ（と `<style>` 要素全体）に、CSS のコメントはそれが書かれたスタイルシートの中に適用されます。
+- **未知のディレクティブはエラーです。** `annealer-` で始まるのに既知のディレクティブでないコメント（たとえばタイプミスの `annealer-disabel`）は、無視されずに実行が失敗します。
+
+```html
+<!-- annealer-disable-next-line: ベンダーのドキュメントからコピー -->
+<a href="/" id="vendor-link">書かれたとおりに残る</a>
+<a href="/" id="home">並べ替えられる</a>
+```
+
+## 実装メモ（スタイルシート）
+
+malva 独自の無視コメント（`malva-ignore`）は流用できません。`: 理由` の形式を受け付けず、ソートでは無視したはずの宣言も移動してしまうためです。代わりに annealer は、malva を呼ぶ前に対象の文を内部マーカーで印付けし、後でマーカーを取り除きます。
+
+Sass（インデント構文）には `;` がないため、マーカーは独立した行に置きます。malva は Sass では、独立した行にある無視コメントしか認識しないためです。
+
+
+
+---
+url: /annealer/ja/guide/design/value-ordering.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# 値の並べ替え
+
+:::info 状況
+静的な `style` 属性は実装済みです（オプトイン。[スタイルシート](/annealer/ja/guide/concepts/stylesheets.md#static-style-attributes-opt-in)を参照）。`class` の値の並べ替えは**計画段階**で、まだ実装していません。このページには合意済みの原則をまとめます。
+:::
+
+属性の並び順が 1 つの軸だとすれば、属性内の値の並び順はもう 1 つの軸です。これは Tailwind に限った需要ではありません。クラスベースの CSS フレームワーク（Bootstrap、Tailwind、プロジェクト独自のユーティリティ群）なら、属性と同じく差分を安定させるという理由で、決まったクラス順の恩恵を受けます。
+
+## 原則
+
+### 静的な値のみ
+
+バインドされた属性（`:class`、`:style`、`v-bind:*`）が持つのは値ではなく式です。annealer はその中身を一切見ません。
+
+これは、`:class` の式や `clsx()` のような呼び出しの中の文字列リテラルまでソートする `eslint-plugin-tailwindcss`（`classnames-order`）や `prettier-plugin-tailwindcss` とは異なる点です。
+
+### 仕組みはライブラリ非依存、プロファイルはライブラリ固有
+
+クラス順は、属性グループと同じくプロファイルのデータであり、コードの分岐ではありません。これが[ライブラリプロファイル](/annealer/ja/guide/design/library-profiles.md)の最初の具体例になります。
+
+### クラス順を決めるのはライブラリ
+
+フレームワークの正式なクラス順は、annealer ではなくそのフレームワークが決める設計事項です。annealer は仕組みとプロファイル形式を提供します。
+
+- **Bootstrap**: 下書きのプロファイルを添えて、仕組みを上流に提案します（Bootstrap 6 は開発中）。並び順は Bootstrap 自身が定義し、保守します。
+- **Tailwind**: 並び順はすでに Tailwind のエンジンが定義しています。annealer はその近似を YAML の組み込みプロファイルとして提供できます。
+
+### プロファイル形式は公開された契約
+
+サードパーティがプロファイルを書いて配布することを想定しているため、提案の前に `schemaVersion`、JSON Schema、形式のドキュメントを安定させる必要があります。annealer の外で配布されるプロファイルには、読み込む手段（たとえばパッケージに含まれるファイルを解決する `extends`）も必要です。
+
+### 近似的で自己完結した順序
+
+Tailwind の正式な順序は、各プロジェクトの Tailwind ビルド（v4 の `@theme` やカスタムユーティリティ、v3 の `tailwind.config.js`）から導かれるもので、Tailwind 自身にしか計算できません。そこで annealer は順序を YAML で定義します。
+
+- 標準のユーティリティについては正式な順序に近い
+- カスタムユーティリティは認識しない
+- JavaScript ランタイムは不要
+
+### 意味を変えない
+
+クラスの並べ替えは CSS の意味を変えません。重複したクラスは残し（削除はリンターの役割です）、未知のクラスも決して取り除きません。
+
+## 素案（設計中）
+
+- `class` の値を空白で分割し、各トークンをグループパターンで分類し（属性グループと同じ考え方）、グループ順、次にグループの `sort` モードで並べます。同順位なら元の順を保ちます。
+- バリアントとブレークポイントには別の軸が必要です。
+  - Tailwind は**接頭辞**（`md:`、`hover:`、`dark:`）を使います。ソートキーはベースのクラスとバリアントの順序です。
+  - Bootstrap は**中置**（`col-md-6`、`d-lg-none`、`mt-sm-3`）を使います。ブレークポイントは名前の途中から取り出します。
+- 末尾の `*` だけでは足りません。たとえば Bootstrap の `text-center`（配置）と `text-primary`（色）は同じ接頭辞を持ちます。値のパターン構文は属性のパターンより表現力が必要です。
+
+## 未解決の論点
+
+- 未知のクラスをどこに置くか。Tailwind の Prettier プラグインはカスタムクラスを先頭に置きます。annealer では `start`/`end` オプションを用意するかもしれません。
+- `class` の値の中の空白（複数行にわたるクラスリスト）を半角スペース 1 つに正規化するか、保持するか。
+- プロファイルをどう組み合わせるか（たとえば `extends: vue` と `bootstrap` のクラス順）。これはライブラリ固有の属性ルールにも使えます。
+
+
+
+---
+url: /annealer/ja/guide/design/library-profiles.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# ライブラリプロファイル
+
+:::info 状況
+計画段階です。以下の検出方針は決定済みですが、実装はまだです。
+:::
+
+annealer は、ライブラリ（UI キットや CSS フレームワーク）固有のルール設定に対応する予定です。これはコードの分岐を増やすのではなく、既存のプロファイルの仕組みを再利用します。
+
+- 属性グループ
+- 要素の種類ごとの `layout.selfClosing`
+- 正規化オプション
+- クラスの値の順序（[値の並べ替え](/annealer/ja/guide/design/value-ordering.md)を参照）
+
+ライブラリプロファイルがこれらを拡張・上書きできるよう、仕組みは汎用的でデータ駆動のまま保ちます。プロファイルの合成（`extends`）や、タグ・コンポーネント単位の上書きが必要になる見込みです。
+
+## 検出方針
+
+### パッケージ内の `annealer.yaml` で検出する
+
+パッケージのルートに `annealer.yaml` があれば、そのパッケージはライブラリプロファイルを提供しているとみなします。判定材料はこのファイルの有無だけです。パッケージ名の規約は使わず、パッケージの中身から推測もしません。
+
+### 既定では直接の依存関係のみ
+
+走査するのはプロジェクトの直接の依存関係だけです。推移的な依存関係は、ライブラリ作者が明示的にオプトインした場合にだけ含めます。たとえば Bootstrap ベースの UI キットは、自身の `annealer.yaml` で Bootstrap のプロファイルを引き継ぐことを宣言できます。
+
+依存関係ツリーの奥深くにパッケージがあるからといって、プロジェクトのマークアップがそのクラスを使っているとは限らないためです。
+
+### 検出と適用を分ける
+
+検出は候補を見つけて報告するだけです。プロファイルが適用されるのは、ユーザーが設定で明示的に指定したときだけです。
+
+依存関係をインストール・更新しただけで annealer の出力が変わることは、決してあってはなりません。
+
+## Bootstrap
+
+Bootstrap については、下書きのプロファイルを添えて仕組みを Bootstrap プロジェクトに提案し（v6 は開発中）、クラス順を Bootstrap 自身が持つようにする計画です。そのためには、まずプロファイル形式を安定させ、文書化する必要があります。
+
+
+
+---
+url: /annealer/ja/guide/design/decisions.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# 設計判断
+
+## アーキテクチャ
+
+```text
+annealer（コア）  純粋関数: format(input: &str, config: &Config)
+                    -> Result<String, FormatError>
+                  ファイル I/O なし。wasm32-unknown-unknown 向けにビルド可能。
+                  CSS/SCSS/Sass/Less の宣言順には malva を使用。
+
+anyl（CLI）       ファイル I/O と引数解析を担当し、コアを呼び出す。
+
+annealer（npm）   コアの WebAssembly ビルドと TypeScript ラッパー。
+```
+
+- **クレートは 1 つ。** 現時点ではコアと CLI を 1 つのクレート（`crates/annealer`）に置きます。早すぎる抽象化を避けるため、実際に必要になった時点でワークスペースに分割します。CLI が使う `clap` は既定の `cli` フィーチャーの裏にあるため、`--no-default-features` でライブラリを WebAssembly 向けにビルドできます。
+- **プロファイルはコードではなく YAML。** HTML、Vue、今後のプロファイルはすべてデータです。プロファイル形式は Rust の関数シグネチャと同じく公開 API なので、各プロファイルに `schemaVersion` を持たせます。
+- **厳格な検証。** 未知のキーはプロファイルの解析時にエラーになり、タイプミスにすぐ気付けます。エディター支援のために JSON Schema（draft-07）を用意しています。draft-07 で表現できない 2 つの規則（フォールバックグループがちょうど 1 つ、グループ名が一意）はローダーでのみ検査します。
+- **malva のバージョン指定は緩く**（`0.16`）。他のプロジェクトで採っているライブラリ依存の方針に合わせています。
+- **npm パッケージは WebAssembly バイナリを埋め込みます。** 別の `.wasm` ファイルを同梱せず、base64 で埋め込みます。圧縮前のサイズが約 33% 増える代わりに、`format()` が同期関数になり、バンドラーやローダーの設定も不要になります。
+
+## 実装中の判断
+
+1. **HTML プロファイルの順序。** 当初の表には、どれにも一致しない属性や `alt`/`title` の置き場所がありませんでした。合意した順序は id → class → 補足（`alt`、`title`、`placeholder`）→ 意味（`type`、`href`、`src`、`srcset`）→ キーと値（`name`、`value`、`content`）→ 寸法（`width`、`height`）→ その他（状態: `disabled`、`checked` など）→ ARIA → data → イベント です。Vue プロファイルも「その他の属性」の階層内で同じ順序を使います。
+2. **静的形式をバインド形式より前に置くのは `class` だけ。** その他の名前ではクラスタ内で書かれた順を保ちます。Vue は `style` を後の宣言が勝つ形でマージし、その他の重複では 1 つの値しか残さないためです。
+3. **`spreadSafe` グループ。** コンパイル時ディレクティブは `v-bind` のスプレッドオブジェクトとマージされないため、スプレッドをまたいで移動してよいものとします。それ以外は自分のセグメント内に留まります。
+4. **複数行のタグでは 1 行に 1 属性。** そうしないと、並べ替えで 1 行に 2 つの属性が並ぶことがあります。`vue/max-attributes-per-line` の複数行時の既定と同じで、`layout.oneAttributePerLine` で無効にできます。
+5. **Vue の階層 8 を分割。** `vue/attributes-order` と同じく、その他のディレクティブ → その他の属性 の順にします（`OTHER_DIRECTIVES` → `OTHER_ATTR`）。
+6. **`void: always` は `vue/html-self-closing` の既定（`html.void: never`）と異なります。** その ESLint ルールを残すプロジェクトでは、どちらかに合わせる必要があります。
+7. **`contentNewline` は HTML プロファイルでも有効。** ブロックレベルのコンテンツの先頭と末尾の空白は表示されず、表示されうる要素は `ignore` リストで除外しています。
+8. **ベンダープレフィックス付きの宣言は先頭に置く**（`vendorPrefix: start`）。標準プロパティが最後に宣言され、優先されるようにするためです。[スタイルシート](/annealer/ja/guide/concepts/stylesheets.md#vendor-prefixes-vendorprefix-start)を参照してください。
+
+## 解決済みの論点
+
+- **`v-model` と通常の `value`**: クラスタにしません。キー `v-model` は `value` と異なります。
+- **プロファイルの厳格さ**: 未知のキーは解析時にエラーになります。
+- **malva のバージョン**: 緩い範囲指定 `0.16`。
+
+## 残っている項目
+
+- malva が raffia 0.13 に上がったら追従する（malva 0.16 はまだ raffia 0.12 を使用）。
+- Svelte プロファイル
+- 静的な `class` 属性の[値の並べ替え](/annealer/ja/guide/design/value-ordering.md)（Tailwind の近似順、Bootstrap への提案）
+- [ライブラリプロファイル](/annealer/ja/guide/design/library-profiles.md)、プロファイルの合成（`extends`）、タグ・コンポーネント単位の上書き
+- 手書きのフィクスチャに加えて、実際のプロジェクトから取ったフィクスチャ
+
+
+
+---
+url: /annealer/ja/api/index.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# API 概要
+
+annealer は 1 つの Rust コアを、いくつかの方法で呼び出せます。
+
+| 入口              | 用途                                      | リファレンス                                           |
+| --------------- | --------------------------------------- | ------------------------------------------------ |
+| `anyl`          | コマンドラインや CI でのファイル整形                    | [CLI](/annealer/ja/api/cli.md)                   |
+| `annealer`（npm） | WebAssembly 経由で Node.js、ブラウザー、バンドラーから利用 | [JavaScript API](/annealer/ja/api/javascript.md) |
+| プロファイル YAML     | 属性順、レイアウト、スタイルシートのオプションのカスタマイズ          | [プロファイルリファレンス](/annealer/ja/api/profile.md)      |
+
+Rust の関数 `annealer::format(input, &Config)` は純粋関数で、ファイル I/O を行いません。そのため同じコアが CLI でも WebAssembly でも動きます。
+
+
+
+---
+url: /annealer/ja/api/cli.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# CLI
+
+```text
+anyl [OPTIONS] [FILES]...
+```
+
+各ファイルを整形して結果を出力します。ファイルを指定しなければ標準入力を読みます。
+
+## オプション
+
+| オプション                         | 説明                                                                            |
+| ----------------------------- | ----------------------------------------------------------------------------- |
+| `-w`, `--write`               | ファイルをその場で上書きします。`--check` とは併用できません。                                          |
+| `-c`, `--check`               | 変更が必要なファイルのパスを出力し、1 つでもあれば終了コード 1 で終了します。                                     |
+| `-p`, `--profile <PROFILE>`   | 組み込みプロファイル名（`html`、`vue`）またはプロファイル YAML ファイルのパス。既定は各ファイルの言語に対応する組み込みプロファイルです。 |
+| `-l`, `--language <LANGUAGE>` | 標準入力の言語: `html`（既定）、`vue`、`css`、`scss`、`sass`、`less`                          |
+| `-h`, `--help`                | ヘルプを表示します。                                                                    |
+| `-V`, `--version`             | バージョンを表示します。                                                                  |
+
+## 言語
+
+ファイルの言語は拡張子から判定します。
+
+| 拡張子                            | 言語      | 既定のプロファイル                     |
+| ------------------------------ | ------- | ----------------------------- |
+| `.html`、`.htm`                 | `html`  | `html`                        |
+| `.vue`                         | `vue`   | `vue`                         |
+| `.css`、`.scss`、`.sass`、`.less` | スタイルシート | `html`（その `stylesheet` セクション） |
+
+それ以外の拡張子は未対応として報告します。
+
+## 終了コード
+
+| コード | 意味                                                                  |
+| --- | ------------------------------------------------------------------- |
+| `0` | 成功。`--check` の場合は、変更が必要なファイルがない。                                    |
+| `1` | `--check` の場合に、変更が必要なファイルが 1 つ以上ある。                                 |
+| `2` | エラー: ファイルを読めない、未対応のファイル形式、不正なプロファイル、不正な入力、未知の `annealer-*` ディレクティブ。 |
+
+複数のファイルを指定した場合は、すべてを処理してエラーを個別に報告し、1 つでも失敗があれば `2` で終了します。
+
+## 例
+
+```bash
+anyl src/App.vue                          # 結果を出力
+anyl --write src/**/*.vue                 # その場で上書き
+anyl --check index.html                   # CI で使う
+anyl --profile my-profile.yaml page.html  # 独自プロファイル
+cat App.vue | anyl --language vue         # 標準入力
+```
+
+
+
+---
+url: /annealer/ja/api/javascript.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# JavaScript API
+
+```ts
+import { builtinProfile, format, init, languageFromPath } from 'annealer';
+```
+
+このパッケージは Rust コアの WebAssembly ビルドと TypeScript ラッパーです。Node.js、ブラウザー、UMD ビルドで動きます。
+
+WebAssembly バイナリ（約 1.3 MB、gzip 後 0.65 MB）は base64 でパッケージに埋め込まれています。アセットの読み込み設定は不要で、`format()` は同期関数です。
+
+## `format(input, options?)`
+
+```ts
+function format(input: string, options?: FormatOptions): string;
+```
+
+属性（HTML、Vue）または宣言（CSS、SCSS、Sass、Less）を並べ替えます。
+
+- `options.language`: 入力の言語。既定は `'html'`。
+- `options.profile`: 組み込みプロファイル名（`'html'`、`'vue'`）またはプロファイルの YAML テキスト。既定は `language` に対応する組み込みプロファイル。
+
+入力やプロファイルが不正な場合は `Error` を投げます。
+
+```ts
+format('<a title="Home" href="/" id="home">Home</a>');
+// => '<a id="home" title="Home" href="/">Home</a>'
+
+format(source, { language: 'vue' });
+format(source, { language: 'html', profile: yamlText });
+```
+
+## `init()`
+
+```ts
+function init(): Promise<void>;
+```
+
+WebAssembly モジュールを、処理をブロックせずに事前コンパイルします。省略可能で、呼ばなければ `format()` の初回呼び出し時に同期的にコンパイルします。
+
+## `languageFromPath(path)`
+
+```ts
+function languageFromPath(path: string): Language | undefined;
+```
+
+ファイル名やパスから言語を推定します（`.html`、`.htm`、`.vue`、`.css`、`.scss`、`.sass`、`.less`）。それ以外の拡張子では `undefined` を返します。
+
+## `builtinProfile(name)`
+
+```ts
+function builtinProfile(name: 'html' | 'vue'): string;
+```
+
+組み込みプロファイルの YAML テキストを返します。独自プロファイルを作る出発点として使えます。
+
+```ts
+const yaml = builtinProfile('vue').replace(
+  'oneAttributePerLine: true',
+  'oneAttributePerLine: false'
+);
+format(source, { language: 'vue', profile: yaml });
+```
+
+## 型
+
+```ts
+type Language = 'html' | 'vue' | 'css' | 'scss' | 'sass' | 'less';
+
+type FormatOptions = {
+  language?: Language;
+  profile?: string;
+};
+
+type Meta = {
+  version: string;
+  date: string;
+};
+```
+
+`Language`、`FormatOptions`、`Meta` は値としてもエクスポートされます。それぞれ拡張子と言語の対応表、既定のオプション、ビルド情報です。
+
+
+
+---
+url: /annealer/ja/api/profile.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# プロファイルリファレンス
+
+プロファイルは、属性順、レイアウト規則、スタイルシートのオプションを定める YAML ファイルです。組み込みプロファイルは [`crates/annealer/profiles/`](https://github.com/logue/annealer/tree/main/crates/annealer/profiles) にあります。
+
+```yaml
+# yaml-language-server: $schema=https://github.com/logue/annealer/raw/refs/heads/main/crates/annealer/schema/profile.schema.json
+schemaVersion: 1
+name: my-profile
+description: 独自の属性順
+
+normalize:
+  directiveShorthand: true
+
+layout:
+  closingBracketNewline: true
+  oneAttributePerLine: true
+  selfClosing:
+    void: always
+  contentNewline: {}
+
+groups:
+  - name: global
+    match: [id]
+  - name: class
+    match: [class]
+  - name: other
+    fallback: true
+  - name: events
+    match: ['on*']
+
+stylesheet:
+  declarationOrder: smacss
+  vendorPrefix: start
+```
+
+:::tip エディター支援
+JSON Schema（draft-07）は `crates/annealer/schema/profile.schema.json` にあります。上のモードラインと [YAML 拡張機能](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)を使えば、VS Code でプロファイルの検証と補完ができます。
+:::
+
+プロファイルのどこでも未知のキーはエラーになるため、タイプミスが見過ごされることはありません。
+
+## トップレベル
+
+| キー              | 型      | 必須 | 説明                                |
+| --------------- | ------ | -- | --------------------------------- |
+| `schemaVersion` | `1`    | ○  | プロファイル形式のバージョン                    |
+| `name`          | 文字列    | ○  | プロファイル名                           |
+| `description`   | 文字列    |    | 人間向けの概要                           |
+| `normalize`     | オブジェクト |    | 属性名の書き換え                          |
+| `layout`        | オブジェクト |    | 開始タグのレイアウト規則                      |
+| `groups`        | 配列     | ○  | 出力順に並べた属性グループ                     |
+| `stylesheet`    | オブジェクト |    | スタイルシートの整形。省略するとスタイルシートには手を加えません。 |
+
+## `normalize`
+
+分類の前に適用する書き換えです。
+
+| キー                        | 型   | 既定      | 説明                                                                |
+| ------------------------- | --- | ------- | ----------------------------------------------------------------- |
+| `directiveShorthand`      | 真偽値 | `false` | `v-bind:foo` → `:foo`、`v-on:click` → `@click`                     |
+| `hyphenateComponentProps` | 真偽値 | `false` | コンポーネントタグ上の camelCase の属性名 → kebab-case。SVG/MathML のネイティブ要素は除きます。 |
+
+## `layout`
+
+詳しくは[レイアウト](/annealer/ja/guide/features/layout.md)を参照してください。
+
+| キー                               | 型                                 | 既定                       | 説明                                           |
+| -------------------------------- | --------------------------------- | ------------------------ | -------------------------------------------- |
+| `closingBracketNewline`          | 真偽値                               | `false`                  | 複数行の開始タグの閉じ括弧を独立した行に置く                       |
+| `oneAttributePerLine`            | 真偽値                               | `false`                  | 複数行の開始タグで 1 行に 1 属性                          |
+| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`               | 空要素: `<br />` または `<br>`                     |
+| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`               | 空の非空要素（`<div />`）。Vue テンプレートのみ               |
+| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`               | 空のコンポーネント（`<MyComp />`）。Vue テンプレートのみ         |
+| `contentNewline`                 | オブジェクト                            | 無効                       | 複数行の要素のコンテンツを独立した行に置く。`{}` で既定値のまま有効         |
+| `contentNewline.ignore`          | 文字列の配列                            | `pre`、`textarea`、インライン要素 | 中身も含めて手を加えない要素。要素名は大文字小文字を区別せず、コンポーネント名は完全一致 |
+| `contentNewline.allowEmptyLines` | 真偽値                               | `false`                  | コンテンツの前後の空行を残す                               |
+
+## `groups`
+
+グループは出力順に並べます。フォールバックのグループはちょうど 1 つで、グループ名は一意でなければなりません。
+
+| キー           | 型                                      | 既定       | 説明                                                            |
+| ------------ | -------------------------------------- | -------- | ------------------------------------------------------------- |
+| `name`       | 文字列                                    | –        | 一意なグループ名。必須                                                   |
+| `match`      | 文字列の配列                                 | –        | パターン: 完全一致の名前、または `*` で終わるプレフィックス。`fallback: true` 以外では必須     |
+| `sort`       | `source` \| `alphabetical` \| `listed` | `source` | グループ内の順序: 書かれた順、キー順、`match` の順                                |
+| `fallback`   | 真偽値                                    | `false`  | どのパターンにも一致しない属性を受け取る                                          |
+| `spreadSafe` | 真偽値                                    | `false`  | このグループの属性は `v-bind="object"` のスプレッドをまたいで移動できる。コンパイル時ディレクティブ専用 |
+
+パターンは**正規化して小文字にしたキー**と照合します。`foo`/`:foo`/`v-bind:foo` は `foo`、`@click` は `v-on:click`、`#name` は `v-slot:name` になり、修飾子は除去されます。完全一致はどのプレフィックスよりも優先され、長いプレフィックスは短いものより優先されます。[属性順](/annealer/ja/guide/concepts/attribute-order.md)を参照してください。
+
+## `stylesheet`
+
+詳しくは[スタイルシート](/annealer/ja/guide/concepts/stylesheets.md)を参照してください。
+
+| キー                        | 型                                                     | 既定                | 説明                                                            |
+| ------------------------- | ----------------------------------------------------- | ----------------- | ------------------------------------------------------------- |
+| `declarationOrder`        | `smacss` \| `concentric` \| `alphabetical`            | –                 | プロパティの順序。指定しなければ宣言を並べ替えません。                                   |
+| `declarationOrderGroupBy` | `non-declaration` \| `non-declaration-and-empty-line` | `non-declaration` | 宣言を、個別にソートする区間にどう分けるか                                         |
+| `vendorPrefix`            | `alongside` \| `start`                                | `alongside`       | `start` にすると、ベンダープレフィックス付きの宣言を各区間の先頭にアルファベット順で置く              |
+| `styleAttribute`          | 真偽値                                                   | `false`           | 静的な `style` 属性内の宣言も並べ替える                                      |
+| `malva`                   | オブジェクト                                                | –                 | その他の [malva のオプション](https://malva.netlify.app/config/)をそのまま渡す |
+
+`stylesheet.malva` には、`printWidth`、`useTabs`、`indentWidth`、`lineBreak`、`hexCase`、`hexColorLength`、`quotes`、`trailingComma`、`formatComments`、`*.preferSingleLine` 系など malva 自身のオプションを書けます。`declarationOrder` と `declarationOrderGroupBy` は `malva` ではなく `stylesheet` 直下に書きます。未知の malva のキーはエラーになります。
+
+
+
+---
+url: /annealer/ja/index.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# annealer
+
+属性を意味の順に
+
+> HTML・Vue の属性とスタイルシートの宣言を、差し替え可能な YAML プロファイルに従って意味に基づき並べ替えます。
+
+[はじめに](/guide/start/introduction) | [GitHub](https://github.com/logue/annealer)
+
+## Features
+
+- [🧭 **意味に基づく属性順**](/guide/concepts/attribute-order): 属性をアルファベット順や入力順ではなく、役割（定義・状態・意味の補足・ARIA・データ・イベント）でグループ化します。
+- [🧩 **vue/attributes-order の上位互換**](/guide/concepts/attribute-order): Vue プロファイルは eslint-plugin-vue の既定順を引き継ぎ、同名クラスタリング、ARIA の細分化、素の HTML、スタイルシートに対応します。
+- [🎨 **malva によるスタイルシート整形**](/guide/concepts/stylesheets): CSS・SCSS・Sass・Less のプロパティ順は malva に委譲し、ベンダープレフィックス付きの宣言は先頭に置きます。
+- [📄 **差し替え可能な YAML プロファイル**](/api/profile): 並び順やレイアウト規則はコードではなくデータです。JSON Schema で検証され、未知のキーはエラーになります。
+- [🦀 **Rust コア・CLI・WebAssembly**](/api/): ファイル I/O を持たない純粋な Rust 関数、anyl CLI、同期的な format() を備えた npm パッケージを提供します。
+- [🛑 **無効化ディレクティブ**](/guide/features/disable-directives): annealer-disable / annealer-enable / annealer-disable-next-line コメントで、指定したコードを書いたとおりに保ちます。
+
+

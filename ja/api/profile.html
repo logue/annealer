@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ja">
+  <head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>プロファイルリファレンス - annealer</title>
+<script>{;var defaultLang = "en", langs = ["en","ja"];if (!/bot|spider|crawl|lighthouse/i.test(window.navigator.userAgent)) {;var firstVisitKey = 'rspress-visited', visited = localStorage.getItem(firstVisitKey);if (!visited) {;localStorage.setItem(firstVisitKey, '1');var targetLang = window.navigator.language.split('-')[0], { pathname, search } = window.location, base = "/annealer", cleanPathname = pathname.startsWith(base) ? pathname.slice(base.length) || '/' : pathname, pathSegments = cleanPathname.split('/').filter(Boolean), currentLang = langs.includes(pathSegments[0]) ? pathSegments[0] : defaultLang;if (langs.includes(targetLang) && targetLang !== currentLang) {;var newPathSegments = pathSegments.slice();if (targetLang === defaultLang) {;newPathSegments.splice(0, 1);} else if (currentLang === defaultLang) {;newPathSegments.splice(0, 0, targetLang);} else {;newPathSegments[0] = targetLang;};;var newPathname = '/' + newPathSegments.join('/'), trailingSlash = newPathname !== '/' && cleanPathname.endsWith('/') ? '/' : '';window.location['replace'](base + newPathname + trailingSlash + search);};};};}</script>
+<script>{;const saved = localStorage.getItem('rspress-theme-appearance');const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches;const defaultTheme = 'auto';const theme = saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : defaultTheme;const isDark = theme === 'auto' ? preferDark : theme === 'dark';document.documentElement.classList.toggle('dark', isDark);document.documentElement.classList.toggle('rp-dark', isDark);document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';}</script>
+<link href="/annealer/static/css/styles.108df18aec.css" rel="stylesheet">
+<link rel="preload" href="/annealer/static/js/async/route-55d272ca4d44.4a84e6ebdf.js" as="script">
+<script defer src="/annealer/static/js/styles.ff9ef37b07.js"></script>
+<script defer src="/annealer/static/js/lib-react.48eabcbdf3.js"></script>
+<script defer src="/annealer/static/js/lib-router.902c892e15.js"></script>
+<script defer src="/annealer/static/js/f.a937849c92.js"></script>
+<script defer src="/annealer/static/js/index.638421d4bb.js"></script>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="generator" content="Rspress v2.0.23">
+<link rel="alternate" hreflang="en" href="/annealer/api/profile.html">
+<link rel="alternate" hreflang="ja" href="/annealer/ja/api/profile.html">
+<link rel="alternate" type="text/markdown" href="/annealer/ja/api/profile.md">
+<link rel="describedby" href="/annealer/ja/llms.txt">
+<meta property="og:type" content="website">
+<meta property="og:title" content="プロファイルリファレンス - annealer">
+<meta name="description" content="annealer のプロファイル YAML 形式のリファレンス。すべてのキーの型と既定値。">
+<meta property="og:description" content="annealer のプロファイル YAML 形式のリファレンス。すべてのキーの型と既定値。"></head>
+
+  <body>
+    <div id="__rspress_root"><div class="rp-llms-hint" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0, 0, 0, 0);clip-path:inset(50%);white-space:nowrap;border:0">For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt, and this page is available as Markdown at /annealer/ja/api/profile.md.</div><header class="rp-nav"><div class="rp-nav__left"><div class="rp-nav__title"><a href="/annealer/ja/" class="rp-nav__title__link rp-link"><span>annealer</span></a></div></div><div class="rp-nav__right"><button class="rp-search-button"><div class="rp-search-button__content"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="none" viewBox="0 0 20 21" class="rp-search-button__icon"><path fill="currentColor" d="M8.333 1.913A6.667 6.667 0 0 1 15 8.58c0 1.54-.525 2.957-1.402 4.085l4.49 4.492a.834.834 0 0 1-1.177 1.178l-4.491-4.49a6.64 6.64 0 0 1-4.087 1.402 6.667 6.667 0 0 1 0-13.334m0 1.667a5 5 0 1 0 0 10 5 5 0 0 0 0-10"></path></svg><span class="rp-search-button__word">検索</span></div><div class="rp-search-button__hotkey" style="opacity:0"><span></span><span>K</span></div></button><div class="rp-search-button--mobile"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="none" viewBox="0 0 20 21"><path fill="currentColor" d="M8.333 1.913A6.667 6.667 0 0 1 15 8.58c0 1.54-.525 2.957-1.402 4.085l4.49 4.492a.834.834 0 0 1-1.177 1.178l-4.491-4.49a6.64 6.64 0 0 1-4.087 1.402 6.667 6.667 0 0 1 0-13.334m0 1.667a5 5 0 1 0 0 10 5 5 0 0 0 0-10"></path></svg></div><ul class="rp-nav-menu rp-nav-menu--right"><li class="rp-nav-menu__item"><a href="/annealer/ja/guide/start/introduction.html" class="rp-nav-menu__item__container rp-link">ガイド</a></li><li class="rp-nav-menu__item rp-nav-menu__item--active"><a href="/annealer/ja/api/index.html" class="rp-nav-menu__item__container rp-link">API</a></li><li class="rp-nav-menu__item"><a href="https://github.com/logue/annealer" target="_blank" class="rp-nav-menu__item__container rp-link">GitHub</a></li></ul><div class="rp-nav__others"><div class="rp-nav-menu__divider"></div><li class="rp-nav-menu__item"><div class="rp-nav-menu__item__container">日本語<svg width="1em" height="1em" viewBox="0 0 32 32" class="rp-nav-menu__item__icon"><path fill="currentColor" d="M16 22 6 12l1.4-1.4 8.6 8.6 8.6-8.6L26 12z"></path></svg></div><ul class="rp-hover-group rp-hover-group--hidden rp-hover-group--center"><li class="rp-hover-group__item" style="padding-left:8px" data-depth="0"><a href="/annealer/api/profile.html" class="rp-hover-group__item__link rp-link" aria-label="English" lang="en" hrefLang="en" rel="alternate">English</a></li><li class="rp-hover-group__item rp-hover-group__item--active" style="padding-left:8px" data-depth="0"><div class="rp-hover-group__item__link" lang="ja">日本語</div></li></ul></li><div class="rp-switch-appearance"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24" class="rp-switch-appearance__icon rp-switch-appearance__icon--sun"><path fill="currentColor" d="m7.001 15.848-1.226 1.226a.58.58 0 0 0 0 .818.58.58 0 0 0 .818 0l1.226-1.226a.58.58 0 0 0 0-.818.58.58 0 0 0-.818 0m-.352-8.735a.584.584 0 0 0 .825-.825L6.237 5.051a.584.584 0 0 0-.825.825zM5.011 11.07h-1.75a.584.584 0 0 0 0 1.167h1.75c.324 0 .584-.26.584-.583a.585.585 0 0 0-.584-.584m7.003-5.835c.324 0 .584-.26.584-.584V2.9a.58.58 0 0 0-.584-.584.58.58 0 0 0-.583.583V4.65c0 .323.262.584.583.584m5.616 1.621 1.226-1.225a.58.58 0 0 0 0-.818.58.58 0 0 0-.818 0l-1.226 1.225a.58.58 0 0 0 0 .818.576.576 0 0 0 .818 0m3.138 4.214h-1.75a.58.58 0 0 0-.584.584c0 .324.26.584.583.584h1.751a.584.584 0 1 0 0-1.167m-3.389 5.124a.584.584 0 0 0-.825.825l1.238 1.238a.584.584 0 0 0 .825-.826zm-5.365-9.795a5.256 5.256 0 0 0-5.257 5.258 5.256 5.256 0 0 0 5.257 5.257 5.256 5.256 0 0 0 5.257-5.257 5.256 5.256 0 0 0-5.257-5.258m0 11.675a.58.58 0 0 0-.583.583v1.751a.582.582 0 1 0 1.167 0v-1.75a.584.584 0 0 0-.584-.584"></path></svg><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" fill="currentColor" viewBox="0 0 19 19" class="rp-switch-appearance__icon rp-switch-appearance__icon--moon"><path fill="currentColor" d="M9.166 0a9.2 9.2 0 0 1 1.857.188.834.834 0 0 1 .042 1.623 4.47 4.47 0 1 0 5.457 5.457l.048-.135a.834.834 0 0 1 1.575.177q.186.902.188 1.856A9.168 9.168 0 1 1 9.166 0"></path></svg></div></div><button aria-label="mobile hamburger" class="rp-nav-hamburger rp-nav-hamburger__sm"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 21 21"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.667" d="M3.645 5.225h13.333M3.645 10.225h13.333M3.645 15.225h13.333"></path></svg></button><button aria-label="mobile hamburger" class="rp-nav-hamburger rp-nav-hamburger__md"><svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" fill="none" viewBox="0 0 21 21"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.667" d="M3.645 5.225h13.333M3.645 10.225h13.333M3.645 15.225h13.333"></path></svg><ul class="rp-hover-group rp-hover-group--hidden rp-hover-group--right"><div class="rp-nav-menu__others-mobile__container"><div class="rp-nav-hamburger__md__hover-group"><div class="rp-nav-screen-appearance"><div class="rp-nav-screen-appearance__left">テーマ</div><div class="rp-nav-screen-appearance__right"></div></div><div class="rp-nav-screen-langs"><div class="rp-nav-screen-langs__left">言語</div><div class="rp-nav-screen-langs__right">日本語<svg width="1em" height="1em" viewBox="0 0 32 32" class="rp-nav-screen-langs__icon "><path fill="currentColor" d="M16 22 6 12l1.4-1.4 8.6 8.6 8.6-8.6L26 12z"></path></svg></div></div><div class="rp-nav-screen-langs-group" style="display:grid;grid-template-rows:0fr;transition:grid-template-rows 0.2s ease-out"><div class="rp-nav-screen-langs-group__inner"><a href="/annealer/api/profile.html" class="rp-nav-screen-langs-group__item rp-link" hrefLang="en" lang="en" rel="alternate">English</a><span class="rp-nav-screen-langs-group__item rp-nav-screen-langs-group__item--active" aria-current="page" aria-disabled="true">日本語</span></div></div><div class="rp-nav-screen-divider"></div></div></div></ul></button></div></header><div class="rp-doc-layout__menu"><div class="rp-sidebar-menu"><button type="button" class="rp-sidebar-menu__left"><svg width="1em" height="1em" viewBox="0 0 32 32"><path fill="currentColor" d="M4 6h24v2H4zm0 18h24v2H4zm0-12h24v2H4zm0 6h24v2H4z"></path></svg><span>メニュー</span></button><button type="button" class="rp-sidebar-menu__right"><span class="rp-sidebar-menu__right__text">目次</span><svg width="14" height="14" class="rp-progress-circle"><circle cx="7" cy="7" r="6" stroke-linecap="round" fill="none" stroke="var(--rp-c-divider-light)" stroke-width="2"></circle><circle cx="7" cy="7" r="6" stroke-linecap="round" fill="none" stroke="var(--rp-c-brand)" stroke-width="2" stroke-dasharray="37.69911184307752" stroke-dashoffset="37.69911184307752" transform="rotate(-90 7 7)" style="transition:stroke-dashoffset 0.3s"></circle></svg><svg width="1em" height="1em" viewBox="0 0 32 32" class="rp-sidebar-menu__right__icon" style="transform:rotate(0deg);transition:transform 0.2s ease-out"><path fill="currentColor" d="M22 16 12 26l-1.4-1.4 8.6-8.6-8.6-8.6L12 6z"></path></svg></button></div></div><div class="rp-doc-layout__container"><aside class="rp-doc-layout__sidebar rp-scrollbar"><a href="/annealer/ja/api/index.html" class="rp-sidebar-item rp-link" style="padding-left:12px" data-depth="0"><div class="rp-sidebar-item__left"><span class="rp-doc">概要</span></div><div class="rp-sidebar-item__right"></div></a><a href="/annealer/ja/api/cli.html" class="rp-sidebar-item rp-link" style="padding-left:12px" data-depth="0"><div class="rp-sidebar-item__left"><span class="rp-doc">CLI</span></div><div class="rp-sidebar-item__right"></div></a><a href="/annealer/ja/api/javascript.html" class="rp-sidebar-item rp-link" style="padding-left:12px" data-depth="0"><div class="rp-sidebar-item__left"><span class="rp-doc">JavaScript API</span></div><div class="rp-sidebar-item__right"></div></a><a href="/annealer/ja/api/profile.html" class="rp-sidebar-item rp-sidebar-item--active rp-link" style="padding-left:12px" data-depth="0"><div class="rp-sidebar-item__left"><span class="rp-doc">プロファイルリファレンス</span></div><div class="rp-sidebar-item__right"></div></a></aside><div class="rp-doc-layout__doc"><main class="rp-doc-layout__doc-container"><div class="rp-doc rspress-doc"><!--$--><h1 class="rp-toc-include" id="プロファイルリファレンス"><a href="#プロファイルリファレンス" class="rp-header-anchor rp-link" aria-hidden="true">#</a>プロファイルリファレンス<!-- --> </h1><div class="rp-not-doc rp-llms-container"><button class="rp-not-doc rp-llms-button rp-llms-copy-button"><div class="rp-llms-copy-button__icon-wrapper"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-llms-copy-button__icon-success"><path fill="currentColor" d="m9.55 18-5.7-5.7 1.425-1.425L9.55 15.15l9.175-9.175L20.15 7.4z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-llms-copy-button__icon-copy"><path fill="currentColor" d="M20 8v12H8V8zm0-2H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2"></path><path fill="currentColor" d="M4 16H2V4a2 2 0 0 1 2-2h12v2H4Z"></path></svg></div><span>Markdown をコピー</span></button><button class="rp-llms-button rp-llms-view-options__trigger "><svg width="1em" height="1em" viewBox="0 0 32 32" class="rp-llms-view-options__arrow "><path fill="currentColor" d="M16 22 6 12l1.4-1.4 8.6 8.6 8.6-8.6L26 12z"></path></svg></button></div>
+<p>プロファイルは、属性順、レイアウト規則、スタイルシートのオプションを定める YAML ファイルです。組み込みプロファイルは <a href="https://github.com/logue/annealer/tree/main/crates/annealer/profiles" target="_blank" rel="noopener noreferrer" class="rp-link"><code>crates/annealer/profiles/</code></a> にあります。</p>
+<div class="rp-codeblock language-yaml"><div class="rp-codeblock__content"><div class="rp-codeblock__content__scroll-container rp-scrollbar rp-scrollbar--always"><pre class="shiki css-variables" style="background-color:var(--shiki-background);color:var(--shiki-foreground)" tabindex="0" data-lang="yaml"><code><span class="line"><span style="color:var(--shiki-token-comment)"># yaml-language-server: $schema=https://github.com/logue/annealer/raw/refs/heads/main/crates/annealer/schema/profile.schema.json</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">schemaVersion</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-token-constant)"> 1</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">name</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-token-string-expression)"> my-profile</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">description</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-token-string-expression)"> 独自の属性順</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">normalize</span><span style="color:var(--shiki-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">  directiveShorthand</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-token-constant)"> true</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">layout</span><span style="color:var(--shiki-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">  closingBracketNewline</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-token-constant)"> true</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">  oneAttributePerLine</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-token-constant)"> true</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">  selfClosing</span><span style="color:var(--shiki-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">    void</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-token-string-expression)"> always</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">  contentNewline</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-foreground)"> {}</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">groups</span><span style="color:var(--shiki-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--shiki-foreground)">  - </span><span style="color:var(--shiki-token-keyword)">name</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-token-string-expression)"> global</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">    match</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-foreground)"> [</span><span style="color:var(--shiki-token-string)">id</span><span style="color:var(--shiki-foreground)">]</span></span>
+<span class="line"><span style="color:var(--shiki-foreground)">  - </span><span style="color:var(--shiki-token-keyword)">name</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-token-string-expression)"> class</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">    match</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-foreground)"> [</span><span style="color:var(--shiki-token-string)">class</span><span style="color:var(--shiki-foreground)">]</span></span>
+<span class="line"><span style="color:var(--shiki-foreground)">  - </span><span style="color:var(--shiki-token-keyword)">name</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-token-string-expression)"> other</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">    fallback</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-token-constant)"> true</span></span>
+<span class="line"><span style="color:var(--shiki-foreground)">  - </span><span style="color:var(--shiki-token-keyword)">name</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-token-string-expression)"> events</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">    match</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-foreground)"> [</span><span style="color:var(--shiki-token-string-expression)">&#x27;on*&#x27;</span><span style="color:var(--shiki-foreground)">]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">stylesheet</span><span style="color:var(--shiki-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">  declarationOrder</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-token-string-expression)"> smacss</span></span>
+<span class="line"><span style="color:var(--shiki-token-keyword)">  vendorPrefix</span><span style="color:var(--shiki-token-keyword)">:</span><span style="color:var(--shiki-token-string-expression)"> start</span></span></code></pre></div><div class="rp-code-button-group"><button class="rp-code-button-group__button rp-code-wrap-button" title="コードの折り返しを切り替え" aria-label="コードの折り返しを切り替え"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-code-button-group__icon rp-code-button-group__icon--wrapped"><path fill="currentColor" d="M21 5H3v2h18zM3 19h7v-2H3zm0-6h15c1 0 2 .43 2 2s-1 2-2 2h-2v-2l-4 3 4 3v-2h2c2.95 0 4-1.27 4-4 0-2.72-1-4-4-4H3z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-code-button-group__icon rp-code-button-group__icon--wrap"><path fill="currentColor" d="M16 7H3V5h13zM3 19h13v-2H3zm19-7-4-3v2H3v2h15v2z"></path></svg></button><button class="rp-code-button-group__button rp-code-copy-button" title="コードをコピー"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-code-button-group__icon rp-code-copy-button__icon rp-code-copy-button__icon--copy"><path fill="currentColor" d="M20 8v12H8V8zm0-2H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2"></path><path fill="currentColor" d="M4 16H2V4a2 2 0 0 1 2-2h12v2H4Z"></path></svg><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="rp-code-button-group__icon rp-code-copy-button__icon rp-code-copy-button__icon--success"><path fill="currentColor" d="m9.55 18-5.7-5.7 1.425-1.425L9.55 15.15l9.175-9.175L20.15 7.4z"></path></svg></button></div></div></div>
+<div class="rp-callout rp-callout--tip"><div class="rp-callout__title">エディター支援</div><div class="rp-callout__content"><p>
+JSON Schema（draft-07）は <code>crates/annealer/schema/profile.schema.json</code> にあります。上のモードラインと <a href="https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml" target="_blank" rel="noopener noreferrer" class="rp-link">YAML 拡張機能</a>を使えば、VS Code でプロファイルの検証と補完ができます。</p></div></div>
+<p>プロファイルのどこでも未知のキーはエラーになるため、タイプミスが見過ごされることはありません。</p>
+<h2 class="rp-toc-include" id="トップレベル"><a href="#トップレベル" class="rp-header-anchor rp-link" aria-hidden="true">#</a>トップレベル</h2>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="rp-table-scroll-container rp-scrollbar"><table><thead><tr><th>キー</th><th>型</th><th>必須</th><th>説明</th></tr></thead><tbody><tr><td><code>schemaVersion</code></td><td><code>1</code></td><td>○</td><td>プロファイル形式のバージョン</td></tr><tr><td><code>name</code></td><td>文字列</td><td>○</td><td>プロファイル名</td></tr><tr><td><code>description</code></td><td>文字列</td><td></td><td>人間向けの概要</td></tr><tr><td><code>normalize</code></td><td>オブジェクト</td><td></td><td>属性名の書き換え</td></tr><tr><td><code>layout</code></td><td>オブジェクト</td><td></td><td>開始タグのレイアウト規則</td></tr><tr><td><code>groups</code></td><td>配列</td><td>○</td><td>出力順に並べた属性グループ</td></tr><tr><td><code>stylesheet</code></td><td>オブジェクト</td><td></td><td>スタイルシートの整形。省略するとスタイルシートには手を加えません。</td></tr></tbody></table></div>
+<h2 class="rp-toc-include" id="normalize"><a href="#normalize" class="rp-header-anchor rp-link" aria-hidden="true">#</a><code>normalize</code></h2>
+<p>分類の前に適用する書き換えです。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="rp-table-scroll-container rp-scrollbar"><table><thead><tr><th>キー</th><th>型</th><th>既定</th><th>説明</th></tr></thead><tbody><tr><td><code>directiveShorthand</code></td><td>真偽値</td><td><code>false</code></td><td><code>v-bind:foo</code> → <code>:foo</code>、<code>v-on:click</code> → <code>@click</code></td></tr><tr><td><code>hyphenateComponentProps</code></td><td>真偽値</td><td><code>false</code></td><td>コンポーネントタグ上の camelCase の属性名 → kebab-case。SVG/MathML のネイティブ要素は除きます。</td></tr></tbody></table></div>
+<h2 class="rp-toc-include" id="layout"><a href="#layout" class="rp-header-anchor rp-link" aria-hidden="true">#</a><code>layout</code></h2>
+<p>詳しくは<a href="/annealer/ja/guide/features/layout.html" class="rp-link">レイアウト</a>を参照してください。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="rp-table-scroll-container rp-scrollbar"><table><thead><tr><th>キー</th><th>型</th><th>既定</th><th>説明</th></tr></thead><tbody><tr><td><code>closingBracketNewline</code></td><td>真偽値</td><td><code>false</code></td><td>複数行の開始タグの閉じ括弧を独立した行に置く</td></tr><tr><td><code>oneAttributePerLine</code></td><td>真偽値</td><td><code>false</code></td><td>複数行の開始タグで 1 行に 1 属性</td></tr><tr><td><code>selfClosing.void</code></td><td><code>always</code> | <code>never</code> | <code>preserve</code></td><td><code>preserve</code></td><td>空要素: <code>&lt;br /&gt;</code> または <code>&lt;br&gt;</code></td></tr><tr><td><code>selfClosing.normal</code></td><td><code>always</code> | <code>never</code> | <code>preserve</code></td><td><code>preserve</code></td><td>空の非空要素（<code>&lt;div /&gt;</code>）。Vue テンプレートのみ</td></tr><tr><td><code>selfClosing.component</code></td><td><code>always</code> | <code>never</code> | <code>preserve</code></td><td><code>preserve</code></td><td>空のコンポーネント（<code>&lt;MyComp /&gt;</code>）。Vue テンプレートのみ</td></tr><tr><td><code>contentNewline</code></td><td>オブジェクト</td><td>無効</td><td>複数行の要素のコンテンツを独立した行に置く。<code>{}</code> で既定値のまま有効</td></tr><tr><td><code>contentNewline.ignore</code></td><td>文字列の配列</td><td><code>pre</code>、<code>textarea</code>、インライン要素</td><td>中身も含めて手を加えない要素。要素名は大文字小文字を区別せず、コンポーネント名は完全一致</td></tr><tr><td><code>contentNewline.allowEmptyLines</code></td><td>真偽値</td><td><code>false</code></td><td>コンテンツの前後の空行を残す</td></tr></tbody></table></div>
+<h2 class="rp-toc-include" id="groups"><a href="#groups" class="rp-header-anchor rp-link" aria-hidden="true">#</a><code>groups</code></h2>
+<p>グループは出力順に並べます。フォールバックのグループはちょうど 1 つで、グループ名は一意でなければなりません。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="rp-table-scroll-container rp-scrollbar"><table><thead><tr><th>キー</th><th>型</th><th>既定</th><th>説明</th></tr></thead><tbody><tr><td><code>name</code></td><td>文字列</td><td>–</td><td>一意なグループ名。必須</td></tr><tr><td><code>match</code></td><td>文字列の配列</td><td>–</td><td>パターン: 完全一致の名前、または <code>*</code> で終わるプレフィックス。<code>fallback: true</code> 以外では必須</td></tr><tr><td><code>sort</code></td><td><code>source</code> | <code>alphabetical</code> | <code>listed</code></td><td><code>source</code></td><td>グループ内の順序: 書かれた順、キー順、<code>match</code> の順</td></tr><tr><td><code>fallback</code></td><td>真偽値</td><td><code>false</code></td><td>どのパターンにも一致しない属性を受け取る</td></tr><tr><td><code>spreadSafe</code></td><td>真偽値</td><td><code>false</code></td><td>このグループの属性は <code>v-bind=&quot;object&quot;</code> のスプレッドをまたいで移動できる。コンパイル時ディレクティブ専用</td></tr></tbody></table></div>
+<p>パターンは<strong>正規化して小文字にしたキー</strong>と照合します。<code>foo</code>/<code>:foo</code>/<code>v-bind:foo</code> は <code>foo</code>、<code>@click</code> は <code>v-on:click</code>、<code>#name</code> は <code>v-slot:name</code> になり、修飾子は除去されます。完全一致はどのプレフィックスよりも優先され、長いプレフィックスは短いものより優先されます。<a href="/annealer/ja/guide/concepts/attribute-order.html" class="rp-link">属性順</a>を参照してください。</p>
+<h2 class="rp-toc-include" id="stylesheet"><a href="#stylesheet" class="rp-header-anchor rp-link" aria-hidden="true">#</a><code>stylesheet</code></h2>
+<p>詳しくは<a href="/annealer/ja/guide/concepts/stylesheets.html" class="rp-link">スタイルシート</a>を参照してください。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="rp-table-scroll-container rp-scrollbar"><table><thead><tr><th>キー</th><th>型</th><th>既定</th><th>説明</th></tr></thead><tbody><tr><td><code>declarationOrder</code></td><td><code>smacss</code> | <code>concentric</code> | <code>alphabetical</code></td><td>–</td><td>プロパティの順序。指定しなければ宣言を並べ替えません。</td></tr><tr><td><code>declarationOrderGroupBy</code></td><td><code>non-declaration</code> | <code>non-declaration-and-empty-line</code></td><td><code>non-declaration</code></td><td>宣言を、個別にソートする区間にどう分けるか</td></tr><tr><td><code>vendorPrefix</code></td><td><code>alongside</code> | <code>start</code></td><td><code>alongside</code></td><td><code>start</code> にすると、ベンダープレフィックス付きの宣言を各区間の先頭にアルファベット順で置く</td></tr><tr><td><code>styleAttribute</code></td><td>真偽値</td><td><code>false</code></td><td>静的な <code>style</code> 属性内の宣言も並べ替える</td></tr><tr><td><code>malva</code></td><td>オブジェクト</td><td>–</td><td>その他の <a href="https://malva.netlify.app/config/" target="_blank" rel="noopener noreferrer" class="rp-link">malva のオプション</a>をそのまま渡す</td></tr></tbody></table></div>
+<p><code>stylesheet.malva</code> には、<code>printWidth</code>、<code>useTabs</code>、<code>indentWidth</code>、<code>lineBreak</code>、<code>hexCase</code>、<code>hexColorLength</code>、<code>quotes</code>、<code>trailingComma</code>、<code>formatComments</code>、<code>*.preferSingleLine</code> 系など malva 自身のオプションを書けます。<code>declarationOrder</code> と <code>declarationOrderGroupBy</code> は <code>malva</code> ではなく <code>stylesheet</code> 直下に書きます。未知の malva のキーはエラーになります。</p><!--/$--></div><footer class="rp-doc-footer"><div class="rp-doc-footer__edit"></div><div class="rp-doc-footer__divider"></div><div class="rp-prev-next-page"><a href="/annealer/ja/api/javascript.html" class="rp-prev-next-page__item rp-prev-next-page__prev rp-link"><span class="rp-prev-next-page__item__desc">前のページ</span><span class="rp-prev-next-page__item__title"><svg width="1em" height="1em" viewBox="0 0 32 32" class="rp-prev-next-page__icon rp-prev-next-page__rotate_180"><path fill="currentColor" d="M22 16 12 26l-1.4-1.4 8.6-8.6-8.6-8.6L12 6z"></path></svg><span>JavaScript API</span></span></a><div class="rp-prev-next-page__placeholder"></div></div></footer></main></div><aside class="rp-doc-layout__outline rp-scrollbar"><div class="rp-outline"><div class="rp-outline__title">目次<svg width="14" height="14" class="rp-progress-circle"><circle cx="7" cy="7" r="6" stroke-linecap="round" fill="none" stroke="var(--rp-c-divider-light)" stroke-width="2"></circle><circle cx="7" cy="7" r="6" stroke-linecap="round" fill="none" stroke="var(--rp-c-brand)" stroke-width="2" stroke-dasharray="37.69911184307752" stroke-dashoffset="37.69911184307752" transform="rotate(-90 7 7)" style="transition:stroke-dashoffset 0.3s"></circle></svg></div><nav class="rp-outline__toc rp-scrollbar"><a href="#トップレベル" class="rp-toc-item rp-link" title="トップレベル" style="padding-left:0" data-depth="0"><span class="rp-toc-item__text rp-doc">トップレベル</span></a><a href="#normalize" class="rp-toc-item rp-link" title="normalize" style="padding-left:0" data-depth="0"><span class="rp-toc-item__text rp-doc"><code>normalize</code></span></a><a href="#layout" class="rp-toc-item rp-link" title="layout" style="padding-left:0" data-depth="0"><span class="rp-toc-item__text rp-doc"><code>layout</code></span></a><a href="#groups" class="rp-toc-item rp-link" title="groups" style="padding-left:0" data-depth="0"><span class="rp-toc-item__text rp-doc"><code>groups</code></span></a><a href="#stylesheet" class="rp-toc-item rp-link" title="stylesheet" style="padding-left:0" data-depth="0"><span class="rp-toc-item__text rp-doc"><code>stylesheet</code></span></a></nav><div class="rp-outline__divider"></div><div class="rp-outline__bottom"></div></div></aside></div></div>
+    <div id="__rspress_modal_container"></div>
+  </body>
+</html>

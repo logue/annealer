@@ -1,0 +1,41 @@
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# 無効化ディレクティブ
+
+サードパーティのスニペットや、意図的に残している従来の並び順など、書かれたとおりの形を保つ必要があるコードもあります。コメントで、そのコードに対して annealer を無効にできます。
+
+```html
+<!-- annealer-disable -->
+<!-- annealer-enable -->
+<!-- annealer-disable-next-line: [理由] -->
+```
+
+```css
+/* annealer-disable */
+/* annealer-enable */
+/* annealer-disable-next-line: [理由] */
+```
+
+## 規則
+
+- **ブロックコメントのみです。** CSS には行コメントがないため、`//` には対応しません。
+- **`annealer-disable`** は、それ以降 `annealer-enable` または文書の末尾までのすべてを対象にします。文書の先頭に置けばファイル全体が変更されません。
+- **`annealer-disable-next-line`** は、次の行で始まる構文を対象にします。
+  - 開始タグ（複数行にわたる場合もタグ全体。`<style>` 要素ならその中身も）
+  - CSS の文（宣言、またはルール全体）
+- **`:` の後の理由は任意**で、annealer は内容を無視します。
+- **対象のコードは書かれたとおり、その位置のまま残します。** スタイルシートでは、周りの宣言がソートされても、対象の宣言は元の位置に留まります。
+- **適用範囲:** マークアップのコメントはマークアップ（と `<style>` 要素全体）に、CSS のコメントはそれが書かれたスタイルシートの中に適用されます。
+- **未知のディレクティブはエラーです。** `annealer-` で始まるのに既知のディレクティブでないコメント（たとえばタイプミスの `annealer-disabel`）は、無視されずに実行が失敗します。
+
+```html
+<!-- annealer-disable-next-line: ベンダーのドキュメントからコピー -->
+<a href="/" id="vendor-link">書かれたとおりに残る</a>
+<a href="/" id="home">並べ替えられる</a>
+```
+
+## 実装メモ（スタイルシート）
+
+malva 独自の無視コメント（`malva-ignore`）は流用できません。`: 理由` の形式を受け付けず、ソートでは無視したはずの宣言も移動してしまうためです。代わりに annealer は、malva を呼ぶ前に対象の文を内部マーカーで印付けし、後でマーカーを取り除きます。
+
+Sass（インデント構文）には `;` がないため、マーカーは独立した行に置きます。malva は Sass では、独立した行にある無視コメントしか認識しないためです。

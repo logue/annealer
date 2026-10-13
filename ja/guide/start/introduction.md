@@ -1,0 +1,90 @@
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# はじめに
+
+annealer は、HTML と Vue テンプレートの属性を意味に基づいて並べ替えるフォーマッターです。スタイルシート（CSS・SCSS・Sass・Less）の宣言も並べ替えます。並び順はハードコードではなく、差し替え可能な YAML プロファイルで定義します。
+
+```html
+<!-- 入力 -->
+<a title="Home" href="/" id="home">Home</a>
+
+<!-- 出力（html プロファイル） -->
+<a id="home" title="Home" href="/">Home</a>
+```
+
+:::warning 開発中
+annealer は開発中です。npm パッケージは未公開で、プロファイル形式も安定版として宣言するまでは変更される可能性があります。
+:::
+
+## 属性順が重要な理由
+
+### 並び順は見た目の問題ではなく、コードレビューの問題
+
+複数の開発者が同じコンポーネントを時間をかけて編集すると、属性は追加・削除・書き換えされます。決まった規則がないと属性の並びが入れ替わり、実際には変わっていない行まで差分に含まれます。規則に基づく安定した並び順にすれば、差分は本当に変わった箇所だけになり、レビューの負担が減ります。
+
+### 属性ごとに意味の重みが違う
+
+HTML の属性は、順序のない文字列の集まりではありません。
+
+- 要素が**何であるか**を定義するもの（`is`、コンポーネント名）
+- **状態や振る舞い**を制御するもの（`v-if`、`v-model`、`disabled`、`width`/`height`）
+- 人間の読み手に向けて**意味を補足する**もの（`title`、`alt`）
+- 支援技術などの外部システムに**意味を伝える**もの（`aria-*`）
+
+アルファベット順や入力順のままでは、この構造が見えなくなります。annealer は要素の意味構造がソース上で読み取れるように属性を並べます。
+
+このグループ分けは恣意的な好みではありません。WAI-ARIA 仕様自体が `aria-*` 属性を _プロパティ_（使用中に変化しない）と _ステート_（使用中に変化する）に分けており、annealer はこの区別を利用しています。
+
+### スタイルシートも同じように扱う
+
+CSS のプロパティにも、レイアウト・外観・状態に応じた表示といった役割があります。「意味の順に並べる」という原則は宣言の順序にも当てはまります。
+
+## `vue/attributes-order` との関係
+
+Vue.js スタイルガイドはすでに属性の優先順位を定めており、eslint-plugin-vue がそれを `vue/attributes-order` として実装しています。annealer の Vue プロファイルは同じ既定順から始まるため、ESLint から移行するプロジェクトでも同じ結果が得られます。
+
+その上で annealer は次の点を追加します。
+
+- **同名クラスタリング**: 同じ属性の静的形式とバインド形式をまとめます（`class` の隣に `:class`）。
+- **ARIA の細分化**: WAI-ARIA のプロパティ／ステートの区別に従い、role → 名前 → 説明 → プロパティ → ステートの順に並べます。
+- **素の HTML への対応**: Vue テンプレートを使わないプロジェクトにも使えます。
+- **スタイルシートの宣言順**: [malva](https://github.com/g-plane/malva) に委譲します。
+
+annealer は `vue/attributes-order` と競合するものではなく、その設計を引き継いで拡張したものです。ESLint を rslint や oxlint に置き換えるチームにとっては、この機能を引き続き使うための後継になります。
+
+## 新しいツールが必要な理由
+
+Biome、rslint、oxlint、oxfmt、markup_fmt を検討しましたが、Vue/HTML の属性を意味に基づいて並べ替えるものはありませんでした。
+
+| ツール                               | 状況                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------- |
+| Biome（`useSortedAttributes`、HTML） | 分類が固定で文書化されていない。`id` などディレクティブ以外の属性を Vue スタイルガイドどおりに配置しない。既知の不具合（属性の重複・欠落）と基盤を共有している。 |
+| rslint                            | Vue に対応する予定がない（メンテナーの判断）。                                                             |
+| oxlint                            | Vue のルールは正しさの検査のみで、属性順のルールはない。                                                        |
+| oxfmt                             | 設計上、テンプレートのマークアップを扱えない。                                                               |
+| markup_fmt                        | Vue/Svelte/Astro のテンプレートを整形できるが、属性を並べ替えるオプションはない。                                     |
+
+CSS のプロパティ順だけは例外で、malva がすでに設定可能な `declarationOrder` を持っているため、annealer はそれに委譲します。**annealer が新たに提供するのは、意味に基づく属性のグループ化です。それ以外をゼロから作る必要はありません。**
+
+## 対象範囲
+
+- HTML と Vue 3 SFC の `<template>` ブロックにおける属性の並べ替え
+- 属性名の正規化: `v-bind:` → `:`、`v-on:` → `@`、コンポーネントの props の camelCase → kebab-case
+- 複数行タグのレイアウト規則（`vue/html-closing-bracket-newline`、`vue/max-attributes-per-line`（複数行）、`vue/html-self-closing`、`vue/multiline-html-element-content-newline` 相当）
+- `<style>` ブロックと単体ファイルにおける CSS/SCSS/Sass/Less の宣言順（malva 経由）
+- 静的な `style` 属性内の宣言順（オプトイン）
+- マークアップとスタイルシートのコメントによる[無効化ディレクティブ](/annealer/ja/guide/features/disable-directives.md)
+- 予定: 静的な `class` 属性の[値の並べ替え](/annealer/ja/guide/design/value-ordering.md)と[ライブラリプロファイル](/annealer/ja/guide/design/library-profiles.md)
+- Svelte は最初のリリースには含めません。プロファイルベースの設計なので、後から作り直しなしで追加できる見込みです。
+
+## 対象外
+
+- テキストやインデントの再整形。行幅とインデントは周辺のフォーマッター（`rs fmt`、Prettier など）に任せます。
+- Vue 2 の構文（`.sync`、`.native` など）
+- HTML/CSS の汎用的な検証
+- 非推奨・廃止されたマークアップ（`<xmp>`、`<center>`、`<font>`、`<marquee>`、`bgcolor` など）への対処。annealer は警告・削除・置換を一切しません。周囲の文書を正しく整形するのに必要な範囲でだけ解析します（たとえば `<xmp>` の中身は生テキストなので、中のタグには手を加えません）。検出はリンターやバリデーターの役割です。
+
+## 次のステップ
+
+- [使い方](/annealer/ja/guide/start/getting-started.md): CLI または JavaScript から annealer を実行します。
+- [属性順](/annealer/ja/guide/concepts/attribute-order.md): 属性の分類と並べ替えの仕組みです。
