@@ -8,13 +8,13 @@ This project uses Rstack CLI as its JS toolchain:
 
 ## Setup & Overview
 
-- **Build tool**: Rslib (for build library), Rsbuild (for demo site)
-- **Linter**: Rslint and Prettir
+- **Build tools**: Rstack (rslib for library, rsbuild for demo, rspress for documantation site)
+- **Linter**: Rslint and Prettier
 - **Testing**: Rstest
 - **Language**: TypeScript 7
 - **Package manager**: pnpm (do not use npm or yarn)
 
-**Last updated**: 2026-09-25
+**Last updated**: 2026-10-12
 **Verified with**: `package.json` in this repository
 
 ### Tool Versions
@@ -24,7 +24,7 @@ See `package.json` for authoritative dependency versions.
 This guide assumes:
 
 - TypeScript 7.0.2 or later
-- rstack 0.8.0 or later
+- rstack 0.8.3 or later
 
 **If you encounter version-related issues, check `package.json` directly—it is the source of truth.**
 
@@ -38,7 +38,7 @@ This guide assumes:
 Recommended extensions are listed in `.vscode/extensions.json`.
 Formatter and linter are configured in `.vscode/settings.json`:
 
-- Default formatter: **Biome**
+- Default formatter: **Prettier**
 - Format on save: enabled
 - Auto-fix on save: Rslint
 
@@ -57,17 +57,22 @@ demo application, tests, and linting:
 - **Rsbuild** - Builds the demo application
   - Command: `pnpm run build:demo`
   - Output: `demo/` (for manual testing and validation)
+- **Rspress** - Builds the documentation site
+  - Source: `src-docs/`
+  - Command: `pnpm run build:docs`
+  - Output: `docs/`
 - **Rstest** - Runs the test suite
   - Command: `pnpm run test`
-- **Rslint and Biome** - Lints and formats the project
+- **Rslint and Prettier** - Lints and formats the project
   - Command: `pnpm run lint`
 
 All tool configuration is defined in `rstack.config.ts` through
-`define.app`, `define.lib`, `define.test`, and `define.lint`.
+`define.app`, `define.doc`, `define.lib`, `define.test`, and `define.lint`.
 TypeScript compiler options remain separated by use case:
 
 - `tsconfig.rslib.json` - Library source and declaration generation
 - `tsconfig.rsbuild.json` - Demo application
+- `tsconfig.rspress.json` - Documentation site and theme
 - `tsconfig.rstest.json` - Tests
 
 ### Development Workflow
@@ -76,10 +81,16 @@ TypeScript compiler options remain separated by use case:
 - `pnpm run build` - Build the library for production
 - `pnpm run build:demo` - Build the demo application
 - `pnpm run preview` - Preview the built demo application
+- `pnpm run dev:docs` - Start the Rspress documentation server
+- `pnpm run build:docs` - Build the documentation into `docs/`
+- `pnpm run preview:docs` - Preview the built documentation site
 
 ## Commands
 
 - `pnpm run dev` - Start the demo development server with hot reload
+- `pnpm run dev:docs` - Start the Rspress documentation server
+- `pnpm run build:docs` - Build the documentation into `docs/`
+- `pnpm run preview:docs` - Preview the built documentation site
 - `pnpm run lint` - Lint and format all code (Biome + Rslint)
 - `pnpm run analyze` - Analyze library build artifacts
 - `pnpm run test` - Run tests at once
@@ -93,11 +104,14 @@ Use Rsdoctor analysis internally to support evidence-based bundle optimization.
 Keep this workflow read-only unless the user explicitly asks for setup or code
 changes.
 
-- First locate a real `rsdoctor-data.json` in `dist/`, `output/`, `static/`,
-  `.rsdoctor/`, or via one bounded `rg --files` search excluding
-  `node_modules` and `.git`.
-- Do not run `rsdoctor-agent` when the data file is missing. Ask for its path,
-  or generate it with `pnpm run analyze` when generation is required.
+- First check a user-provided or known path for a real `rsdoctor-data.json`. If
+  no path is available and a report needs to be generated, run
+  `pnpm run analyze` before searching. Since `.rstack/` is gitignored, use
+  `rg --hidden --no-ignore --files .rstack` to locate the generated file;
+  ordinary `rg --files` will omit it.
+- Do not run `rsdoctor-agent` until the data file exists. If it is missing, ask
+  for its path or generate it with `pnpm run analyze` when generation is
+  required.
 - `rsdoctor` from `@rsdoctor/cli` is only the browser viewer. It is not a
   substitute for the data-fetching `rsdoctor-agent` from
   `@rsdoctor/agent-cli`.
@@ -106,7 +120,7 @@ changes.
   For plugin versions below 1.5.11, configure brief JSON output instead of
   using `RSDOCTOR_OUTPUT=json`.
 - Validate that the generated data is valid JSON before analysis. A
-  `.rsdoctor/manifest.json` file alone is only a viewer index.
+  `.rstack/.rsdoctor/manifest.json` file alone is only a viewer index.
 - Fetch only the default evidence first: build cost, top assets, top packages,
   duplicate packages, cross-chunk duplication, and retained tree-shaking
   modules. Bound output with filters, pagination, and limits.
@@ -119,6 +133,14 @@ changes.
 
 For command details and version-specific generation rules, read
 `.agents/skills/rsdoctor-analysis/SKILL.md` and its references.
+
+### Rspress Documentation
+
+The documentation site is configured with `define.doc()` in `rstack.config.ts`.
+Its source root is `src-docs/` and its generated output is `docs/`; keep these
+paths aligned with the Rspress config and the package scripts. When updating the
+documentation site, follow `.agents/skills/rspress-docs-generator/SKILL.md` and
+validate changes with `pnpm run build:docs`.
 
 ### Directory Structure & File Organization
 

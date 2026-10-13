@@ -1,42 +1,35 @@
 # Dependencies
-.claude/
-.pnp
-.pnp.js
 node_modules/
 
 # Build / Cache
 .cache
+.cargo/config.toml
+.claude
 .data
 .mf
 .nitro
 .nuxt
 .output
-
-# Test Report
-coverage/
-reports/
-test-results/
+.pnpm/crates/
+.rstack
 
 # Production / Build output
-target/
 dist/
 docs/
 demo/
 storybook-static/
+target/
+
+# Test Report
+coverage/
+e2e/
+playwright-report/
+reports/
+test-results/
 
 # Logs
 logs
 *.log
-
-# Runtime data
-.cargo/config.toml
-.pnpm/crates/
-.rstack
-.rspack-profile-*
-*.pid
-*.pid.lock
-*.seed
-pids
 
 # Environment
 .env
@@ -50,12 +43,6 @@ pids
 # pnpm-workspace.yaml # as you need to commit this file for reproducible builds
 
 # IDE
-.idea
-*.iml
-*.sublime-project
-*.sublime-workspace
-*.swo
-*.swp
 .vscode/*
 !.vscode/extensions.json
 !.vscode/mcp.json
@@ -65,5 +52,4 @@ pids
 /local
 .DS_Store
 *.local
-*.log*
 Thumbs.db
