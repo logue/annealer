@@ -9,8 +9,9 @@
 - [Attribute order](/annealer/guide/concepts/attribute-order.md): How annealer tokenizes start tags, classifies attributes into groups, clusters same-name attributes, respects v-bind spreads, and normalizes names.
 - [Stylesheets](/annealer/guide/concepts/stylesheets.md): How annealer orders declarations in CSS, SCSS, Sass and Less through malva, where vendor-prefixed declarations go, and the opt-in style attribute support.
 - [Layout](/annealer/guide/features/layout.md): Layout rules for multiline start tags, self-closing elements and element content, equivalent to the matching eslint-plugin-vue rules.
+- [Class order](/annealer/guide/features/class-order.md): Ordering the classes of static class attributes with a swappable class order profile, with a built-in Tailwind CSS order that matches eslint-plugin-tailwindcss.
 - [Disable directives](/annealer/guide/features/disable-directives.md): Comments that switch annealer off for a region or for the next line, in markup and in stylesheets.
-- [Value ordering](/annealer/guide/design/value-ordering.md): Planned ordering of tokens inside static class attributes, defined by library-specific profiles such as Tailwind and Bootstrap.
+- [Value ordering](/annealer/guide/design/value-ordering.md): Principles behind ordering the tokens inside static class attributes with library-specific class order profiles, and what is still open.
 - [Library profiles](/annealer/guide/design/library-profiles.md): Planned library-specific profiles, and the agreed policy for discovering them in a project's dependencies.
 - [Design decisions](/annealer/guide/design/decisions.md): Architecture of annealer and the design decisions made during implementation, with their reasons.
 
@@ -18,5 +19,5 @@
 
 - [API Overview](/annealer/api/index.md): Entry points to annealer, the anyl CLI, the JavaScript API, and the YAML profile format.
 - [CLI](/annealer/api/cli.md): Options, input languages and exit codes of the anyl command-line tool.
-- [JavaScript API](/annealer/api/javascript.md): The annealer npm package, format(), init(), languageFromPath(), builtinProfile() and the exported types.
+- [JavaScript API](/annealer/api/javascript.md): The annealer npm package, format(), init(), languageFromPath(), builtinProfile(), builtinClassOrder() and the exported types.
 - [Profile reference](/annealer/api/profile.md): Reference for the annealer profile YAML format, with every key, its type and its default.

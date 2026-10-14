@@ -3,12 +3,18 @@
 # JavaScript API
 
 ```ts
-import { builtinProfile, format, init, languageFromPath } from 'annealer';
+import {
+  builtinClassOrder,
+  builtinProfile,
+  format,
+  init,
+  languageFromPath
+} from 'annealer';
 ```
 
 このパッケージは Rust コアの WebAssembly ビルドと TypeScript ラッパーです。Node.js、ブラウザー、UMD ビルドで動きます。
 
-WebAssembly バイナリ（約 1.3 MB、gzip 後 0.65 MB）は base64 でパッケージに埋め込まれています。アセットの読み込み設定は不要で、`format()` は同期関数です。
+WebAssembly バイナリ（約 1.5 MB、gzip 後 0.7 MB）は base64 でパッケージに埋め込まれています。アセットの読み込み設定は不要で、`format()` は同期関数です。
 
 ## `format(input, options?)`
 
@@ -20,6 +26,7 @@ function format(input: string, options?: FormatOptions): string;
 
 - `options.language`: 入力の言語。既定は `'html'`。
 - `options.profile`: 組み込みプロファイル名（`'html'`、`'vue'`）またはプロファイルの YAML テキスト。既定は `language` に対応する組み込みプロファイル。
+- `options.classOrder`: 組み込みのクラス順の名前（`'tailwind'`）またはクラス順の YAML テキスト。静的な `class` 属性のクラスを並べ替え、プロファイルの `classOrder` より優先されます。既定ではクラスは元の順のままです。[クラス順](/annealer/ja/guide/features/class-order.md)を参照してください。
 
 入力やプロファイルが不正な場合は `Error` を投げます。
 
@@ -29,6 +36,7 @@ format('<a title="Home" href="/" id="home">Home</a>');
 
 format(source, { language: 'vue' });
 format(source, { language: 'html', profile: yamlText });
+format(source, { language: 'vue', classOrder: 'tailwind' });
 ```
 
 ## `init()`
@@ -63,6 +71,14 @@ const yaml = builtinProfile('vue').replace(
 format(source, { language: 'vue', profile: yaml });
 ```
 
+## `builtinClassOrder(name)`
+
+```ts
+function builtinClassOrder(name: 'tailwind'): string;
+```
+
+組み込みのクラス順の YAML テキストを返します。独自のクラス順の出発点として使えます。
+
 ## 型
 
 ```ts
@@ -71,6 +87,7 @@ type Language = 'html' | 'vue' | 'css' | 'scss' | 'sass' | 'less';
 type FormatOptions = {
   language?: Language;
   profile?: string;
+  classOrder?: string;
 };
 
 type Meta = {

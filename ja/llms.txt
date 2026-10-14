@@ -9,8 +9,9 @@
 - [属性順](/annealer/ja/guide/concepts/attribute-order.md): annealer が開始タグを字句解析し、属性をグループに分類し、同名属性をまとめ、v-bind スプレッドを尊重し、属性名を正規化する仕組み。
 - [スタイルシート](/annealer/ja/guide/concepts/stylesheets.md): annealer が malva を通じて CSS・SCSS・Sass・Less の宣言を並べ替える方法、ベンダープレフィックス付き宣言の位置、オプトインの style 属性対応。
 - [レイアウト](/annealer/ja/guide/features/layout.md): 複数行の開始タグ、自己終了要素、要素のコンテンツに関するレイアウト規則。eslint-plugin-vue の対応ルールと同等です。
+- [クラス順](/annealer/ja/guide/features/class-order.md): 差し替え可能なクラス順プロファイルで静的な class 属性内のクラスを並べ替える機能と、eslint-plugin-tailwindcss と同じ並び順になる組み込みの Tailwind CSS 順。
 - [無効化ディレクティブ](/annealer/ja/guide/features/disable-directives.md): マークアップとスタイルシートで、範囲または次の行について annealer を無効にするコメント。
-- [値の並べ替え](/annealer/ja/guide/design/value-ordering.md): 静的な class 属性内のトークンを、Tailwind や Bootstrap などライブラリ固有のプロファイルで定めた順に並べ替える計画。
+- [値の並べ替え](/annealer/ja/guide/design/value-ordering.md): 静的な class 属性内のトークンを、ライブラリ固有のクラス順プロファイルで並べ替える仕組みの原則と、残っている論点。
 - [ライブラリプロファイル](/annealer/ja/guide/design/library-profiles.md): 計画中のライブラリ固有プロファイルと、プロジェクトの依存関係からそれを検出する方針（合意済み）。
 - [設計判断](/annealer/ja/guide/design/decisions.md): annealer のアーキテクチャと、実装中に行った設計判断およびその理由。
 
@@ -18,5 +19,5 @@
 
 - [API 概要](/annealer/ja/api/index.md): annealer の入口である anyl CLI、JavaScript API、YAML プロファイル形式の概要。
 - [CLI](/annealer/ja/api/cli.md): コマンドラインツール anyl のオプション、入力言語、終了コード。
-- [JavaScript API](/annealer/ja/api/javascript.md): npm パッケージ annealer の format()、init()、languageFromPath()、builtinProfile() とエクスポートされる型。
+- [JavaScript API](/annealer/ja/api/javascript.md): npm パッケージ annealer の format()、init()、languageFromPath()、builtinProfile()、builtinClassOrder() とエクスポートされる型。
 - [プロファイルリファレンス](/annealer/ja/api/profile.md): annealer のプロファイル YAML 形式のリファレンス。すべてのキーの型と既定値。

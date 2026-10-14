@@ -489,6 +489,96 @@ Moving content to a new line can change the indentation that a nested tag's clos
 
 
 ---
+url: /annealer/guide/features/class-order.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/llms.txt, the full documentation bundle is available at /annealer/llms-full.txt.
+
+# Class order
+
+annealer can reorder the classes inside static `class` attributes. The order comes from a **class order profile**, a YAML file separate from the attribute profile, so it can be swapped for another library's order.
+
+It is off by default. Turn it on with a class order name or file:
+
+```bash
+anyl --class-order tailwind src/**/*.vue
+anyl --class-order ./my-classes.yaml index.html
+```
+
+```ts
+format(source, { language: 'vue', classOrder: 'tailwind' });
+```
+
+An attribute profile can also name one with [`classOrder`](/annealer/api/profile.md#classorder). `--class-order` and the `classOrder` option override it.
+
+## Built-in: `tailwind`
+
+The built-in `tailwind` class order follows the order that `eslint-plugin-tailwindcss` (`classnames-order`) and `prettier-plugin-tailwindcss` apply. Both take it from the Tailwind CSS compiler.
+
+<!-- prettier-ignore -->
+
+```html
+<!-- Input -->
+<div class="p-3 border-gray-300 m-4 h-24 lg:p-4 flex border-2 lg:m-4 card"></div>
+
+<!-- Output -->
+<div class="card m-4 flex h-24 border-2 border-gray-300 p-3 lg:m-4 lg:p-4"></div>
+```
+
+annealer doesn't run Tailwind. The order is data, generated from Tailwind CSS 4.3 with its default theme by `scripts/generate-tailwind-order.mjs`. The same script writes a test corpus of 3,000 class lists sorted by Tailwind itself, and annealer's output matches all of them.
+
+Differences from running Tailwind:
+
+- **Your own theme and utilities aren't known.** A custom color (`bg-brand-500`) is ordered like a theme color, because a value that matches no other rule falls back to the color rule. A custom utility (`@utility`) is an unknown class.
+- **Duplicates are kept.** `eslint-plugin-tailwindcss` removes them by default (`removeDuplicates`). Removing classes is a lint concern, so the built-in profile keeps them. A class order with `removeDuplicates: true` removes them.
+- **Only static `class` attributes.** `:class` bindings and `clsx()`-style calls are expressions, and annealer never reads them.
+
+## How classes are ordered
+
+1. Classes no rule matches (`card`, `js-toggle`) go first, in their source order (`unknown: end` puts them last).
+2. Classes without variants come first. Classes with variants follow, by the ranks of their variants (`variants.order`). The highest rank decides, like comparing bit masks.
+3. Then by the CSS properties a class sets: the first property that differs, by its position in `propertyOrder`.
+4. Then more properties first (`count`).
+5. Then by name, with runs of digits compared as numbers (`p-2` before `p-10`).
+
+This is the comparison Tailwind uses. Nothing in it is specific to Tailwind: any utility library can describe its classes by the properties they set.
+
+## What changes in the markup
+
+- Whitespace stays in place: classes move between the existing separators, so multi-line class lists keep their line breaks.
+- Values with template syntax (`{{ }}`, `{% %}`, `<?php ?>`, `${}`) and unquoted values are left as written.
+- [Disable directives](/annealer/guide/features/disable-directives.md) apply as for attributes.
+
+## Writing a class order
+
+```yaml
+# yaml-language-server: $schema=https://github.com/logue/annealer/raw/refs/heads/main/crates/annealer/schema/class-order.schema.json
+schemaVersion: 1
+name: my-utilities
+unknown: end
+propertyOrder: [display, margin, padding, color]
+values:
+  size: [sm, md, lg]
+rules:
+  - match: [d-*]
+    properties: [display]
+  - match: ['m-{number}', 'm-{size}', mx-auto]
+    properties: [margin]
+  - match: ['p-{number}']
+    properties: [padding]
+  - match: [text-*]
+    properties: [color]
+```
+
+- `match` patterns: `*` matches any run of characters; `{name}` matches one entry of a value set in `values`. `{number}` (a decimal number) is built in.
+- The most specific pattern wins: an exact name, then the most literal characters, then the most value sets.
+- A modifier after `/` (`bg-red-500/50`) is ignored when the class without it matches better.
+
+See the [class order reference](/annealer/api/profile.md#class-order-profiles) for every key. `builtinClassOrder('tailwind')` in the JavaScript API returns the built-in YAML as a starting point.
+
+
+
+---
 url: /annealer/guide/features/disable-directives.md
 ---
 
@@ -545,7 +635,7 @@ url: /annealer/guide/design/value-ordering.md
 # Value ordering
 
 :::info Status
-Static `style` attributes are implemented (opt-in, see [Stylesheets](/annealer/guide/concepts/stylesheets.md#static-style-attributes-opt-in)). Ordering of `class` values is **planned** and not implemented yet. This page records the agreed principles.
+Both are implemented: static `style` attributes (opt-in, see [Stylesheets](/annealer/guide/concepts/stylesheets.md#static-style-attributes-opt-in)) and `class` values with a swappable class order (see [Class order](/annealer/guide/features/class-order.md)), with a built-in `tailwind` order. A Bootstrap profile is not written yet. This page records the principles behind them.
 :::
 
 Attribute order is one axis. The order of the values inside an attribute is another. The need isn't specific to Tailwind: any class-based CSS framework (Bootstrap, Tailwind, a project's own utility set) benefits from a fixed class order, for the same diff-stability reason as attributes.
@@ -567,7 +657,7 @@ The class order is plain profile data, like attribute groups, not a code branch.
 A framework's canonical class order is a design decision of that framework, not of annealer. annealer provides the mechanism and the profile format.
 
 - **Bootstrap**: annealer proposes the mechanism upstream, with a draft profile (Bootstrap 6 is in development), so that Bootstrap itself defines and maintains the order.
-- **Tailwind**: the order is already defined by Tailwind's engine. annealer can ship a built-in YAML approximation of it.
+- **Tailwind**: the order is already defined by Tailwind's engine. annealer ships it as built-in YAML (`tailwind`), generated from Tailwind and checked against it. It follows the spec of `eslint-plugin-tailwindcss` `classnames-order`, except that duplicates are kept (see below).
 
 ### The profile format is a public contract
 
@@ -585,19 +675,22 @@ The official Tailwind order is derived from each project's own Tailwind build (v
 
 Reordering classes doesn't change CSS semantics. Duplicate classes are kept (removing them is a lint concern), and unknown classes are never dropped.
 
-## Sketch (to be designed)
+## Design
 
-- Split the `class` value on whitespace, classify each token with group patterns (as with attribute groups), sort by group, then by the group's `sort` mode. Source order is the tie-breaker.
-- Variants and breakpoints need their own axis:
-  - Tailwind uses **prefixes** (`md:`, `hover:`, `dark:`). The sort key is the base class plus the variant order.
-  - Bootstrap uses **infixes** (`col-md-6`, `d-lg-none`, `mt-sm-3`). The breakpoint is taken from the middle of the name.
-- Patterns need more than a trailing `*`. In Bootstrap, `text-center` (alignment) and `text-primary` (color) share a prefix. Value patterns will be richer than attribute patterns.
+- **Classes are ranked by the CSS properties they set**, with Tailwind's comparison: unknown classes, variants, the first differing property in a property order, the number of properties, then the name. Properties are library-agnostic, so a Bootstrap profile can use the same format (`d-flex` sets `display`, `mt-3` sets `margin-top`).
+- **Variants** (Tailwind's `md:`, `hover:`) are a separate axis: a separator and a ranked list of variant patterns.
+- **Patterns** are richer than attribute patterns: `*` anywhere and `{name}` value sets, with the most specific match winning. `text-center`, `text-lg` and `text-red-500` resolve to different rules.
+- **The class order is its own profile**, not part of the attribute profile, so it can be combined with any attribute profile: `--class-order`, the `classOrder` option, or `classOrder` in a profile.
+
+## Resolved questions
+
+- Where unknown classes go: `unknown: start` (Tailwind's order) or `end`.
+- Whitespace inside a `class` value is preserved: classes move between the existing separators, as `eslint-plugin-tailwindcss` does.
 
 ## Open questions
 
-- Where unknown classes go. Tailwind's Prettier plugin puts custom classes first; annealer may offer a `start`/`end` option.
-- Whether whitespace inside a `class` value (multi-line class lists) is normalized to single spaces or preserved.
-- How profiles compose (for example `extends: vue` plus a `bootstrap` class order). This also serves library-specific attribute rules.
+- Infix breakpoints (Bootstrap's `col-md-6`, `d-lg-none`) are not a separate axis yet. A profile can only rank them through patterns.
+- How attribute profiles compose (for example `extends: vue`). This also serves library-specific attribute rules.
 
 
 
@@ -736,14 +829,15 @@ Formats each file and prints the result. Reads stdin when no file is given.
 
 ## Options
 
-| Option                        | Description                                                                                                                            |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `-w`, `--write`               | Overwrite files in place. Can't be combined with `--check`.                                                                            |
-| `-c`, `--check`               | Print the paths of files that would change, and exit with status 1 if any would.                                                       |
-| `-p`, `--profile <PROFILE>`   | A built-in profile name (`html`, `vue`) or the path to a profile YAML file. Defaults to the built-in profile for each file's language. |
-| `-l`, `--language <LANGUAGE>` | Language of stdin input: `html` (default), `vue`, `css`, `scss`, `sass`, `less`.                                                       |
-| `-h`, `--help`                | Show help.                                                                                                                             |
-| `-V`, `--version`             | Show the version.                                                                                                                      |
+| Option                        | Description                                                                                                                                                            |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-w`, `--write`               | Overwrite files in place. Can't be combined with `--check`.                                                                                                            |
+| `-c`, `--check`               | Print the paths of files that would change, and exit with status 1 if any would.                                                                                       |
+| `-p`, `--profile <PROFILE>`   | A built-in profile name (`html`, `vue`) or the path to a profile YAML file. Defaults to the built-in profile for each file's language.                                 |
+| `--class-order <CLASS_ORDER>` | Order the classes of static `class` attributes: a built-in class order name (`tailwind`) or the path to a class order YAML file. Overrides the profile's `classOrder`. |
+| `-l`, `--language <LANGUAGE>` | Language of stdin input: `html` (default), `vue`, `css`, `scss`, `sass`, `less`.                                                                                       |
+| `-h`, `--help`                | Show help.                                                                                                                                                             |
+| `-V`, `--version`             | Show the version.                                                                                                                                                      |
 
 ## Languages
 
@@ -774,6 +868,7 @@ anyl src/App.vue                          # print the result
 anyl --write src/**/*.vue                 # format in place
 anyl --check index.html                   # use in CI
 anyl --profile my-profile.yaml page.html  # custom profile
+anyl --class-order tailwind src/**/*.vue  # order Tailwind classes
 cat App.vue | anyl --language vue         # stdin
 ```
 
@@ -788,12 +883,18 @@ url: /annealer/api/javascript.md
 # JavaScript API
 
 ```ts
-import { builtinProfile, format, init, languageFromPath } from 'annealer';
+import {
+  builtinClassOrder,
+  builtinProfile,
+  format,
+  init,
+  languageFromPath
+} from 'annealer';
 ```
 
 The package is a WebAssembly build of the Rust core with a TypeScript wrapper. It works in Node.js, in browsers and as a UMD build.
 
-The WebAssembly binary (about 1.3 MB, 0.65 MB gzipped) is embedded in the package as base64. No asset loading needs to be configured, and `format()` is synchronous.
+The WebAssembly binary (about 1.5 MB, 0.7 MB gzipped) is embedded in the package as base64. No asset loading needs to be configured, and `format()` is synchronous.
 
 ## `format(input, options?)`
 
@@ -805,6 +906,7 @@ Reorders attributes (HTML, Vue) or declarations (CSS, SCSS, Sass, Less).
 
 - `options.language`: the input language. Default: `'html'`.
 - `options.profile`: a built-in profile name (`'html'`, `'vue'`) or the YAML text of a profile. Default: the built-in profile for `language`.
+- `options.classOrder`: a built-in class order name (`'tailwind'`) or the YAML text of a class order. Orders the classes of static `class` attributes and overrides the profile's `classOrder`. Default: classes keep their order. See [Class order](/annealer/guide/features/class-order.md).
 
 Throws an `Error` when the input or the profile is invalid.
 
@@ -814,6 +916,7 @@ format('<a title="Home" href="/" id="home">Home</a>');
 
 format(source, { language: 'vue' });
 format(source, { language: 'html', profile: yamlText });
+format(source, { language: 'vue', classOrder: 'tailwind' });
 ```
 
 ## `init()`
@@ -848,6 +951,14 @@ const yaml = builtinProfile('vue').replace(
 format(source, { language: 'vue', profile: yaml });
 ```
 
+## `builtinClassOrder(name)`
+
+```ts
+function builtinClassOrder(name: 'tailwind'): string;
+```
+
+Returns the YAML text of a built-in class order, as a starting point for a custom one.
+
 ## Types
 
 ```ts
@@ -856,6 +967,7 @@ type Language = 'html' | 'vue' | 'css' | 'scss' | 'sass' | 'less';
 type FormatOptions = {
   language?: Language;
   profile?: string;
+  classOrder?: string;
 };
 
 type Meta = {
@@ -917,15 +1029,16 @@ Unknown keys are errors everywhere in a profile, so typos never go unnoticed.
 
 ## Top level
 
-| Key             | Type   | Required | Description                                                    |
-| --------------- | ------ | -------- | -------------------------------------------------------------- |
-| `schemaVersion` | `1`    | yes      | Profile format version.                                        |
-| `name`          | string | yes      | Profile name.                                                  |
-| `description`   | string |          | Human-readable summary.                                        |
-| `normalize`     | object |          | Attribute name rewrites.                                       |
-| `layout`        | object |          | Start-tag layout rules.                                        |
-| `groups`        | array  | yes      | Attribute groups in output order.                              |
-| `stylesheet`    | object |          | Stylesheet formatting. Omit it to leave stylesheets untouched. |
+| Key             | Type             | Required | Description                                                                        |
+| --------------- | ---------------- | -------- | ---------------------------------------------------------------------------------- |
+| `schemaVersion` | `1`              | yes      | Profile format version.                                                            |
+| `name`          | string           | yes      | Profile name.                                                                      |
+| `description`   | string           |          | Human-readable summary.                                                            |
+| `normalize`     | object           |          | Attribute name rewrites.                                                           |
+| `layout`        | object           |          | Start-tag layout rules.                                                            |
+| `groups`        | array            | yes      | Attribute groups in output order.                                                  |
+| `stylesheet`    | object           |          | Stylesheet formatting. Omit it to leave stylesheets untouched.                     |
+| `classOrder`    | string \| object |          | Class order for static `class` attributes. Omit it to keep classes in their order. |
 
 ## `normalize`
 
@@ -978,6 +1091,34 @@ See [Stylesheets](/annealer/guide/concepts/stylesheets.md) for details.
 | `malva`                   | object                                                | –                 | Other [malva options](https://malva.netlify.app/config/), passed through.    |
 
 `stylesheet.malva` accepts malva's own options, such as `printWidth`, `useTabs`, `indentWidth`, `lineBreak`, `hexCase`, `hexColorLength`, `quotes`, `trailingComma`, `formatComments` and the `*.preferSingleLine` options. `declarationOrder` and `declarationOrderGroupBy` belong to `stylesheet` itself, not to `malva`. Unknown malva keys are rejected.
+
+## `classOrder`
+
+The order of the classes in static `class` attributes (see [Class order](/annealer/guide/features/class-order.md)): a built-in class order name (`tailwind`), or a [class order profile](#class-order-profiles) written inline. The CLI's `--class-order` and the JavaScript `classOrder` option override it.
+
+```yaml
+classOrder: tailwind
+```
+
+## Class order profiles
+
+A class order profile is a YAML file of its own, passed with `--class-order` or `classOrder`, or written inline under a profile's `classOrder`. The JSON Schema is `crates/annealer/schema/class-order.schema.json`; the built-in one is [`crates/annealer/class-orders/tailwind.yaml`](https://github.com/logue/annealer/tree/main/crates/annealer/class-orders).
+
+| Key                   | Type                | Default | Description                                                                                                                    |
+| --------------------- | ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `schemaVersion`       | `1`                 | –       | Required. Format version.                                                                                                      |
+| `name`                | string              | –       | Required. Class order name.                                                                                                    |
+| `description`         | string              | –       | Human-readable summary.                                                                                                        |
+| `unknown`             | `start` \| `end`    | `start` | Where classes no rule matches go, in source order.                                                                             |
+| `removeDuplicates`    | boolean             | `false` | Drop repeated classes, keeping the first.                                                                                      |
+| `important`           | string              | –       | Marker stripped from the start or end of a utility before matching (`!`).                                                      |
+| `arbitraryProperties` | boolean             | `false` | Classes of the form `[property:value]` set `property`.                                                                         |
+| `variants`            | object              | –       | `separator` (e.g. `:`) and `order`: variant patterns by rank, lowest first. A list entry gives its patterns the same rank.     |
+| `propertyOrder`       | string\[]           | –       | Required. CSS properties in output order.                                                                                      |
+| `values`              | map of pattern list | –       | Value sets for `{name}` in patterns. `number` is built in.                                                                     |
+| `rules`               | array               | –       | Required. `match` (patterns), `properties` (from `propertyOrder`) and optional `count` (number of declarations, if different). |
+
+A class with a variant that no pattern matches is unknown. Rules may only name properties listed in `propertyOrder`; anything else is an error.
 
 
 
