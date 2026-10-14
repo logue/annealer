@@ -45,15 +45,16 @@ Unknown keys are errors everywhere in a profile, so typos never go unnoticed.
 
 ## Top level
 
-| Key             | Type   | Required | Description                                                    |
-| --------------- | ------ | -------- | -------------------------------------------------------------- |
-| `schemaVersion` | `1`    | yes      | Profile format version.                                        |
-| `name`          | string | yes      | Profile name.                                                  |
-| `description`   | string |          | Human-readable summary.                                        |
-| `normalize`     | object |          | Attribute name rewrites.                                       |
-| `layout`        | object |          | Start-tag layout rules.                                        |
-| `groups`        | array  | yes      | Attribute groups in output order.                              |
-| `stylesheet`    | object |          | Stylesheet formatting. Omit it to leave stylesheets untouched. |
+| Key             | Type             | Required | Description                                                                        |
+| --------------- | ---------------- | -------- | ---------------------------------------------------------------------------------- |
+| `schemaVersion` | `1`              | yes      | Profile format version.                                                            |
+| `name`          | string           | yes      | Profile name.                                                                      |
+| `description`   | string           |          | Human-readable summary.                                                            |
+| `normalize`     | object           |          | Attribute name rewrites.                                                           |
+| `layout`        | object           |          | Start-tag layout rules.                                                            |
+| `groups`        | array            | yes      | Attribute groups in output order.                                                  |
+| `stylesheet`    | object           |          | Stylesheet formatting. Omit it to leave stylesheets untouched.                     |
+| `classOrder`    | string \| object |          | Class order for static `class` attributes. Omit it to keep classes in their order. |
 
 ## `normalize`
 
@@ -106,3 +107,31 @@ See [Stylesheets](../guide/concepts/stylesheets.md) for details.
 | `malva`                   | object                                                | –                 | Other [malva options](https://malva.netlify.app/config/), passed through.    |
 
 `stylesheet.malva` accepts malva's own options, such as `printWidth`, `useTabs`, `indentWidth`, `lineBreak`, `hexCase`, `hexColorLength`, `quotes`, `trailingComma`, `formatComments` and the `*.preferSingleLine` options. `declarationOrder` and `declarationOrderGroupBy` belong to `stylesheet` itself, not to `malva`. Unknown malva keys are rejected.
+
+## `classOrder`
+
+The order of the classes in static `class` attributes (see [Class order](../guide/features/class-order.md)): a built-in class order name (`tailwind`), or a [class order profile](#class-order-profiles) written inline. The CLI's `--class-order` and the JavaScript `classOrder` option override it.
+
+```yaml
+classOrder: tailwind
+```
+
+## Class order profiles
+
+A class order profile is a YAML file of its own, passed with `--class-order` or `classOrder`, or written inline under a profile's `classOrder`. The JSON Schema is `crates/annealer/schema/class-order.schema.json`; the built-in one is [`crates/annealer/class-orders/tailwind.yaml`](https://github.com/logue/annealer/tree/main/crates/annealer/class-orders).
+
+| Key                   | Type                | Default | Description                                                                                                                    |
+| --------------------- | ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `schemaVersion`       | `1`                 | –       | Required. Format version.                                                                                                      |
+| `name`                | string              | –       | Required. Class order name.                                                                                                    |
+| `description`         | string              | –       | Human-readable summary.                                                                                                        |
+| `unknown`             | `start` \| `end`    | `start` | Where classes no rule matches go, in source order.                                                                             |
+| `removeDuplicates`    | boolean             | `false` | Drop repeated classes, keeping the first.                                                                                      |
+| `important`           | string              | –       | Marker stripped from the start or end of a utility before matching (`!`).                                                      |
+| `arbitraryProperties` | boolean             | `false` | Classes of the form `[property:value]` set `property`.                                                                         |
+| `variants`            | object              | –       | `separator` (e.g. `:`) and `order`: variant patterns by rank, lowest first. A list entry gives its patterns the same rank.     |
+| `propertyOrder`       | string[]            | –       | Required. CSS properties in output order.                                                                                      |
+| `values`              | map of pattern list | –       | Value sets for `{name}` in patterns. `number` is built in.                                                                     |
+| `rules`               | array               | –       | Required. `match` (patterns), `properties` (from `propertyOrder`) and optional `count` (number of declarations, if different). |
+
+A class with a variant that no pattern matches is unknown. Rules may only name properties listed in `propertyOrder`; anything else is an error.

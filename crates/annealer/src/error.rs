@@ -52,6 +52,12 @@ pub enum ProfileError {
 
     #[error("unknown malva option `stylesheet.malva.{0}`")]
     MalvaOption(String),
+
+    #[error("unknown built-in class order `{0}`")]
+    UnknownClassOrder(String),
+
+    #[error("invalid class order: {0}")]
+    ClassOrder(String),
 }
 
 /// Converts a byte offset into a 1-based (line, column) pair.

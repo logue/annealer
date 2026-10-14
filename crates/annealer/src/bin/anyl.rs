@@ -2,7 +2,7 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use annealer::{Config, Language, Profile, format};
+use annealer::{ClassOrder, Config, Language, Profile, format};
 use clap::{Parser, ValueEnum};
 
 /// Reorder HTML/Vue attributes by semantic meaning.
@@ -24,6 +24,11 @@ struct Cli {
     /// Defaults to the profile matching each file's language.
     #[arg(short, long)]
     profile: Option<String>,
+
+    /// Order the classes of static `class` attributes: a built-in class
+    /// order name (`tailwind`) or path to a class order YAML file.
+    #[arg(long)]
+    class_order: Option<String>,
 
     /// Language of stdin input.
     #[arg(short, long, value_enum, default_value = "html")]
@@ -61,20 +66,38 @@ fn load_profile(spec: &str) -> Result<Profile, String> {
     Profile::from_yaml(&yaml).map_err(|error| format!("{spec}: {error}"))
 }
 
-fn config_for(language: Language, profile: Option<&Profile>) -> Config {
-    match profile {
+fn load_class_order(spec: &str) -> Result<ClassOrder, String> {
+    if let Some(class_order) = ClassOrder::builtin(spec) {
+        return Ok(class_order);
+    }
+    let yaml = std::fs::read_to_string(spec).map_err(|error| format!("{spec}: {error}"))?;
+    ClassOrder::from_yaml(&yaml).map_err(|error| format!("{spec}: {error}"))
+}
+
+/// What every file shares: the `--profile` and `--class-order` options.
+struct Options {
+    profile: Option<Profile>,
+    class_order: Option<ClassOrder>,
+}
+
+fn config_for(language: Language, options: &Options) -> Config {
+    let config = match &options.profile {
         Some(profile) => Config::new(language, profile.clone()),
         None => Config::for_language(language),
+    };
+    match &options.class_order {
+        Some(class_order) => config.with_class_order(Some(class_order.clone())),
+        None => config,
     }
 }
 
 /// Returns whether the file changed.
-fn process_file(path: &Path, cli: &Cli, profile: Option<&Profile>) -> Result<bool, String> {
+fn process_file(path: &Path, cli: &Cli, options: &Options) -> Result<bool, String> {
     let language = Language::from_path(path)
         .ok_or_else(|| format!("{}: unsupported file type", path.display()))?;
     let input =
         std::fs::read_to_string(path).map_err(|error| format!("{}: {error}", path.display()))?;
-    let output = format(&input, &config_for(language, profile))
+    let output = format(&input, &config_for(language, options))
         .map_err(|error| format!("{}: {error}", path.display()))?;
     let changed = output != input;
 
@@ -96,14 +119,21 @@ fn process_file(path: &Path, cli: &Cli, profile: Option<&Profile>) -> Result<boo
 }
 
 fn run(cli: &Cli) -> Result<bool, String> {
-    let profile = cli.profile.as_deref().map(load_profile).transpose()?;
+    let options = Options {
+        profile: cli.profile.as_deref().map(load_profile).transpose()?,
+        class_order: cli
+            .class_order
+            .as_deref()
+            .map(load_class_order)
+            .transpose()?,
+    };
 
     if cli.files.is_empty() {
         let mut input = String::new();
         io::stdin()
             .read_to_string(&mut input)
             .map_err(|error| error.to_string())?;
-        let output = format(&input, &config_for(cli.language.into(), profile.as_ref()))
+        let output = format(&input, &config_for(cli.language.into(), &options))
             .map_err(|error| error.to_string())?;
         if !cli.check {
             io::stdout()
@@ -116,7 +146,7 @@ fn run(cli: &Cli) -> Result<bool, String> {
     let mut any_changed = false;
     let mut failed = false;
     for path in &cli.files {
-        match process_file(path, cli, profile.as_ref()) {
+        match process_file(path, cli, &options) {
             Ok(changed) => any_changed |= changed,
             Err(message) => {
                 eprintln!("error: {message}");

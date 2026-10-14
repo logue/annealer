@@ -2,16 +2,38 @@
 
 use serde_json::Value;
 
+use crate::class_order::ClassOrder;
 use crate::profile::{MALVA_OPTIONS, Profile};
 
 const SCHEMA: &str = include_str!("../schema/profile.schema.json");
+const CLASS_ORDER_SCHEMA: &str = include_str!("../schema/class-order.schema.json");
 
 fn schema() -> Value {
     serde_json::from_str(SCHEMA).unwrap()
 }
 
+/// The profile schema, with the class order schema it references.
 fn validator() -> jsonschema::Validator {
-    jsonschema::validator_for(&schema()).unwrap()
+    let class_order: Value = serde_json::from_str(CLASS_ORDER_SCHEMA).unwrap();
+    let id = class_order["$id"].as_str().unwrap().to_owned();
+    let registry = jsonschema::Registry::new()
+        .add(id, class_order)
+        .unwrap()
+        .prepare()
+        .unwrap();
+    jsonschema::options()
+        .with_registry(&registry)
+        .build(&schema())
+        .unwrap()
+}
+
+fn class_order_validator() -> jsonschema::Validator {
+    jsonschema::validator_for(&serde_json::from_str(CLASS_ORDER_SCHEMA).unwrap()).unwrap()
+}
+
+fn class_order_schema_accepts(yaml: &str) -> bool {
+    let instance: Value = yaml_serde::from_str(yaml).unwrap();
+    class_order_validator().is_valid(&instance)
 }
 
 fn schema_accepts(yaml: &str) -> bool {
@@ -92,6 +114,18 @@ fn schema_and_loader_agree() {
             false,
         ),
         (profile_with("stylesheet:\n  styleAttribute: true\n"), true),
+        (profile_with("classOrder: tailwind\n"), true),
+        (profile_with("classOrder: bootstrap\n"), false),
+        (
+            profile_with(
+                "classOrder:\n  schemaVersion: 1\n  name: own\n  propertyOrder: [display]\n  rules:\n    - match: [d-*]\n      properties: [display]\n",
+            ),
+            true,
+        ),
+        (
+            profile_with("classOrder:\n  schemaVersion: 1\n  name: own\n  rules: []\n"),
+            false,
+        ),
         (
             profile_with("stylesheet:\n  styleAttribute: yes please\n"),
             false,
@@ -157,4 +191,54 @@ fn loader_is_stricter_where_schema_cannot_be() {
         assert!(schema_accepts(&yaml));
         assert!(Profile::from_yaml(&yaml).is_err());
     }
+}
+
+#[test]
+fn builtin_class_orders_match_schema() {
+    let instance: Value =
+        yaml_serde::from_str(include_str!("../class-orders/tailwind.yaml")).unwrap();
+    let errors: Vec<String> = class_order_validator()
+        .iter_errors(&instance)
+        .map(|error| format!("{}: {error}", error.instance_path()))
+        .collect();
+    assert!(errors.is_empty(), "{errors:#?}");
+}
+
+#[test]
+fn class_order_schema_and_loader_agree() {
+    let base = "schemaVersion: 1\nname: x\npropertyOrder: [display, margin]\n";
+    let cases = [
+        ("rules: []\n", true),
+        (
+            "unknown: end\nremoveDuplicates: true\nimportant: '!'\narbitraryProperties: true\nvariants:\n  separator: ':'\n  order: [sm, [md, lg]]\nvalues:\n  size: [sm, lg]\nrules:\n  - match: [d-*, 'm-{size}', 'm-{number}']\n    properties: [display]\n    count: 2\n",
+            true,
+        ),
+        ("rules: []\nunknown: middle\n", false),
+        ("rules: []\nextra: 1\n", false),
+        ("rules:\n  - match: []\n    properties: [display]\n", false),
+        ("rules:\n  - match: [d-*]\n", false),
+        (
+            "rules:\n  - match: [d-*]\n    properties: [display]\n    sort: x\n",
+            false,
+        ),
+        ("variants:\n  order: [sm]\nrules: []\n", false),
+        ("values:\n  number: ['1']\nrules: []\n", false),
+    ];
+    for (extra, valid) in cases {
+        let yaml = format!("{base}{extra}");
+        assert_eq!(
+            class_order_schema_accepts(&yaml),
+            valid,
+            "schema disagrees on:\n{yaml}"
+        );
+        assert_eq!(
+            ClassOrder::from_yaml(&yaml).is_ok(),
+            valid,
+            "loader disagrees on:\n{yaml}"
+        );
+    }
+    // Draft-07 can't check that rule properties are listed in `propertyOrder`.
+    let unlisted = format!("{base}rules:\n  - match: [p-*]\n    properties: [padding]\n");
+    assert!(class_order_schema_accepts(&unlisted));
+    assert!(ClassOrder::from_yaml(&unlisted).is_err());
 }

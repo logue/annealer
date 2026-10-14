@@ -111,11 +111,41 @@
 - [ ] Upgrade raffia to 0.13 when malva does (0.16 still uses raffia 0.12; see the
       comment in `crates/annealer/Cargo.toml`). Blocked on malva.
 - [ ] Svelte profile (follow-on)
-- [ ] Value ordering for static `class` attributes (profile-defined order), see
+- [x] Value ordering for static `class` attributes (profile-defined order), see
       PLAN.md "Value ordering"
-  - [ ] Tailwind: built-in approximate order
+  - Class order profiles are their own YAML documents
+    (`schema/class-order.schema.json`), so any attribute profile can use any
+    class order. Selected with `--class-order`, the JS `classOrder` option, or
+    `classOrder` in a profile (built-in name or inline); the first two win.
+    Off unless selected.
+  - Classes are ranked by the CSS properties they set, with Tailwind v4's
+    comparison (unknown classes → variant mask → first differing property in
+    `propertyOrder` → more declarations first → name with numeric runs).
+    Library-agnostic: Bootstrap utilities also map to properties.
+  - Patterns: `*` anywhere, `{name}` value sets (`{number}` built in), most
+    specific wins. A `/modifier` is ignored when the class without it matches
+    better (`text-lg/7` vs `w-1/2`). `important` and `arbitraryProperties`
+    cover Tailwind's `!` and `[prop:value]`.
+  - Whitespace stays in place (classes move between separators, as
+    `eslint-plugin-tailwindcss` does). Values with template syntax and
+    unquoted values are left alone. Bound `:class` is never read.
+  - [x] Tailwind: built-in `tailwind` class order, following
+        `eslint-plugin-tailwindcss` `classnames-order` (the user's decision,
+        2026-10-14: Bootstrap has no rule yet, so use that spec for now).
+    - Generated from Tailwind CSS 4.3.3 (default theme) by
+      `scripts/generate-tailwind-order.mjs` (`pnpm run generate:tailwind`;
+      `tailwindcss` is a dev dependency). Re-run it when Tailwind changes.
+    - The same script writes `tests/class-order/tailwind.tsv`: 3,000 random
+      class lists sorted by Tailwind's own `getClassOrder`. All match.
+    - Not known: a project's own theme and utilities. Values that match no
+      other rule fall back to the color rule (`bg-brand-500` sorts as a
+      color); `@utility` classes are unknown.
+    - Deviation: `removeDuplicates: false`. The plugin removes duplicates by
+      default; PLAN.md says removing classes is a lint concern. Supported as
+      an option.
   - [ ] Bootstrap: draft profile + proposal to the Bootstrap project (v6), so
-        Bootstrap owns the order; needs a stable, documented profile format first
+        Bootstrap owns the order; needs a stable, documented profile format first.
+        Infix breakpoints (`col-md-6`) are not their own axis yet.
 - [ ] Library-specific rule profiles, built on the same mechanisms (groups,
       `layout.selfClosing`, normalize). Likely needs profile composition
       (`extends`) and per-tag/per-component overrides.

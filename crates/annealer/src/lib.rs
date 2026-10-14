@@ -10,6 +10,7 @@
 //! ```
 
 mod attribute;
+mod class_order;
 mod directive;
 mod error;
 mod markup;
@@ -23,6 +24,7 @@ mod wasm;
 
 use std::path::Path;
 
+pub use class_order::{ClassOrder, UnknownPosition};
 pub use error::{FormatError, ProfileError};
 pub use profile::{GroupSort, Profile};
 
@@ -67,11 +69,25 @@ impl Language {
 pub struct Config {
     pub language: Language,
     pub profile: Profile,
+    /// Order of the classes in static `class` attributes. Overrides the
+    /// profile's `classOrder`; when both are absent, classes keep their order.
+    pub class_order: Option<ClassOrder>,
 }
 
 impl Config {
     pub fn new(language: Language, profile: Profile) -> Self {
-        Self { language, profile }
+        Self {
+            language,
+            profile,
+            class_order: None,
+        }
+    }
+
+    /// Sets the class order (e.g. `ClassOrder::builtin("tailwind")`).
+    #[must_use]
+    pub fn with_class_order(mut self, class_order: Option<ClassOrder>) -> Self {
+        self.class_order = class_order;
+        self
     }
 
     /// Uses the built-in profile that matches `language`.
@@ -94,9 +110,13 @@ pub fn format(input: &str, config: &Config) -> Result<String, FormatError> {
         }
         None => Ok(input.to_owned()),
     };
+    let class_order = config
+        .class_order
+        .as_ref()
+        .or(config.profile.class_order.as_ref());
     match config.language {
-        Language::Html => markup::Scanner::format(input, &config.profile, false),
-        Language::Vue => markup::Scanner::format(input, &config.profile, true),
+        Language::Html => markup::Scanner::format(input, &config.profile, class_order, false),
+        Language::Vue => markup::Scanner::format(input, &config.profile, class_order, true),
         Language::Css => stylesheet(stylesheet::StyleLang::Css),
         Language::Scss => stylesheet(stylesheet::StyleLang::Scss),
         Language::Sass => stylesheet(stylesheet::StyleLang::Sass),

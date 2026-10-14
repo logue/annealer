@@ -180,6 +180,17 @@
           "$ref": "#/definitions/malvaOptions"
         }
       }
+    },
+    "classOrder": {
+      "description": "Order of the classes in static `class` attributes (bound `:class` is never touched): a built-in class order name (`tailwind`) or a class order profile. Omit this key to keep classes in their order.",
+      "anyOf": [
+        {
+          "enum": ["tailwind"]
+        },
+        {
+          "$ref": "class-order.schema.json"
+        }
+      ]
     }
   },
   "definitions": {

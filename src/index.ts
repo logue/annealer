@@ -1,6 +1,7 @@
 import { FormatOptions } from '@/types/FormatOptions';
 import { Language } from '@/types/Language';
 import initWasm, {
+  builtinClassOrder as builtinClassOrderWasm,
   builtinProfile as builtinProfileWasm,
   format as formatWasm,
   initSync
@@ -13,6 +14,9 @@ export { Meta } from '@/types/Meta';
 
 /** Built-in profile names. */
 export type BuiltinProfile = 'html' | 'vue';
+
+/** Built-in class order names. */
+export type BuiltinClassOrder = 'tailwind';
 
 let ready = false;
 
@@ -45,7 +49,8 @@ export const init = async (): Promise<void> => {
 
 /**
  * Reorders attributes (HTML, Vue) or declarations (CSS, SCSS, Sass, Less)
- * by semantic meaning.
+ * by semantic meaning, and optionally the classes of static `class`
+ * attributes (`classOrder`).
  *
  * @throws {Error} when the input or the profile is invalid.
  */
@@ -54,7 +59,8 @@ export const format = (input: string, options: FormatOptions = {}): string => {
   return formatWasm(
     input,
     options.language ?? FormatOptions.language,
-    options.profile
+    options.profile,
+    options.classOrder
   );
 };
 
@@ -70,6 +76,19 @@ export const builtinProfile = (name: BuiltinProfile): string => {
   const yaml = builtinProfileWasm(name);
   if (yaml === undefined) {
     throw new Error(`unknown built-in profile \`${name}\``);
+  }
+  return yaml;
+};
+
+/**
+ * The YAML text of a built-in class order, as a starting point for a custom
+ * one.
+ */
+export const builtinClassOrder = (name: BuiltinClassOrder): string => {
+  ensureReady();
+  const yaml = builtinClassOrderWasm(name);
+  if (yaml === undefined) {
+    throw new Error(`unknown built-in class order \`${name}\``);
   }
   return yaml;
 };

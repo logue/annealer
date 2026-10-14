@@ -9,6 +9,12 @@ export type FormatOptions = {
    * Defaults to the built-in profile for `language`.
    */
   profile?: string;
+  /**
+   * Order of the classes in static `class` attributes: a built-in class order
+   * name (`tailwind`) or the YAML text of a class order. Overrides the
+   * profile's `classOrder`; by default classes keep their order.
+   */
+  classOrder?: string;
 };
 
 /** Default `format` options. */

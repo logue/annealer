@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'rstack/test';
 
-import { builtinProfile, format, init, languageFromPath } from '@/index';
+import {
+  builtinClassOrder,
+  builtinProfile,
+  format,
+  init,
+  languageFromPath
+} from '@/index';
 
 describe('format', () => {
   test('orders HTML attributes by default', () => {
@@ -47,6 +53,17 @@ describe('format', () => {
     );
   });
 
+  test('orders classes with a class order', () => {
+    const input = '<p class="p-3 m-4 lg:p-4 flex card">';
+    expect(format(input)).toBe(input);
+    expect(format(input, { classOrder: 'tailwind' })).toBe(
+      '<p class="card m-4 flex p-3 lg:p-4">'
+    );
+    expect(() => format(input, { classOrder: 'name: x' })).toThrow(
+      /class order|schemaVersion/u
+    );
+  });
+
   test('init can be awaited before formatting', async () => {
     await init();
     expect(format('<br>')).toBe('<br />');
@@ -63,5 +80,9 @@ describe('helpers', () => {
 
   test('builtinProfile returns YAML', () => {
     expect(builtinProfile('vue')).toMatch(/^schemaVersion: 1$/mu);
+  });
+
+  test('builtinClassOrder returns YAML', () => {
+    expect(builtinClassOrder('tailwind')).toMatch(/^name: tailwind$/mu);
   });
 });

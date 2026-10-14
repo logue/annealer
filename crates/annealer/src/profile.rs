@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use malva::config::{DeclarationOrder, DeclarationOrderGroupBy, FormatOptions};
 use serde::Deserialize;
 
+use crate::class_order::ClassOrder;
 use crate::error::ProfileError;
 
 const SCHEMA_VERSION: u32 = 1;
@@ -141,6 +142,9 @@ struct RawProfile {
     groups: Vec<RawGroup>,
     #[serde(default)]
     stylesheet: Option<RawStylesheet>,
+    /// A built-in class order name, or an inline class order profile.
+    #[serde(default)]
+    class_order: Option<yaml_serde::Value>,
 }
 
 #[derive(Deserialize)]
@@ -309,6 +313,7 @@ pub struct Profile {
     pub(crate) normalize: Normalize,
     pub(crate) layout: Layout,
     pub(crate) stylesheet: Option<StylesheetOptions>,
+    pub(crate) class_order: Option<ClassOrder>,
 }
 
 impl Profile {
@@ -366,6 +371,7 @@ impl Profile {
                 .stylesheet
                 .map(RawStylesheet::into_options)
                 .transpose()?,
+            class_order: raw.class_order.map(class_order_of).transpose()?,
         })
     }
 
@@ -432,6 +438,16 @@ impl Profile {
             },
             |(_, classification)| classification,
         )
+    }
+}
+
+/// Resolves `classOrder`: a built-in name or an inline class order profile.
+fn class_order_of(value: yaml_serde::Value) -> Result<ClassOrder, ProfileError> {
+    match value {
+        yaml_serde::Value::String(name) => {
+            ClassOrder::builtin(&name).ok_or(ProfileError::UnknownClassOrder(name))
+        }
+        inline => ClassOrder::from_yaml(&yaml_serde::to_string(&inline)?),
     }
 }
 

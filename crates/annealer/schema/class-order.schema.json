@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/logue/annealer/raw/refs/heads/main/crates/annealer/schema/class-order.schema.json",
+  "title": "annealer class order",
+  "description": "Order of the classes in static `class` attributes. A class is ranked by the CSS properties it sets: classes no rule matches first (or last, see `unknown`), then by variants, then by the first differing property in `propertyOrder`, then by the number of properties (more first), then by name with runs of digits compared as numbers. This is the comparison Tailwind CSS uses for its official order.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "name", "propertyOrder", "rules"],
+  "properties": {
+    "schemaVersion": {
+      "description": "Class order format version.",
+      "const": 1
+    },
+    "name": {
+      "description": "Class order name.",
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "description": "Human-readable summary.",
+      "type": "string"
+    },
+    "unknown": {
+      "description": "Where classes that no rule matches go, in source order.",
+      "enum": ["start", "end"],
+      "default": "start"
+    },
+    "removeDuplicates": {
+      "description": "Drop repeated classes, keeping the first.",
+      "type": "boolean",
+      "default": false
+    },
+    "important": {
+      "description": "Marker for important utilities, stripped from the start or end of the utility before matching (`!` for Tailwind's `!p-4` and `p-4!`).",
+      "type": "string"
+    },
+    "arbitraryProperties": {
+      "description": "Classes of the form `[property:value]` set `property` (Tailwind's arbitrary properties).",
+      "type": "boolean",
+      "default": false
+    },
+    "variants": {
+      "description": "Variant prefixes (`md:`, `hover:`). Omit when classes have none. A class with an unknown variant is unknown.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["separator", "order"],
+      "properties": {
+        "separator": {
+          "description": "Separates variants from each other and from the utility, outside `[]` and `()`.",
+          "type": "string",
+          "minLength": 1
+        },
+        "order": {
+          "description": "Variant patterns by rank, lowest first. An entry that is a list gives its patterns the same rank. Classes without variants come first; otherwise the highest rank among a class's variants decides, then the next one, like comparing bit masks.",
+          "type": "array",
+          "items": {
+            "anyOf": [
+              { "$ref": "#/definitions/pattern" },
+              {
+                "type": "array",
+                "minItems": 1,
+                "items": { "$ref": "#/definitions/pattern" }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "propertyOrder": {
+      "description": "CSS properties in output order. Rules may only name properties listed here.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "values": {
+      "description": "Named value sets, used as `{name}` in rule patterns. Entries are patterns without value sets. `number` (a decimal number such as `4` or `0.5`) is built in.",
+      "type": "object",
+      "propertyNames": {
+        "not": { "const": "number" }
+      },
+      "additionalProperties": {
+        "type": "array",
+        "items": { "$ref": "#/definitions/pattern" }
+      }
+    },
+    "rules": {
+      "description": "Which properties each class sets. The most specific matching pattern wins: an exact name, then the most literal characters, then the most value sets; the first listed wins ties. A modifier after `/` (`bg-red-500/50`) is ignored when the class without it matches better.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["match", "properties"],
+        "properties": {
+          "match": {
+            "description": "Class patterns: `*` matches any run of characters, `{name}` one entry of a value set.",
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "#/definitions/pattern" }
+          },
+          "properties": {
+            "description": "The properties the classes set, from `propertyOrder`.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "count": {
+            "description": "Number of declarations the classes emit, when it differs from the number of `properties`. Breaks ties: more first.",
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "pattern": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

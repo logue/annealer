@@ -4,6 +4,7 @@
 //! attribute lists. Everything else is copied through byte-for-byte.
 
 use crate::attribute::{Key, is_component, key_of, normalize_name};
+use crate::class_order::ClassOrder;
 use crate::directive::{self, Disabled};
 use crate::error::{FormatError, line_col};
 use crate::order::attribute_order;
@@ -102,6 +103,7 @@ pub(crate) struct Scanner<'a> {
     copied: usize,
     out: String,
     profile: &'a Profile,
+    class_order: Option<&'a ClassOrder>,
     vue: bool,
     disabled: Disabled,
     /// `layout.contentNewline` moved content onto a new line.
@@ -109,7 +111,12 @@ pub(crate) struct Scanner<'a> {
 }
 
 impl<'a> Scanner<'a> {
-    pub(crate) fn new(src: &'a str, profile: &'a Profile, vue: bool) -> Self {
+    pub(crate) fn new(
+        src: &'a str,
+        profile: &'a Profile,
+        class_order: Option<&'a ClassOrder>,
+        vue: bool,
+    ) -> Self {
         Self {
             src,
             bytes: src.as_bytes(),
@@ -117,6 +124,7 @@ impl<'a> Scanner<'a> {
             copied: 0,
             out: String::with_capacity(src.len()),
             profile,
+            class_order,
             vue,
             disabled: Disabled::new(src),
             content_moved: false,
@@ -126,11 +134,16 @@ impl<'a> Scanner<'a> {
     /// Formats `src`. Content moved onto a new line changes the indentation
     /// of the line it starts, which other layout rules (the closing bracket of
     /// a multiline tag) depend on, so it is formatted again until stable.
-    pub(crate) fn format(src: &str, profile: &Profile, vue: bool) -> Result<String, FormatError> {
+    pub(crate) fn format(
+        src: &str,
+        profile: &Profile,
+        class_order: Option<&ClassOrder>,
+        vue: bool,
+    ) -> Result<String, FormatError> {
         const MAX_PASSES: usize = 4;
         let mut text = src.to_owned();
         for _ in 0..MAX_PASSES {
-            let mut scanner = Scanner::new(&text, profile, vue);
+            let mut scanner = Scanner::new(&text, profile, class_order, vue);
             scanner.scan()?;
             let moved = scanner.content_moved;
             text = scanner.finish();
@@ -696,6 +709,23 @@ impl<'a> Scanner<'a> {
         }
     }
 
+    /// The reordered value of a static `class` attribute, when a class order
+    /// is set. Values holding template syntax are left as written.
+    fn class_attribute(&self, attribute: &Attribute<'_>, key: &Key) -> Option<String> {
+        let class_order = self.class_order?;
+        attribute.quote?;
+        let value = attribute.value?;
+        if key.bound
+            || !attribute.name.eq_ignore_ascii_case("class")
+            || ["{{", "{%", "{#", "<", "${"]
+                .iter()
+                .any(|syntax| value.contains(syntax))
+        {
+            return None;
+        }
+        class_order.sort_value(value)
+    }
+
     /// The reordered value of a static `style` attribute, when enabled.
     fn style_attribute(&self, attribute: &Attribute<'_>, key: &Key) -> Option<String> {
         let options = self.profile.stylesheet.as_ref()?;
@@ -744,7 +774,10 @@ impl<'a> Scanner<'a> {
             text.push_str(separator);
             text.push_str(&names[index]);
             let attribute = &tag.attributes[index];
-            match self.style_attribute(attribute, &keys[index]) {
+            let value = self
+                .style_attribute(attribute, &keys[index])
+                .or_else(|| self.class_attribute(attribute, &keys[index]));
+            match value {
                 Some(value) => {
                     let value_start = attribute
                         .rest

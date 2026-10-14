@@ -3,6 +3,7 @@ import { type Language, Meta, builtinProfile, format, init } from '@/';
 const SAMPLES: Record<Language, string> = {
   vue: `<template>
   <MyButton @click="submit" :disabled="busy" v-if="visible" class="primary" :class="{ busy }" id="submit" aria-label="Submit"></MyButton>
+  <p class="text-sm p-3 hover:bg-gray-100 card flex mt-4 md:p-6 font-bold">Tailwind classes</p>
   <div
     title="Panel" v-for="item in items" :key="item.id">{{ item.name }}</div>
 </template>
@@ -41,6 +42,7 @@ const element = (id: string): HTMLElement => {
 
 const language = element('language') as HTMLSelectElement;
 const profile = element('profile') as HTMLSelectElement;
+const classOrder = element('class-order') as HTMLSelectElement;
 const profileEditor = element('profile-editor') as HTMLDetailsElement;
 const profileYaml = element('profile-yaml') as HTMLTextAreaElement;
 const input = element('input') as HTMLTextAreaElement;
@@ -53,7 +55,8 @@ const render = (): void => {
   try {
     output.value = format(input.value, {
       language: language.value as Language,
-      profile: spec
+      profile: spec,
+      classOrder: classOrder.value || undefined
     });
     error.textContent = '';
   } catch (error_) {
@@ -77,6 +80,7 @@ profile.addEventListener('change', () => {
   }
   render();
 });
+classOrder.addEventListener('change', render);
 profileYaml.addEventListener('input', render);
 input.addEventListener('input', render);
 

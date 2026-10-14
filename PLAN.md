@@ -251,7 +251,7 @@ order). Comments switch annealer off:
   declaration. annealer marks covered statements with internal markers before
   calling malva and removes the markers afterwards.
 
-## Value ordering (planned)
+## Value ordering
 
 Attribute order is one axis; the order of values inside an attribute is
 another. The demand is not specific to Tailwind: any class-based CSS framework
@@ -306,7 +306,15 @@ rule-based class order, for the same diff-stability reason as attributes.
   in their config. Installing or updating a dependency must never change
   annealer's output by itself.
 
-### Sketch (to be designed)
+### Implementation
+
+Implemented for `class` with a built-in `tailwind` class order (see
+PROGRESS.md and `src-docs/*/guide/features/class-order.md`). Classes are
+ranked by the CSS properties they set, with Tailwind's comparison; the class
+order is its own swappable profile (`class-order.schema.json`). Unknown
+classes go to `start` or `end`; whitespace is kept in place.
+
+### Original sketch
 
 - `class` value: split on whitespace, classify each token with group patterns
   (same idea as attribute groups), sort by group, then by the group's `sort`
@@ -336,9 +344,8 @@ rule-based class order, for the same diff-stability reason as attributes.
 - Whether `strictImportMetaEnv`-equivalent strictness is relevant to
   `annealer`'s own config validation (surfacing typos in profile YAML at
   parse time rather than silently ignoring unknown keys).
-- Value ordering: where unknown classes go (Tailwind's Prettier plugin puts
-  custom classes first; a `start`/`end` option?), and whether whitespace inside
-  a `class` value (multi-line class lists) is normalized to single spaces or
-  preserved.
-- Value ordering: how profiles compose (e.g. `extends: vue` plus a
-  `bootstrap` class order), which also serves library-specific attribute rules.
+- Value ordering: resolved. Unknown classes go to `unknown: start` (default,
+  Tailwind's order) or `end`; whitespace inside a `class` value is preserved.
+  A class order is its own profile, so it combines with any attribute profile
+  without `extends`.
+- Profile composition (`extends`) for library-specific attribute rules.

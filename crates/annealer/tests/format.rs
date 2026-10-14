@@ -847,3 +847,120 @@ mod errors_and_profiles {
         );
     }
 }
+
+mod class_order {
+    use super::*;
+    use annealer::ClassOrder;
+
+    fn tailwind(input: &str, language: Language) -> String {
+        let config =
+            Config::for_language(language).with_class_order(ClassOrder::builtin("tailwind"));
+        let once = format(input, &config).unwrap();
+        assert_eq!(format(&once, &config).unwrap(), once, "not idempotent");
+        once
+    }
+
+    #[test]
+    fn is_off_unless_a_class_order_is_set() {
+        let input = r#"<p class="p-4 m-2 flex">"#;
+        assert_eq!(html(input), input);
+    }
+
+    #[test]
+    fn orders_static_class_attributes() {
+        assert_eq!(
+            tailwind(
+                r#"<div class="p-3 border-gray-300 m-4 h-24 lg:p-4 flex border-2 lg:m-4" id="a">"#,
+                Language::Html
+            ),
+            r#"<div id="a" class="m-4 flex h-24 border-2 border-gray-300 p-3 lg:m-4 lg:p-4">"#
+        );
+    }
+
+    #[test]
+    fn leaves_bound_classes_and_template_syntax_alone() {
+        assert_eq!(
+            tailwind(
+                &sfc(r#"<div :class="['p-4 m-2', x]" class="p-4 m-2">"#),
+                Language::Vue
+            ),
+            sfc(r#"<div class="m-2 p-4" :class="['p-4 m-2', x]">"#)
+        );
+        let input = r#"<p class="p-4 {{ extra }} m-2"><p class="p-4 <?= $x ?> m-2"><p class=p-4>"#;
+        assert_eq!(tailwind(input, Language::Html), input);
+    }
+
+    #[test]
+    fn keeps_whitespace_of_multiline_class_lists() {
+        assert_eq!(
+            tailwind("<p class=\"\n  p-4\n  card\n  m-2\n\">", Language::Html),
+            // The value spans lines, so the tag is multiline (`closingBracketNewline`).
+            "<p class=\"\n  card\n  m-2\n  p-4\n\"\n>"
+        );
+    }
+
+    #[test]
+    fn respects_disable_directives() {
+        let input = "<!-- annealer-disable-next-line -->\n<p class=\"p-4 m-2\">";
+        assert_eq!(tailwind(input, Language::Html), input);
+    }
+
+    #[test]
+    fn profiles_can_name_or_inline_a_class_order() {
+        let named = Profile::from_yaml(
+            "schemaVersion: 1\nname: x\ngroups:\n  - name: rest\n    fallback: true\nclassOrder: tailwind\n",
+        )
+        .unwrap();
+        let config = Config::new(Language::Html, named);
+        assert_eq!(
+            format(r#"<p class="p-4 m-2">"#, &config).unwrap(),
+            r#"<p class="m-2 p-4">"#
+        );
+
+        // A library other than Tailwind, written by hand: classes go by the
+        // properties they set.
+        let inline = Profile::from_yaml(concat!(
+            "schemaVersion: 1\nname: x\ngroups:\n  - name: rest\n    fallback: true\n",
+            "classOrder:\n",
+            "  schemaVersion: 1\n  name: utilities\n  unknown: end\n",
+            "  propertyOrder: [display, margin, color]\n",
+            "  rules:\n",
+            "    - match: [d-*]\n      properties: [display]\n",
+            "    - match: ['m-{number}', mx-auto]\n      properties: [margin]\n",
+            "    - match: [text-*]\n      properties: [color]\n",
+        ))
+        .unwrap();
+        let config = Config::new(Language::Html, inline);
+        assert_eq!(
+            format(r#"<p class="text-muted card m-3 d-flex">"#, &config).unwrap(),
+            r#"<p class="d-flex m-3 text-muted card">"#
+        );
+    }
+
+    #[test]
+    fn config_overrides_the_profile_class_order() {
+        let profile = Profile::from_yaml(
+            "schemaVersion: 1\nname: x\ngroups:\n  - name: rest\n    fallback: true\nclassOrder: tailwind\n",
+        )
+        .unwrap();
+        let own = ClassOrder::from_yaml(
+            "schemaVersion: 1\nname: own\nunknown: end\npropertyOrder: [padding]\nrules:\n  - match: [p-*]\n    properties: [padding]\n",
+        )
+        .unwrap();
+        let config = Config::new(Language::Html, profile).with_class_order(Some(own));
+        assert_eq!(
+            format(r#"<p class="m-2 p-4">"#, &config).unwrap(),
+            r#"<p class="p-4 m-2">"#
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_builtin_names() {
+        assert!(matches!(
+            Profile::from_yaml(
+                "schemaVersion: 1\nname: x\ngroups:\n  - name: rest\n    fallback: true\nclassOrder: bootstrap\n"
+            ),
+            Err(annealer::ProfileError::UnknownClassOrder(name)) if name == "bootstrap"
+        ));
+    }
+}
