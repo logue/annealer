@@ -9,6 +9,7 @@ homepage = "https://github.com/logue/annealer"
 authors = ["Logue <logue@hotmail.co.jp>"]
 keywords = ["html", "vue", "formatter", "attributes", "css"]
 categories = ["development-tools"]
+rust-version = "1.99.1"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -39,4 +40,4 @@ path = "src/bin/anyl.rs"
 required-features = ["cli"]
 
 [dev-dependencies]
-jsonschema = "0.58"
+jsonschema = "0.60"

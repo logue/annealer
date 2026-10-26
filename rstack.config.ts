@@ -97,7 +97,7 @@ const IGNORE_PATTERNS = [
 ];
 
 const APP_FILES = [
-  '**/*.{ts,mts,tsx,js,mjs,jsx,json,jsonc,yml,yaml,mdx,vue,astro,svelte}'
+  '**/*.{ts,mts,tsx,js,mjs,jsx,json,jsonc,mdx,vue,astro,svelte}'
 ];
 const TEST_FILES = ['**/*.{test,spec}.{ts,mts,tsx,js,mjs,jsx}'];
 const DOC_FILES = ['**/*.{md,mdx}'];
@@ -185,11 +185,6 @@ define.app({
     },
     include: ['./src'],
     tsconfigPath: './tsconfig.rsbuild.json'
-  },
-  tools: {
-    rspack: {
-      plugins: createRsdoctorPlugins()
-    }
   }
 });
 

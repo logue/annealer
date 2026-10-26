@@ -11,7 +11,7 @@
       "source": "rstackjs/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/rsdoctor-analysis/SKILL.md",
-      "computedHash": "1aa36522b3ef319f9348fe0b7d7863c8b2d0d2ee76a1f784f895d239cb02ebd2"
+      "computedHash": "6b5ea016ec7dbc34f155e367c15dc7d776b8b8106db55e1d8236ea4db0694177"
     },
     "rslib-best-practices": {
       "source": "rstackjs/agent-skills",
@@ -25,7 +25,7 @@
       "skillPath": "skills/rslib-modern-package/SKILL.md",
       "computedHash": "11096504136dfb50a564d60b7375de4b0958e6ff7d3d0a27debc35e5c5079b4e"
     },
-        "rspress-docs-generator": {
+    "rspress-docs-generator": {
       "source": "rstackjs/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/rspress-docs-generator/SKILL.md",

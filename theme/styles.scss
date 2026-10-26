@@ -2,7 +2,7 @@
   Carbon Web Components self-style via Shadow DOM — no global @import needed.
   We only define typography tokens and map Rspress CSS variables here.
 */
-@use "@carbon/styles" with (
+@use '@carbon/styles' with (
   $use-per-family-plex: true,
   $use-akamai-cdn: true
 );
@@ -10,9 +10,9 @@
 /* ─── IBM Plex fonts ─────────────────────────────────────────────────────── */
 :root {
   --font-sans:
-    "IBM Plex Sans", "IBM Plex Sans JP", -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
-  --font-mono: "IBM Plex Mono", "Menlo", "Monaco", "Consolas", monospace;
+    'IBM Plex Sans', 'IBM Plex Sans JP', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
 }
 
 body {
