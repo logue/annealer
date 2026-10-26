@@ -6,12 +6,12 @@
 <script>{;var defaultLang = "en", langs = ["en","ja"];if (!/bot|spider|crawl|lighthouse/i.test(window.navigator.userAgent)) {;var firstVisitKey = 'rspress-visited', visited = localStorage.getItem(firstVisitKey);if (!visited) {;localStorage.setItem(firstVisitKey, '1');var targetLang = window.navigator.language.split('-')[0], { pathname, search } = window.location, base = "/annealer", cleanPathname = pathname.startsWith(base) ? pathname.slice(base.length) || '/' : pathname, pathSegments = cleanPathname.split('/').filter(Boolean), currentLang = langs.includes(pathSegments[0]) ? pathSegments[0] : defaultLang;if (langs.includes(targetLang) && targetLang !== currentLang) {;var newPathSegments = pathSegments.slice();if (targetLang === defaultLang) {;newPathSegments.splice(0, 1);} else if (currentLang === defaultLang) {;newPathSegments.splice(0, 0, targetLang);} else {;newPathSegments[0] = targetLang;};;var newPathname = '/' + newPathSegments.join('/'), trailingSlash = newPathname !== '/' && cleanPathname.endsWith('/') ? '/' : '';window.location['replace'](base + newPathname + trailingSlash + search);};};};}</script>
 <script>{;const saved = localStorage.getItem('rspress-theme-appearance');const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches;const defaultTheme = 'auto';const theme = saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : defaultTheme;const isDark = theme === 'auto' ? preferDark : theme === 'dark';document.documentElement.classList.toggle('dark', isDark);document.documentElement.classList.toggle('rp-dark', isDark);document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';}</script>
 <link href="/annealer/static/css/styles.108df18aec.css" rel="stylesheet">
-<link rel="preload" href="/annealer/static/js/async/route-1514802a9082.0fac246ae3.js" as="script">
-<script defer src="/annealer/static/js/styles.ff9ef37b07.js"></script>
-<script defer src="/annealer/static/js/lib-react.48eabcbdf3.js"></script>
-<script defer src="/annealer/static/js/lib-router.902c892e15.js"></script>
-<script defer src="/annealer/static/js/f.a937849c92.js"></script>
-<script defer src="/annealer/static/js/index.ed2632f536.js"></script>
+<link rel="preload" href="/annealer/static/js/async/route-1514802a9082.2b67d16877.js" as="script">
+<script defer src="/annealer/static/js/styles.086edf5527.js"></script>
+<script defer src="/annealer/static/js/lib-react.f1a7a127be.js"></script>
+<script defer src="/annealer/static/js/lib-router.5117c5d8ad.js"></script>
+<script defer src="/annealer/static/js/b.954b852ff0.js"></script>
+<script defer src="/annealer/static/js/index.af1a67a8d7.js"></script>
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="generator" content="Rspress v2.0.23">
 <link rel="alternate" hreflang="en" href="/annealer/guide/design/value-ordering.html">
