@@ -724,6 +724,35 @@ mod stylesheets {
     }
 
     #[test]
+    fn prefers_single_quotes() {
+        assert_eq!(
+            run(
+                "@use \"sass:math\";\na { font-family: \"Noto Sans\", \"O'Brien\"; }\n",
+                Language::Scss
+            ),
+            // Double quotes stay where single quotes would need escaping.
+            "@use 'sass:math';\na {\n  font-family: 'Noto Sans', \"O'Brien\";\n}\n"
+        );
+    }
+
+    #[test]
+    fn single_quotes_are_the_default_for_custom_profiles_too() {
+        let profile = |malva: &str| {
+            Profile::from_yaml(&format!(
+                "schemaVersion: 1\nname: x\ngroups:\n  - name: r\n    fallback: true\nstylesheet:\n  declarationOrder: smacss\n{malva}"
+            ))
+            .unwrap()
+        };
+        let css = "a { font-family: \"A B\"; }\n";
+        let format_with = |profile| format(css, &Config::new(Language::Css, profile)).unwrap();
+        assert_eq!(format_with(profile("")), "a {\n  font-family: 'A B';\n}\n");
+        assert_eq!(
+            format_with(profile("  malva:\n    quotes: always-double\n")),
+            "a {\n  font-family: \"A B\";\n}\n"
+        );
+    }
+
+    #[test]
     fn orders_vendor_prefixes_in_style_blocks() {
         assert_eq!(
             vue("<style>\n.a { box-shadow: none; -webkit-box-shadow: none; }\n</style>\n"),

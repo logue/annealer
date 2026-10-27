@@ -106,7 +106,7 @@ See [Stylesheets](../guide/concepts/stylesheets.md) for details.
 | `styleAttribute`          | boolean                                               | `false`           | Also order declarations in static `style` attributes.                        |
 | `malva`                   | object                                                | –                 | Other [malva options](https://malva.netlify.app/config/), passed through.    |
 
-`stylesheet.malva` accepts malva's own options, such as `printWidth`, `useTabs`, `indentWidth`, `lineBreak`, `hexCase`, `hexColorLength`, `quotes`, `trailingComma`, `formatComments` and the `*.preferSingleLine` options. `declarationOrder` and `declarationOrderGroupBy` belong to `stylesheet` itself, not to `malva`. Unknown malva keys are rejected.
+`stylesheet.malva` accepts malva's own options, such as `printWidth`, `useTabs`, `indentWidth`, `lineBreak`, `hexCase`, `hexColorLength`, `quotes`, `trailingComma`, `formatComments` and the `*.preferSingleLine` options. `declarationOrder` and `declarationOrderGroupBy` belong to `stylesheet` itself, not to `malva`. Unknown malva keys are rejected. `quotes` defaults to `prefer-single` in annealer (malva's own default is `always-double`); see [Quotes](../guide/concepts/stylesheets.md#quotes).
 
 ## `classOrder`
 

@@ -57,7 +57,7 @@ malva has no such option (it sorts by the unprefixed name). annealer re-parses m
 `stylesheet.styleAttribute: true` also orders the declarations inside static `style` attributes. It is off in both built-in profiles.
 
 - The value stays on one line.
-- CSS strings use the quote opposite to the attribute's quote.
+- CSS strings use the quote opposite to the attribute's quote. With the usual double-quoted attribute, that is the single quote annealer prefers anyway.
 - A missing trailing `;` stays missing.
 - Bound `:style` is never touched.
 - Values are left as written when they are unquoted, contain template syntax, comments, `{}`, `<` or `&`, or don't parse as plain declarations.
@@ -65,3 +65,7 @@ malva has no such option (it sorts by the unprefixed name). annealer re-parses m
 ## Other malva options
 
 Other malva options go under `stylesheet.malva` (for example `printWidth`, `quotes`, `hexCase`). Unknown keys are rejected, so a typo isn't silently ignored. See the [Profile reference](../../api/profile.md#stylesheet).
+
+## Quotes
+
+CSS strings use single quotes (`@use 'sass:math'`, `font-family: 'Noto Sans'`), as Prettier and oxfmt write them with `singleQuote`. A string keeps double quotes where single quotes would need escaping (`"O'Brien"`). This is annealer's default (`quotes: prefer-single`); malva's own default is double quotes. Set `stylesheet.malva.quotes` to change it.

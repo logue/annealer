@@ -286,7 +286,7 @@
             "prefer-double",
             "prefer-single"
           ],
-          "default": "always-double"
+          "default": "prefer-single"
         },
         "attrSelector.quotes": {
           "enum": [

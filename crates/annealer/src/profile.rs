@@ -2,7 +2,7 @@
 
 use std::collections::HashSet;
 
-use malva::config::{DeclarationOrder, DeclarationOrderGroupBy, FormatOptions};
+use malva::config::{DeclarationOrder, DeclarationOrderGroupBy, FormatOptions, Quotes};
 use serde::Deserialize;
 
 use crate::class_order::ClassOrder;
@@ -231,6 +231,7 @@ pub(crate) const MALVA_OPTIONS: &[&str] = &[
 impl RawStylesheet {
     /// Builds malva options, rejecting keys malva would silently ignore.
     fn into_options(self) -> Result<StylesheetOptions, ProfileError> {
+        let mut quotes_set = false;
         let mut options = match self.malva {
             None => FormatOptions::default(),
             Some(mapping) => {
@@ -239,10 +240,17 @@ impl RawStylesheet {
                     if !MALVA_OPTIONS.contains(&key) {
                         return Err(ProfileError::MalvaOption(key.to_owned()));
                     }
+                    quotes_set |= key == "quotes";
                 }
                 yaml_serde::from_value(yaml_serde::Value::Mapping(mapping))?
             }
         };
+        // Single quotes are annealer's default (malva's is double), like
+        // Prettier's and oxfmt's `singleQuote`: a string switches to double
+        // quotes only when that needs fewer escapes.
+        if !quotes_set {
+            options.language.quotes = Quotes::PreferSingle;
+        }
         options.language.declaration_order = self.declaration_order;
         if let Some(group_by) = self.declaration_order_group_by {
             options.language.declaration_order_group_by = group_by;

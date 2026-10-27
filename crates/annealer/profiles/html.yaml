@@ -93,3 +93,8 @@ stylesheet:
   # Vendor-prefixed declarations go first, alphabetically (no grouping), so the
   # standard property is declared last and wins where the prefixed one is an alias.
   vendorPrefix: start
+  malva:
+    # Single-quoted CSS strings, as Prettier and oxfmt write them with
+    # `singleQuote` (also annealer's default). Double quotes are used only
+    # where they need fewer escapes.
+    quotes: prefer-single

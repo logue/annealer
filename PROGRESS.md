@@ -150,6 +150,12 @@
       `layout.selfClosing`, normalize). Likely needs profile composition
       (`extends`) and per-tag/per-component overrides.
 
+- [x] CSS strings prefer single quotes (user's decision, 2026-10-27: Prettier
+      and oxc default to them, and a font name in a double-quoted `style`
+      attribute needs them anyway). annealer defaults malva's `quotes` to
+      `prefer-single` (malva: `always-double`); the built-in profiles also
+      state it. Double quotes remain where single quotes would need escapes.
+
 ## Decisions made during implementation (please confirm)
 
 1. **HTML profile order (agreed).** The plan's table had no place for
