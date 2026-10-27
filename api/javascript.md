@@ -27,6 +27,9 @@ Reorders attributes (HTML, Vue) or declarations (CSS, SCSS, Sass, Less).
 - `options.language`: the input language. Default: `'html'`.
 - `options.profile`: a built-in profile name (`'html'`, `'vue'`) or the YAML text of a profile. Default: the built-in profile for `language`.
 - `options.classOrder`: a built-in class order name (`'tailwind'`) or the YAML text of a class order. Orders the classes of static `class` attributes and overrides the profile's `classOrder`. Default: classes keep their order. See [Class order](/annealer/guide/features/class-order.md).
+- `options.removeDuplicateClasses`: `true` drops repeated classes in static `class` attributes, keeping the first, with or without `classOrder`; `false` keeps them. Default: the class order's `removeDuplicates` (off in `tailwind`, and off without a class order).
+- `options.selfClosing`: `true` self-closes empty elements and components in Vue templates (`layout.selfClosing.normal`/`component`: `<div />`, `<MyComp />`); `false` turns that off. Default: the profile's setting (off in the built-in profiles). Void elements (`<br />`) always follow `layout.selfClosing.void`.
+- `options.contentNewline`: `true` puts the content of multiline elements on lines of its own, with the rule's defaults when the profile has no `layout.contentNewline`; `false` turns it off. Default: the profile's setting (off in the built-in profiles). See [Layout](/annealer/guide/features/layout.md).
 
 Throws an `Error` when the input or the profile is invalid.
 
@@ -37,6 +40,8 @@ format('<a title="Home" href="/" id="home">Home</a>');
 format(source, { language: 'vue' });
 format(source, { language: 'html', profile: yamlText });
 format(source, { language: 'vue', classOrder: 'tailwind' });
+format(source, { classOrder: 'tailwind', removeDuplicateClasses: true });
+format(source, { language: 'vue', selfClosing: true, contentNewline: true });
 ```
 
 ## `init()`
@@ -88,6 +93,9 @@ type FormatOptions = {
   language?: Language;
   profile?: string;
   classOrder?: string;
+  removeDuplicateClasses?: boolean;
+  selfClosing?: boolean;
+  contentNewline?: boolean;
 };
 
 type Meta = {

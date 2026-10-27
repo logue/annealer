@@ -10,15 +10,18 @@ anyl [OPTIONS] [FILES]...
 
 ## オプション
 
-| オプション                         | 説明                                                                                                    |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `-w`, `--write`               | ファイルをその場で上書きします。`--check` とは併用できません。                                                                  |
-| `-c`, `--check`               | 変更が必要なファイルのパスを出力し、1 つでもあれば終了コード 1 で終了します。                                                             |
-| `-p`, `--profile <PROFILE>`   | 組み込みプロファイル名（`html`、`vue`）またはプロファイル YAML ファイルのパス。既定は各ファイルの言語に対応する組み込みプロファイルです。                         |
-| `--class-order <CLASS_ORDER>` | 静的な `class` 属性のクラスを並べ替えます。組み込みのクラス順の名前（`tailwind`）またはクラス順 YAML ファイルのパス。プロファイルの `classOrder` より優先されます。 |
-| `-l`, `--language <LANGUAGE>` | 標準入力の言語: `html`（既定）、`vue`、`css`、`scss`、`sass`、`less`                                                  |
-| `-h`, `--help`                | ヘルプを表示します。                                                                                            |
-| `-V`, `--version`             | バージョンを表示します。                                                                                          |
+| オプション                         | 説明                                                                                                                                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `-w`, `--write`               | ファイルをその場で上書きします。`--check` とは併用できません。                                                                                                                                                                               |
+| `-c`, `--check`               | 変更が必要なファイルのパスを出力し、1 つでもあれば終了コード 1 で終了します。                                                                                                                                                                          |
+| `-p`, `--profile <PROFILE>`   | 組み込みプロファイル名（`html`、`vue`）またはプロファイル YAML ファイルのパス。既定は各ファイルの言語に対応する組み込みプロファイルです。                                                                                                                                      |
+| `--class-order <CLASS_ORDER>` | 静的な `class` 属性のクラスを並べ替えます。組み込みのクラス順の名前（`tailwind`）またはクラス順 YAML ファイルのパス。プロファイルの `classOrder` より優先されます。                                                                                                              |
+| `--remove-duplicate-classes`  | 静的な `class` 属性で重複したクラスを、最初のものを残して削除します。`--class-order` の有無にかかわらず使えます。既定ではクラス順の `removeDuplicates` に従います（`tailwind` では無効）。`--keep-duplicate-classes` で残します。                                                         |
+| `--self-closing`              | Vue テンプレートの空要素と空のコンポーネントを自己終了にします（`layout.selfClosing.normal`/`component`、`vue/html-self-closing`）: `<div />`、`<MyComp />`。組み込みプロファイルでは無効です。`--no-self-closing` で無効にします。空要素（`<br />`）は常に `selfClosing.void` に従います。 |
+| `--content-newline`           | 複数行の要素のコンテンツを独立した行に置きます（`vue/multiline-html-element-content-newline`）。組み込みプロファイルでは無効です。`--no-content-newline` で無効にします。                                                                                             |
+| `-l`, `--language <LANGUAGE>` | 標準入力の言語: `html`（既定）、`vue`、`css`、`scss`、`sass`、`less`                                                                                                                                                               |
+| `-h`, `--help`                | ヘルプを表示します。                                                                                                                                                                                                         |
+| `-V`, `--version`             | バージョンを表示します。                                                                                                                                                                                                       |
 
 ## 言語
 
@@ -50,5 +53,7 @@ anyl --write src/**/*.vue                 # その場で上書き
 anyl --check index.html                   # CI で使う
 anyl --profile my-profile.yaml page.html  # 独自プロファイル
 anyl --class-order tailwind src/**/*.vue  # Tailwind のクラスを並べ替える
+anyl --class-order tailwind --remove-duplicate-classes src/**/*.vue  # 重複も削除する
+anyl --self-closing --content-newline src/**/*.vue  # オプションのレイアウト規則も適用する
 cat App.vue | anyl --language vue         # 標準入力
 ```

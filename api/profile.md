@@ -67,16 +67,18 @@ Rewrites applied before classification.
 
 See [Layout](/annealer/guide/features/layout.md) for details.
 
-| Key                              | Type                              | Default                            | Description                                                                                                              |
-| -------------------------------- | --------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `closingBracketNewline`          | boolean                           | `false`                            | Put the closing bracket of a multiline start tag on its own line.                                                        |
-| `oneAttributePerLine`            | boolean                           | `false`                            | One attribute per line in a multiline start tag.                                                                         |
-| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`                         | Void elements: `<br />` or `<br>`.                                                                                       |
-| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`                         | Empty non-void elements (`<div />`). Vue templates only.                                                                 |
-| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`                         | Empty components (`<MyComp />`). Vue templates only.                                                                     |
-| `contentNewline`                 | object                            | off                                | Put the content of a multiline element on lines of its own. `{}` turns it on with the defaults.                          |
-| `contentNewline.ignore`          | string\[]                         | `pre`, `textarea`, inline elements | Elements left alone, with everything inside them. Element names match case-insensitively; component names match exactly. |
-| `contentNewline.allowEmptyLines` | boolean                           | `false`                            | Keep blank lines before and after the content.                                                                           |
+| Key                              | Type                              | Default                            | Description                                                                                                                                                      |
+| -------------------------------- | --------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `closingBracketNewline`          | boolean                           | `false`                            | Put the closing bracket of a multiline start tag on its own line.                                                                                                |
+| `oneAttributePerLine`            | boolean                           | `false`                            | One attribute per line in a multiline start tag.                                                                                                                 |
+| `selfClosing.enabled`            | boolean                           | `true`                             | Whether `normal` and `component` apply (`void` always does). The built-in `vue` profile sets `false`; `--self-closing` and the `selfClosing` option override it. |
+| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`                         | Void elements: `<br />` or `<br>`.                                                                                                                               |
+| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`                         | Empty non-void elements (`<div />`). Vue templates only.                                                                                                         |
+| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`                         | Empty components (`<MyComp />`). Vue templates only.                                                                                                             |
+| `contentNewline`                 | object                            | off                                | Put the content of a multiline element on lines of its own. `{}` turns it on with the defaults.                                                                  |
+| `contentNewline.enabled`         | boolean                           | `true`                             | Whether the rule applies. The built-in profiles set `false`; `--content-newline` and the `contentNewline` option override it.                                    |
+| `contentNewline.ignore`          | string\[]                         | `pre`, `textarea`, inline elements | Elements left alone, with everything inside them. Element names match case-insensitively; component names match exactly.                                         |
+| `contentNewline.allowEmptyLines` | boolean                           | `false`                            | Keep blank lines before and after the content.                                                                                                                   |
 
 ## `groups`
 
@@ -124,7 +126,7 @@ A class order profile is a YAML file of its own, passed with `--class-order` or 
 | `name`                | string              | –       | Required. Class order name.                                                                                                    |
 | `description`         | string              | –       | Human-readable summary.                                                                                                        |
 | `unknown`             | `start` \| `end`    | `start` | Where classes no rule matches go, in source order.                                                                             |
-| `removeDuplicates`    | boolean             | `false` | Drop repeated classes, keeping the first.                                                                                      |
+| `removeDuplicates`    | boolean             | `false` | Drop repeated classes, keeping the first. `--remove-duplicate-classes` overrides it.                                           |
 | `important`           | string              | –       | Marker stripped from the start or end of a utility before matching (`!`).                                                      |
 | `arbitraryProperties` | boolean             | `false` | Classes of the form `[property:value]` set `property`.                                                                         |
 | `variants`            | object              | –       | `separator` (e.g. `:`) and `order`: variant patterns by rank, lowest first. A list entry gives its patterns the same rank.     |

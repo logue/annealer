@@ -6,6 +6,8 @@
 
 - [Introduction](/annealer/guide/start/introduction.md): What annealer is, why attribute order matters, how it relates to vue/attributes-order, and what is in and out of scope.
 - [Getting started](/annealer/guide/start/getting-started.md): Run annealer from the anyl CLI or from JavaScript, and choose a built-in or custom profile.
+- [Using with other tools](/annealer/guide/start/integration.md): Run annealer together with Rslint and rs fmt (Prettier), oxlint and oxfmt, or Biome, with configuration examples that keep the tools from undoing each other's output.
+- [Limitations](/annealer/guide/start/limitations.md): Current limitations of annealer, covering supported inputs, markup and layout, class order, stylesheets, profiles and the CLI.
 - [Attribute order](/annealer/guide/concepts/attribute-order.md): How annealer tokenizes start tags, classifies attributes into groups, clusters same-name attributes, respects v-bind spreads, and normalizes names.
 - [Stylesheets](/annealer/guide/concepts/stylesheets.md): How annealer orders declarations in CSS, SCSS, Sass and Less through malva, where vendor-prefixed declarations go, and the opt-in style attribute support.
 - [Layout](/annealer/guide/features/layout.md): Layout rules for multiline start tags, self-closing elements and element content, equivalent to the matching eslint-plugin-vue rules.

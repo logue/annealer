@@ -29,8 +29,9 @@ annealer (npm)   WebAssembly build of the core with a TypeScript wrapper.
 4. **One attribute per line in multiline tags.** Otherwise reordering could put two attributes on one line. This matches the multiline default of `vue/max-attributes-per-line` and can be turned off with `layout.oneAttributePerLine`.
 5. **Vue tier 8 is split** into other directives, then other attributes, as in `vue/attributes-order` (`OTHER_DIRECTIVES` → `OTHER_ATTR`).
 6. **`void: always` differs from `vue/html-self-closing`'s default** (`html.void: never`). Projects that keep that ESLint rule need to align one side.
-7. **`contentNewline` is on in the HTML profile too.** Whitespace at the start and end of block-level content isn't rendered, and the `ignore` list covers the elements where it could be.
+7. **`contentNewline` is defined in the HTML profile too.** Whitespace at the start and end of block-level content isn't rendered, and the `ignore` list covers the elements where it could be.
 8. **Vendor-prefixed declarations go first** (`vendorPrefix: start`), so the standard property is declared last and wins. See [Stylesheets](/annealer/guide/concepts/stylesheets.md#vendor-prefixes-vendorprefix-start).
+9. **Self-closing empty elements and components, and `contentNewline`, are opt-in.** They rewrite markup beyond what reordering needs, and they conflict with setups that don't use those eslint-plugin-vue rules (Prettier, for example). The built-in profiles keep their settings with `enabled: false`; `--self-closing` / `--content-newline` or the matching JavaScript options turn them on. Void elements (`<br />`) are self-closed always, as Prettier also writes them.
 
 ## Resolved questions
 

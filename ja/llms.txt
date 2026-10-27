@@ -6,6 +6,8 @@
 
 - [はじめに](/annealer/ja/guide/start/introduction.md): annealer とは何か、属性順がなぜ重要か、vue/attributes-order との関係、対象範囲と対象外について。
 - [使い方](/annealer/ja/guide/start/getting-started.md): anyl CLI または JavaScript から annealer を実行し、組み込みプロファイルまたは独自プロファイルを選ぶ方法。
+- [他のツールとの併用](/annealer/ja/guide/start/integration.md): annealer を Rslint と rs fmt（Prettier）、oxlint と oxfmt、Biome と組み合わせる方法。互いの出力を打ち消し合わないための設定例を示します。
+- [制約事項](/annealer/ja/guide/start/limitations.md): annealer の現在の制約事項。対応する入力、マークアップとレイアウト、クラス順、スタイルシート、プロファイルと CLI について。
 - [属性順](/annealer/ja/guide/concepts/attribute-order.md): annealer が開始タグを字句解析し、属性をグループに分類し、同名属性をまとめ、v-bind スプレッドを尊重し、属性名を正規化する仕組み。
 - [スタイルシート](/annealer/ja/guide/concepts/stylesheets.md): annealer が malva を通じて CSS・SCSS・Sass・Less の宣言を並べ替える方法、ベンダープレフィックス付き宣言の位置、オプトインの style 属性対応。
 - [レイアウト](/annealer/ja/guide/features/layout.md): 複数行の開始タグ、自己終了要素、要素のコンテンツに関するレイアウト規則。eslint-plugin-vue の対応ルールと同等です。

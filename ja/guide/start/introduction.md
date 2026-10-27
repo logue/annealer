@@ -70,7 +70,7 @@ CSS のプロパティ順だけは例外で、malva がすでに設定可能な 
 
 - HTML と Vue 3 SFC の `<template>` ブロックにおける属性の並べ替え
 - 属性名の正規化: `v-bind:` → `:`、`v-on:` → `@`、コンポーネントの props の camelCase → kebab-case
-- 複数行タグのレイアウト規則（`vue/html-closing-bracket-newline`、`vue/max-attributes-per-line`（複数行）、`vue/html-self-closing`、`vue/multiline-html-element-content-newline` 相当）
+- 複数行タグのレイアウト規則（`vue/html-closing-bracket-newline`、`vue/max-attributes-per-line`（複数行）、`vue/html-self-closing`（空要素は常時、それ以外はオプトイン）相当。オプトインで `vue/multiline-html-element-content-newline` 相当）
 - `<style>` ブロックと単体ファイルにおける CSS/SCSS/Sass/Less の宣言順（malva 経由）
 - 静的な `style` 属性内の宣言順（オプトイン）
 - マークアップとスタイルシートのコメントによる[無効化ディレクティブ](/annealer/ja/guide/features/disable-directives.md)
@@ -87,4 +87,6 @@ CSS のプロパティ順だけは例外で、malva がすでに設定可能な 
 ## 次のステップ
 
 - [使い方](/annealer/ja/guide/start/getting-started.md): CLI または JavaScript から annealer を実行します。
+- [他のツールとの併用](/annealer/ja/guide/start/integration.md): Rslint/`rs fmt`、oxlint/oxfmt、Biome の設定例です。
+- [制約事項](/annealer/ja/guide/start/limitations.md): annealer がまだ対応していないことです。
 - [属性順](/annealer/ja/guide/concepts/attribute-order.md): 属性の分類と並べ替えの仕組みです。

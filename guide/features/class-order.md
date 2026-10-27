@@ -36,7 +36,7 @@ annealer doesn't run Tailwind. The order is data, generated from Tailwind CSS 4.
 Differences from running Tailwind:
 
 - **Your own theme and utilities aren't known.** A custom color (`bg-brand-500`) is ordered like a theme color, because a value that matches no other rule falls back to the color rule. A custom utility (`@utility`) is an unknown class.
-- **Duplicates are kept.** `eslint-plugin-tailwindcss` removes them by default (`removeDuplicates`). Removing classes is a lint concern, so the built-in profile keeps them. A class order with `removeDuplicates: true` removes them.
+- **Duplicates are kept by default.** `eslint-plugin-tailwindcss` removes them by default (`removeDuplicates`). Removing classes is a lint concern, so the built-in profile keeps them. To remove them, pass `--remove-duplicate-classes` (JavaScript: `removeDuplicateClasses: true`) or use a class order with `removeDuplicates: true`. The option also works without a class order: the classes keep their order and only the repeats go.
 - **Only static `class` attributes.** `:class` bindings and `clsx()`-style calls are expressions, and annealer never reads them.
 
 ## How classes are ordered
