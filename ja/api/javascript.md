@@ -28,6 +28,7 @@ function format(input: string, options?: FormatOptions): string;
 - `options.profile`: 組み込みプロファイル名（`'html'`、`'vue'`）またはプロファイルの YAML テキスト。既定は `language` に対応する組み込みプロファイル。
 - `options.classOrder`: 組み込みのクラス順の名前（`'tailwind'`）またはクラス順の YAML テキスト。静的な `class` 属性のクラスを並べ替え、プロファイルの `classOrder` より優先されます。既定ではクラスは元の順のままです。[クラス順](/annealer/ja/guide/features/class-order.md)を参照してください。
 - `options.removeDuplicateClasses`: `true` で静的な `class` 属性の重複したクラスを、最初のものを残して削除します。`classOrder` の有無にかかわらず使えます。`false` で残します。既定はクラス順の `removeDuplicates`（`tailwind` では無効、クラス順がなければ無効）。
+- `options.printWidth`: スタイルシートと `<style>` ブロックの行幅（`stylesheet.malva.printWidth`、1 以上）。フォーマッターに合わせます。Prettier と Biome は 80、oxfmt は 100。既定はプロファイルの値（80）。
 - `options.selfClosing`: `true` で Vue テンプレートの空要素と空のコンポーネントを自己終了にし（`layout.selfClosing.normal`/`component`: `<div />`、`<MyComp />`）、`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。空要素（`<br />`）は常に `layout.selfClosing.void` に従います。
 - `options.contentNewline`: `true` で複数行の要素のコンテンツを独立した行に置きます。プロファイルに `layout.contentNewline` がなければ規則の既定値を使います。`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。[レイアウト](/annealer/ja/guide/features/layout.md)を参照してください。
 
@@ -94,6 +95,7 @@ type FormatOptions = {
   profile?: string;
   classOrder?: string;
   removeDuplicateClasses?: boolean;
+  printWidth?: number;
   selfClosing?: boolean;
   contentNewline?: boolean;
 };

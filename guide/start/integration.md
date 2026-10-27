@@ -4,7 +4,13 @@
 
 annealer only orders things: attributes, classes and declarations. It leaves line width and indentation to your formatter. This page shows how to combine it with the usual toolchains so that neither tool undoes the other.
 
-The examples were checked with [Prettier](https://prettier.io/) 3.9 (through `rs fmt`), [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) 0.74, [oxlint](https://oxc.rs/docs/guide/usage/linter.html) 1.89 and [Biome](https://biomejs.dev/) 2.6.
+The examples were checked with:
+
+- [Prettier](https://prettier.io/) 3.9 (through `rs fmt`)
+- [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) 0.74
+- [oxlint](https://oxc.rs/docs/guide/usage/linter.html) 1.89
+- [eslint-plugin-vue](https://eslint.vuejs.org/) 10.11, with [eslint-config-prettier](https://npm.im/eslint-config-prettier) 10.1
+- [Biome](https://biomejs.dev/) 2.6
 
 ## Run order
 
@@ -35,13 +41,23 @@ annealer's built-in profiles use these values. Aligning the formatter with them 
 | -------------------------- | ------------------------------------- | -------------------------------- | -------------------- | ------------------------------------------------ |
 | CSS string quotes          | single (`quotes: prefer-single`)      | `singleQuote: true`              | `singleQuote: true`  | `css.formatter.quoteStyle: "single"`             |
 | Indentation in stylesheets | 2 spaces (malva default)              | default                          | default              | `formatter.indentStyle: "space"`                 |
-| Line width in stylesheets  | 80 (malva default)                    | default                          | `printWidth: 80`     | default                                          |
+| Line width in stylesheets  | 80; `--print-width` to change         | default (80)                     | `--print-width 100`  | default (80)                                     |
 | Void elements              | `<br />` (always)                     | default                          | default              | `html.formatter.selfCloseVoidElements: "always"` |
-| Attribute sorting          | annealer                              | none                             | none                 | `useSortedAttributes` off (the default)          |
-| Declaration sorting        | annealer (`declarationOrder: smacss`) | none                             | none                 | `useSortedProperties` off (the default)          |
+| Attribute sorting          | annealer                              | none                             | none                 | `useSortedAttributes` off (required)             |
+| Declaration sorting        | annealer (`declarationOrder: smacss`) | none                             | none                 | `useSortedProperties` off (required)             |
 | Tailwind class sorting     | `--class-order tailwind` (opt-in)     | no `prettier-plugin-tailwindcss` | no `sortTailwindcss` | `useTailwindSortedClasses` off                   |
 
 To use double quotes instead, change the profile rather than the formatter: copy the built-in profile (`crates/annealer/profiles/*.yaml`) and set `stylesheet.malva.quotes: prefer-double`.
+
+### No alphabetical sorting
+
+annealer exists to put attributes and declarations in an order that carries meaning: identity first, then what an element is and does, ARIA, data, and events. Alphabetical order throws that away, so any tool that sorts attributes or declarations alphabetically works against annealer, and the two keep rewriting each other's output. Turn these off:
+
+| Tool              | Setting                                                                                   |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| eslint-plugin-vue | `vue/attributes-order`: keep `alphabetical: false` (the default)                          |
+| Biome             | `assist.actions.source.useSortedAttributes` and `useSortedProperties`: `off`              |
+| Stylelint         | don't use `stylelint-order` `properties-alphabetical-order` on files that annealer orders |
 
 ### Tailwind classes: pick one sorter
 
@@ -89,6 +105,31 @@ define.staged({
 
 Keep the staged globs to the extensions annealer supports. Any other file is an error (`unsupported file type`).
 
+## eslint-plugin-vue
+
+`vue/attributes-order` (in `flat/recommended`) checks the same tiers that annealer's `vue` profile uses, so annealer's output passes it. Keep `alphabetical` at its default, `false` (see [No alphabetical sorting](#no-alphabetical-sorting)). With Prettier, add `eslint-config-prettier` last: it turns off the layout rules (`vue/html-self-closing`, `vue/max-attributes-per-line`, …), and Prettier decides the layout.
+
+```js title="eslint.config.js"
+import vue from 'eslint-plugin-vue';
+import prettier from 'eslint-config-prettier';
+
+export default [
+  ...vue.configs['flat/recommended'],
+  prettier,
+  {
+    rules: {
+      // annealer orders the "other attributes" tier by meaning.
+      'vue/attributes-order': ['warn', { alphabetical: false }]
+    }
+  }
+];
+```
+
+- **Spreads:** annealer never moves an attribute across `v-bind="object"`, because in Vue 3 the later one wins. `vue/attributes-order` still checks the order across the spread, and its `--fix` moves attributes across it (`title="t" v-bind="obj"` becomes `v-bind="obj" title="t"`, so `title` now overrides `obj.title`). On such tags, order the attributes by hand or add an `eslint-disable` comment.
+- **Not rewritten by annealer:** `vue/v-on-event-hyphenation` (`@myEvent` → `@my-event`) and `vue/v-slot-style` (`v-slot:item` → `#item`). `eslint --fix` rewrites them, and annealer leaves its result alone.
+
+Run annealer, then Prettier, then `eslint --fix`. `anyl --check` passes on the result.
+
 ## oxlint and oxfmt (Oxc)
 
 oxlint's `vue` plugin only checks `<script>` code; it has no template rules such as `vue/attributes-order`. Nothing has to be turned off:
@@ -102,17 +143,16 @@ oxlint's `vue` plugin only checks `<script>` code; it has no template rules such
 }
 ```
 
-oxfmt formats `.vue` and `.html` with its bundled Prettier and CSS/SCSS/Less natively. Its defaults differ from annealer in quotes (double) and line width (100):
+oxfmt formats `.vue` and `.html` with its bundled Prettier and CSS/SCSS/Less natively. Its defaults differ from annealer in quotes (double) and line width (100 instead of 80). Set the quotes in oxfmt:
 
 ```json title=".oxfmtrc.json"
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "singleQuote": true,
-  "printWidth": 80
+  "singleQuote": true
 }
 ```
 
-`printWidth: 80` matches malva's line width for stylesheets. It applies to all files, so leave it out if you want 100 for JavaScript and rely on the run order instead. Leave `sortTailwindcss` off when annealer orders classes, or turn it on and drop `--class-order`:
+For the line width, change annealer rather than oxfmt: pass `--print-width 100` (JavaScript: `printWidth: 100`), so that stylesheets and `<style>` blocks wrap where oxfmt wraps them. If you set `printWidth` in `.oxfmtrc.json`, pass the same value to `--print-width`. Leave `sortTailwindcss` off when annealer orders classes, or turn it on and drop `--class-order`:
 
 ```json title=".oxfmtrc.json (oxfmt sorts Tailwind classes)"
 {
@@ -127,7 +167,7 @@ oxfmt formats `.vue` and `.html` with its bundled Prettier and CSS/SCSS/Less nat
 Then run annealer before oxfmt:
 
 ```bash
-git ls-files -z '*.vue' '*.html' '*.css' '*.scss' '*.less' | xargs -0 anyl --write
+git ls-files -z '*.vue' '*.html' '*.css' '*.scss' '*.less' | xargs -0 anyl --write --print-width 100
 oxfmt
 ```
 
@@ -158,7 +198,7 @@ Biome's defaults conflict with annealer in four places: tabs, double-quoted CSS 
 }
 ```
 
-- `useSortedAttributes` sorts attributes alphabetically in HTML and Vue, and `useSortedProperties` sorts CSS declarations. Both are off by default; the config above keeps them off explicitly, because turning them on would undo annealer's order on every `biome check --write`.
+- **Turn off `useSortedAttributes` and `useSortedProperties`.** `useSortedAttributes` sorts HTML and Vue attributes alphabetically, and `useSortedProperties` sorts CSS declarations by its own order. Both conflict with annealer's ordering by meaning and undo it on every `biome check --write` (see [No alphabetical sorting](#no-alphabetical-sorting)). They are off by default; set them to `off` explicitly as above, so that a shared config can't turn them on.
 - `useTailwindSortedClasses` is a nursery rule. Turn it off when annealer orders classes.
 - If you keep tabs, set `stylesheet.malva.useTabs: true` in your profile instead of changing `indentStyle`.
 

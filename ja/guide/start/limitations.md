@@ -19,7 +19,7 @@ annealer は開発中です。このページでは、まだ対応していな�
 
 - **DOM を作りません。** 開始タグを字句解析で読むだけで、HTML の検証や壊れたマークアップの修正は行いません。非推奨のマークアップ（`<center>`、`bgcolor`）も解析はしますが、報告も変更もしません。
 - **再整形しません。** 改行を追加・削除するのは、レイアウト規則が必要とする場所だけです。行のインデントを直したり、テキストを行幅で折り返したりはしません。それはフォーマッターの役割です（[他のツールとの併用](/annealer/ja/guide/start/integration.md)）。
-- **スプレッドは境界です。** 属性は `v-bind="object"` をまたいで移動しません（コンパイル時ディレクティブの `spreadSafe` グループを除く）。そのため、スプレッドを含むタグは一部が並べ替えられないまま残ることがあります（[属性順](/annealer/ja/guide/concepts/attribute-order.md)）。
+- **スプレッドは境界です。** 属性は `v-bind="object"` をまたいで移動しません（コンパイル時ディレクティブの `spreadSafe` グループを除く）。そのため、スプレッドを含むタグは一部が並べ替えられないまま残ることがあり、`vue/attributes-order` はそれを報告します（[属性順](/annealer/ja/guide/concepts/attribute-order.md)、[eslint-plugin-vue](/annealer/ja/guide/start/integration.md#eslint-plugin-vue)）。
 - **同名の属性のまとまりは元の順を保ちます。** 例外は `class` で、静的形式をバインド形式より前に置きます。`style` などの重複は、順序で動作が変わりうるため書かれたままにします。
 
 ## レイアウト \{#layout}
@@ -45,6 +45,6 @@ annealer は開発中です。このページでは、まだ対応していな�
 ## プロファイルと CLI \{#profiles-and-the-cli}
 
 - **プロファイルの合成（`extends`）はできません。** 組み込みプロファイルの設定を 1 つ変えるだけでも、プロファイル全体（`crates/annealer/profiles/*.yaml` または `builtinProfile()`）をコピーして編集する必要があります。
-- **設定ファイルはありません。** `--profile`、`--class-order`、`--self-closing` などのオプションは毎回指定します（`package.json` のスクリプトにまとめてください）。
+- **設定ファイルはありません。** `--profile`、`--class-order`、`--self-closing`、`--print-width` などのオプションは毎回指定します（`package.json` のスクリプトにまとめてください）。
 - **`anyl` はファイルのパスだけを受け取ります。** ディレクトリをたどる、glob を展開する、ignore ファイルを読む、といったことはしません。シェルや `git ls-files` からパスを渡してください。
 - エディター拡張、言語サーバー、Prettier プラグインはありません。annealer は CLI、Git フック、JavaScript API から実行してください。
