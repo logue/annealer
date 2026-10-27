@@ -386,7 +386,7 @@ malva にはこのオプションがありません（プレフィックスを�
 `stylesheet.styleAttribute: true` にすると、静的な `style` 属性内の宣言も並べ替えます。どちらの組み込みプロファイルでも無効です。
 
 - 値は 1 行のままです。
-- CSS の文字列には、属性の引用符と反対の引用符を使います。
+- CSS の文字列には、属性の引用符と反対の引用符を使います。一般的なダブルクォートの属性なら、annealer が元々優先するシングルクォートになります。
 - 末尾の `;` がなければ、ないままにします。
 - バインドされた `:style` には一切手を加えません。
 - 引用符がない値、テンプレート構文・コメント・`{}`・`<`・`&` を含む値、通常の宣言として解析できない値は、書かれたとおりに残します。
@@ -394,6 +394,10 @@ malva にはこのオプションがありません（プレフィックスを�
 ## その他の malva オプション
 
 その他の malva オプション（`printWidth`、`quotes`、`hexCase` など）は `stylesheet.malva` に書きます。未知のキーはエラーになるため、タイプミスが黙って無視されることはありません。[プロファイルリファレンス](/annealer/ja/api/profile.md#stylesheet)を参照してください。
+
+## 引用符 \{#quotes}
+
+CSS の文字列はシングルクォートで書きます（`@use 'sass:math'`、`font-family: 'Noto Sans'`）。Prettier や oxfmt が `singleQuote` で書くのと同じです。シングルクォートにするとエスケープが必要になる文字列（`"O'Brien"`）はダブルクォートのままです。これは annealer の既定（`quotes: prefer-single`）で、malva 自身の既定はダブルクォートです。変えるには `stylesheet.malva.quotes` を指定します。
 
 
 
@@ -1090,7 +1094,7 @@ JSON Schema（draft-07）は `crates/annealer/schema/profile.schema.json` にあ
 | `styleAttribute`          | 真偽値                                                   | `false`           | 静的な `style` 属性内の宣言も並べ替える                                      |
 | `malva`                   | オブジェクト                                                | –                 | その他の [malva のオプション](https://malva.netlify.app/config/)をそのまま渡す |
 
-`stylesheet.malva` には、`printWidth`、`useTabs`、`indentWidth`、`lineBreak`、`hexCase`、`hexColorLength`、`quotes`、`trailingComma`、`formatComments`、`*.preferSingleLine` 系など malva 自身のオプションを書けます。`declarationOrder` と `declarationOrderGroupBy` は `malva` ではなく `stylesheet` 直下に書きます。未知の malva のキーはエラーになります。
+`stylesheet.malva` には、`printWidth`、`useTabs`、`indentWidth`、`lineBreak`、`hexCase`、`hexColorLength`、`quotes`、`trailingComma`、`formatComments`、`*.preferSingleLine` 系など malva 自身のオプションを書けます。`declarationOrder` と `declarationOrderGroupBy` は `malva` ではなく `stylesheet` 直下に書きます。未知の malva のキーはエラーになります。`quotes` の既定は annealer では `prefer-single` です（malva 自身の既定は `always-double`）。[引用符](/annealer/ja/guide/concepts/stylesheets.md#quotes)を参照してください。
 
 ## `classOrder`
 

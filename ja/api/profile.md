@@ -104,7 +104,7 @@ JSON Schema（draft-07）は `crates/annealer/schema/profile.schema.json` にあ
 | `styleAttribute`          | 真偽値                                                   | `false`           | 静的な `style` 属性内の宣言も並べ替える                                      |
 | `malva`                   | オブジェクト                                                | –                 | その他の [malva のオプション](https://malva.netlify.app/config/)をそのまま渡す |
 
-`stylesheet.malva` には、`printWidth`、`useTabs`、`indentWidth`、`lineBreak`、`hexCase`、`hexColorLength`、`quotes`、`trailingComma`、`formatComments`、`*.preferSingleLine` 系など malva 自身のオプションを書けます。`declarationOrder` と `declarationOrderGroupBy` は `malva` ではなく `stylesheet` 直下に書きます。未知の malva のキーはエラーになります。
+`stylesheet.malva` には、`printWidth`、`useTabs`、`indentWidth`、`lineBreak`、`hexCase`、`hexColorLength`、`quotes`、`trailingComma`、`formatComments`、`*.preferSingleLine` 系など malva 自身のオプションを書けます。`declarationOrder` と `declarationOrderGroupBy` は `malva` ではなく `stylesheet` 直下に書きます。未知の malva のキーはエラーになります。`quotes` の既定は annealer では `prefer-single` です（malva 自身の既定は `always-double`）。[引用符](/annealer/ja/guide/concepts/stylesheets.md#quotes)を参照してください。
 
 ## `classOrder`
 
