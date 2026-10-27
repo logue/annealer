@@ -43,6 +43,11 @@ const element = (id: string): HTMLElement => {
 const language = element('language') as HTMLSelectElement;
 const profile = element('profile') as HTMLSelectElement;
 const classOrder = element('class-order') as HTMLSelectElement;
+const removeDuplicateClasses = element(
+  'remove-duplicate-classes'
+) as HTMLInputElement;
+const selfClosing = element('self-closing') as HTMLInputElement;
+const contentNewline = element('content-newline') as HTMLInputElement;
 const profileEditor = element('profile-editor') as HTMLDetailsElement;
 const profileYaml = element('profile-yaml') as HTMLTextAreaElement;
 const input = element('input') as HTMLTextAreaElement;
@@ -56,7 +61,11 @@ const render = (): void => {
     output.value = format(input.value, {
       language: language.value as Language,
       profile: spec,
-      classOrder: classOrder.value || undefined
+      classOrder: classOrder.value || undefined,
+      // Unchecked keeps the profile's (or class order's) setting.
+      removeDuplicateClasses: removeDuplicateClasses.checked || undefined,
+      selfClosing: selfClosing.checked || undefined,
+      contentNewline: contentNewline.checked || undefined
     });
     error.textContent = '';
   } catch (error_) {
@@ -81,6 +90,9 @@ profile.addEventListener('change', () => {
   render();
 });
 classOrder.addEventListener('change', render);
+removeDuplicateClasses.addEventListener('change', render);
+selfClosing.addEventListener('change', render);
+contentNewline.addEventListener('change', render);
 profileYaml.addEventListener('input', render);
 input.addEventListener('input', render);
 

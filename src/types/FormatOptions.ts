@@ -15,6 +15,28 @@ export type FormatOptions = {
    * profile's `classOrder`; by default classes keep their order.
    */
   classOrder?: string;
+  /**
+   * Self-closes empty elements and components in Vue templates
+   * (`layout.selfClosing.normal`/`component`, `vue/html-self-closing`):
+   * `<div />`, `<MyComp />`. `false` turns that off. By default the profile's
+   * setting is kept (off in the built-in profiles). Void elements (`<br />`)
+   * always follow `layout.selfClosing.void`.
+   */
+  selfClosing?: boolean;
+  /**
+   * Puts the content of multiline elements on lines of its own
+   * (`vue/multiline-html-element-content-newline`), with the rule's defaults
+   * when the profile has no `layout.contentNewline`. `false` turns it off. By
+   * default the profile's setting is kept (off in the built-in profiles).
+   */
+  contentNewline?: boolean;
+  /**
+   * Drops repeated classes in static `class` attributes, keeping the first.
+   * Works with or without `classOrder`. `false` keeps them. By default the
+   * class order's `removeDuplicates` is kept (off in `tailwind`, and off
+   * without a class order).
+   */
+  removeDuplicateClasses?: boolean;
 };
 
 /** Default `format` options. */

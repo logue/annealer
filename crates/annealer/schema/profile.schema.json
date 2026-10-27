@@ -57,6 +57,11 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "enabled": {
+              "description": "Whether the `normal` and `component` rules apply (`void` always does). The built-in `vue` profile sets this to `false`; `--self-closing` (CLI) and the `selfClosing` format option (JS) override it.",
+              "type": "boolean",
+              "default": true
+            },
             "void": {
               "description": "Void elements (`br`, `img`, `input`, …): `always` → `<br />`, `never` → `<br>`.",
               "$ref": "#/definitions/selfClosing"
@@ -72,10 +77,15 @@
           }
         },
         "contentNewline": {
-          "description": "Put the content of a multiline element (its end tag starts on a later line than its start tag) on lines of its own (like `vue/multiline-html-element-content-newline`). Elements without content are left alone. Omit this key to turn the rule off; `{}` turns it on with the defaults.",
+          "description": "Put the content of a multiline element (its end tag starts on a later line than its start tag) on lines of its own (like `vue/multiline-html-element-content-newline`). Elements without content are left alone. Omit this key or set `enabled: false` to turn the rule off; `{}` turns it on with the defaults.",
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "enabled": {
+              "description": "Whether the rule applies. The built-in profiles set this to `false`; `--content-newline` (CLI) and the `contentNewline` format option (JS) override it.",
+              "type": "boolean",
+              "default": true
+            },
             "ignore": {
               "description": "Elements left alone, together with everything inside them. Element names match case-insensitively; component names match exactly. Defaults to `pre`, `textarea`, and inline elements, where added whitespace could be visible.",
               "type": "array",

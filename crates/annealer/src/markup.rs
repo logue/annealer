@@ -4,7 +4,7 @@
 //! attribute lists. Everything else is copied through byte-for-byte.
 
 use crate::attribute::{Key, is_component, key_of, normalize_name};
-use crate::class_order::ClassOrder;
+use crate::class_order::Classes;
 use crate::directive::{self, Disabled};
 use crate::error::{FormatError, line_col};
 use crate::order::attribute_order;
@@ -103,7 +103,7 @@ pub(crate) struct Scanner<'a> {
     copied: usize,
     out: String,
     profile: &'a Profile,
-    class_order: Option<&'a ClassOrder>,
+    classes: Classes<'a>,
     vue: bool,
     disabled: Disabled,
     /// `layout.contentNewline` moved content onto a new line.
@@ -111,12 +111,7 @@ pub(crate) struct Scanner<'a> {
 }
 
 impl<'a> Scanner<'a> {
-    pub(crate) fn new(
-        src: &'a str,
-        profile: &'a Profile,
-        class_order: Option<&'a ClassOrder>,
-        vue: bool,
-    ) -> Self {
+    pub(crate) fn new(src: &'a str, profile: &'a Profile, classes: Classes<'a>, vue: bool) -> Self {
         Self {
             src,
             bytes: src.as_bytes(),
@@ -124,7 +119,7 @@ impl<'a> Scanner<'a> {
             copied: 0,
             out: String::with_capacity(src.len()),
             profile,
-            class_order,
+            classes,
             vue,
             disabled: Disabled::new(src),
             content_moved: false,
@@ -137,13 +132,13 @@ impl<'a> Scanner<'a> {
     pub(crate) fn format(
         src: &str,
         profile: &Profile,
-        class_order: Option<&ClassOrder>,
+        classes: Classes<'_>,
         vue: bool,
     ) -> Result<String, FormatError> {
         const MAX_PASSES: usize = 4;
         let mut text = src.to_owned();
         for _ in 0..MAX_PASSES {
-            let mut scanner = Scanner::new(&text, profile, class_order, vue);
+            let mut scanner = Scanner::new(&text, profile, classes, vue);
             scanner.scan()?;
             let moved = scanner.content_moved;
             text = scanner.finish();
@@ -299,7 +294,7 @@ impl<'a> Scanner<'a> {
         tag_out_start: usize,
         parent: Option<&OpenElement<'_>>,
     ) -> OpenElement<'a> {
-        let rule = self.profile.layout.content_newline.as_ref();
+        let rule = self.profile.layout.content_newline();
         let ignored = rule.is_some_and(|rule| {
             let component = self.vue && is_component(tag.name);
             rule.ignore
@@ -348,7 +343,7 @@ impl<'a> Scanner<'a> {
 
     /// Puts the content of `element`, which ends at `end`, on lines of its own.
     fn break_content(&mut self, element: &OpenElement<'_>, end: usize) {
-        let Some(rule) = &self.profile.layout.content_newline else {
+        let Some(rule) = self.profile.layout.content_newline() else {
             return;
         };
         self.flush(end);
@@ -532,7 +527,7 @@ impl<'a> Scanner<'a> {
         let policy = match kind {
             ElementKind::Void => rules.void,
             // `<div />` is an unclosed start tag in plain HTML.
-            _ if !self.vue => SelfClosing::Preserve,
+            _ if !self.vue || !rules.enabled => SelfClosing::Preserve,
             ElementKind::Normal => rules.normal,
             ElementKind::Component => rules.component,
         };
@@ -709,10 +704,13 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    /// The reordered value of a static `class` attribute, when a class order
-    /// is set. Values holding template syntax are left as written.
+    /// The reordered (or deduplicated) value of a static `class` attribute,
+    /// when a class order or duplicate removal is set. Values holding template
+    /// syntax are left as written.
     fn class_attribute(&self, attribute: &Attribute<'_>, key: &Key) -> Option<String> {
-        let class_order = self.class_order?;
+        if !self.classes.is_active() {
+            return None;
+        }
         attribute.quote?;
         let value = attribute.value?;
         if key.bound
@@ -723,7 +721,7 @@ impl<'a> Scanner<'a> {
         {
             return None;
         }
-        class_order.sort_value(value)
+        self.classes.rewrite(value)
     }
 
     /// The reordered value of a static `style` attribute, when enabled.

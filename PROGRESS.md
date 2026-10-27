@@ -143,6 +143,12 @@
     - Deviation: `removeDuplicates: false`. The plugin removes duplicates by
       default; PLAN.md says removing classes is a lint concern. Supported as
       an option.
+    - [x] Duplicate removal as a standalone option (2026-10-27, for annealer
+          used alone): `--remove-duplicate-classes` / `--keep-duplicate-classes`,
+          `Config::remove_duplicate_classes`, JS `removeDuplicateClasses`.
+          Overrides the class order's `removeDuplicates`; works without a
+          class order (source order kept, only repeats dropped). Static
+          `class` only.
   - [ ] Bootstrap: draft profile + proposal to the Bootstrap project (v6), so
         Bootstrap owns the order; needs a stable, documented profile format first.
         Infix breakpoints (`col-md-6`) are not their own axis yet.
@@ -155,6 +161,31 @@
       attribute needs them anyway). annealer defaults malva's `quotes` to
       `prefer-single` (malva: `always-double`); the built-in profiles also
       state it. Double quotes remain where single quotes would need escapes.
+
+- [x] `selfClosing.normal`/`component` and `contentNewline` are opt-in
+      (user's request, 2026-10-27: they rewrite markup beyond attribute and
+      class order). `selfClosing.void` (`<br />`, `<hr />`, `<wbr />`) always
+      applies (user's decision, same day).
+  - Both rules take `enabled` (default `true`, so existing custom profiles
+    keep working). The built-in profiles keep their values with
+    `enabled: false`. `selfClosing.enabled` covers `normal`/`component`
+    only, so the HTML profile has no `enabled` there.
+  - Turned on with `--self-closing` / `--content-newline`, the JS options
+    `selfClosing` / `contentNewline`, or `Config::with_self_closing` /
+    `with_content_newline`; these override the profile. `--no-…` / `false`
+    turn them off. `contentNewline` on a profile without the key uses its
+    defaults; `selfClosing` without values is a no-op (all `preserve`).
+  - Fixture tests run with both rules on, so the expected files are unchanged.
+  - Demo: two checkboxes.
+
+- [x] Docs: "Using with other tools" (Rslint/`rs fmt`, oxlint/oxfmt, Biome
+      config examples) and "Limitations" pages, en/ja (2026-10-27). Checked
+      with Prettier 3.9, oxfmt 0.74, oxlint 1.89, Biome 2.6.
+  - [ ] Found while checking: malva keeps comma-separated values
+        (`transition`, `font-family`) on one line where Prettier/oxfmt/Biome
+        break them, and no malva option changes that. `anyl` → formatter is
+        stable, but `anyl --check` alone fails on formatter output. Options:
+        an order-only check mode, or leaving layout to the formatter.
 
 ## Decisions made during implementation (please confirm)
 
@@ -189,8 +220,8 @@
    (`html.void: never`). Projects that keep that ESLint rule need
    `html.void: always` there, or `void: never` in the annealer profile.
 
-7. **`contentNewline` is on in the HTML profile too**, like the other layout
-   rules. Block-level content whitespace at the start and end of an element
+7. **`contentNewline` is defined in the HTML profile too** (off by default,
+   like `selfClosing`). Block-level content whitespace at the start and end of an element
    is not rendered, and the ignore list covers the elements where it can be.
 8. **The npm package embeds the WebAssembly binary** (base64) instead of
    shipping a separate `.wasm` file. Trade-off: about 33% more bytes before

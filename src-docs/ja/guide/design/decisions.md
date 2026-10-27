@@ -31,8 +31,9 @@ annealer（npm）   コアの WebAssembly ビルドと TypeScript ラッパー�
 4. **複数行のタグでは 1 行に 1 属性。** そうしないと、並べ替えで 1 行に 2 つの属性が並ぶことがあります。`vue/max-attributes-per-line` の複数行時の既定と同じで、`layout.oneAttributePerLine` で無効にできます。
 5. **Vue の階層 8 を分割。** `vue/attributes-order` と同じく、その他のディレクティブ → その他の属性 の順にします（`OTHER_DIRECTIVES` → `OTHER_ATTR`）。
 6. **`void: always` は `vue/html-self-closing` の既定（`html.void: never`）と異なります。** その ESLint ルールを残すプロジェクトでは、どちらかに合わせる必要があります。
-7. **`contentNewline` は HTML プロファイルでも有効。** ブロックレベルのコンテンツの先頭と末尾の空白は表示されず、表示されうる要素は `ignore` リストで除外しています。
+7. **`contentNewline` は HTML プロファイルにも定義。** ブロックレベルのコンテンツの先頭と末尾の空白は表示されず、表示されうる要素は `ignore` リストで除外しています。
 8. **ベンダープレフィックス付きの宣言は先頭に置く**（`vendorPrefix: start`）。標準プロパティが最後に宣言され、優先されるようにするためです。[スタイルシート](../concepts/stylesheets.md#vendor-prefixes-vendorprefix-start)を参照してください。
+9. **空要素以外の自己終了と `contentNewline` はオプトイン。** 並べ替えに必要な範囲を超えてマークアップを書き換え、それらの eslint-plugin-vue ルールを使わない構成（Prettier など）と衝突するためです。組み込みプロファイルは設定値を `enabled: false` で保持し、`--self-closing` / `--content-newline` または対応する JavaScript オプションで有効にします。空要素（`<br />`）は Prettier と同じく常に自己終了にします。
 
 ## 解決済みの論点
 

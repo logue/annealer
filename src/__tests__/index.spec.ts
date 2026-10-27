@@ -23,7 +23,36 @@ describe('format', () => {
           language: 'vue'
         }
       )
-    ).toBe('<template>\n<div v-if="x" id="i" @click="c" />\n</template>\n');
+    ).toBe('<template>\n<div v-if="x" id="i" @click="c"></div>\n</template>\n');
+  });
+
+  test('turns on the optional layout rules', () => {
+    const input =
+      '<template>\n<div>a\nb</div><MyComp></MyComp><br>\n</template>\n';
+    // Void elements are always self-closed.
+    expect(format(input, { language: 'vue' })).toBe(
+      '<template>\n<div>a\nb</div><MyComp></MyComp><br />\n</template>\n'
+    );
+    expect(
+      format(input, {
+        language: 'vue',
+        selfClosing: true,
+        contentNewline: true
+      })
+    ).toBe('<template>\n<div>\n  a\nb\n</div><MyComp /><br />\n</template>\n');
+  });
+
+  test('removes duplicate classes when asked', () => {
+    expect(format('<p class="b a b">')).toBe('<p class="b a b">');
+    expect(format('<p class="b a b">', { removeDuplicateClasses: true })).toBe(
+      '<p class="b a">'
+    );
+    expect(
+      format('<p class="p-4 m-2 p-4">', {
+        classOrder: 'tailwind',
+        removeDuplicateClasses: true
+      })
+    ).toBe('<p class="m-2 p-4">');
   });
 
   test('orders stylesheet declarations', () => {

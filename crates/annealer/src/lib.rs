@@ -22,6 +22,7 @@ mod stylesheet;
 #[cfg(feature = "wasm")]
 mod wasm;
 
+use std::borrow::Cow;
 use std::path::Path;
 
 pub use class_order::{ClassOrder, UnknownPosition};
@@ -72,6 +73,17 @@ pub struct Config {
     /// Order of the classes in static `class` attributes. Overrides the
     /// profile's `classOrder`; when both are absent, classes keep their order.
     pub class_order: Option<ClassOrder>,
+    /// Turns the profile's `layout.selfClosing` rules on or off. `None` keeps
+    /// the profile's setting (off in the built-in profiles).
+    pub self_closing: Option<bool>,
+    /// Turns the profile's `layout.contentNewline` rule on or off, with its
+    /// defaults when the profile has none. `None` keeps the profile's setting
+    /// (off in the built-in profiles).
+    pub content_newline: Option<bool>,
+    /// Drops repeated classes in static `class` attributes, keeping the first.
+    /// Works with or without a class order. `None` keeps the class order's
+    /// `removeDuplicates` (off without a class order).
+    pub remove_duplicate_classes: Option<bool>,
 }
 
 impl Config {
@@ -80,7 +92,44 @@ impl Config {
             language,
             profile,
             class_order: None,
+            self_closing: None,
+            content_newline: None,
+            remove_duplicate_classes: None,
         }
+    }
+
+    /// Turns `layout.selfClosing` on or off (`vue/html-self-closing`).
+    #[must_use]
+    pub fn with_self_closing(mut self, enabled: Option<bool>) -> Self {
+        self.self_closing = enabled;
+        self
+    }
+
+    /// Turns `layout.contentNewline` on or off
+    /// (`vue/multiline-html-element-content-newline`).
+    #[must_use]
+    pub fn with_content_newline(mut self, enabled: Option<bool>) -> Self {
+        self.content_newline = enabled;
+        self
+    }
+
+    /// Turns removal of repeated classes on or off.
+    #[must_use]
+    pub fn with_remove_duplicate_classes(mut self, enabled: Option<bool>) -> Self {
+        self.remove_duplicate_classes = enabled;
+        self
+    }
+
+    /// The profile with the layout overrides applied.
+    fn effective_profile(&self) -> Cow<'_, Profile> {
+        if self.self_closing.is_none() && self.content_newline.is_none() {
+            return Cow::Borrowed(&self.profile);
+        }
+        let mut profile = self.profile.clone();
+        profile
+            .layout
+            .enable(self.self_closing, self.content_newline);
+        Cow::Owned(profile)
     }
 
     /// Sets the class order (e.g. `ClassOrder::builtin("tailwind")`).
@@ -110,13 +159,18 @@ pub fn format(input: &str, config: &Config) -> Result<String, FormatError> {
         }
         None => Ok(input.to_owned()),
     };
-    let class_order = config
-        .class_order
-        .as_ref()
-        .or(config.profile.class_order.as_ref());
+    let classes = class_order::Classes::new(
+        config
+            .class_order
+            .as_ref()
+            .or(config.profile.class_order.as_ref()),
+        config.remove_duplicate_classes,
+    );
     match config.language {
-        Language::Html => markup::Scanner::format(input, &config.profile, class_order, false),
-        Language::Vue => markup::Scanner::format(input, &config.profile, class_order, true),
+        Language::Html => {
+            markup::Scanner::format(input, &config.effective_profile(), classes, false)
+        }
+        Language::Vue => markup::Scanner::format(input, &config.effective_profile(), classes, true),
         Language::Css => stylesheet(stylesheet::StyleLang::Css),
         Language::Scss => stylesheet(stylesheet::StyleLang::Scss),
         Language::Sass => stylesheet(stylesheet::StyleLang::Sass),

@@ -37,7 +37,7 @@ annealer は Tailwind を実行しません。並び順はデータで、`script
 Tailwind を実行する場合との違い:
 
 - **プロジェクト独自のテーマやユーティリティは認識しません。** 独自の色（`bg-brand-500`）はテーマの色と同じように並びます。他のどのルールにも一致しない値は、色のルールに当てはまるためです。独自のユーティリティ（`@utility`）は未知のクラスになります。
-- **重複は残します。** `eslint-plugin-tailwindcss` は既定で重複を削除します（`removeDuplicates`）。クラスの削除はリンターの役割なので、組み込みプロファイルでは残します。`removeDuplicates: true` のクラス順なら削除します。
+- **既定では重複を残します。** `eslint-plugin-tailwindcss` は既定で重複を削除します（`removeDuplicates`）。クラスの削除はリンターの役割なので、組み込みプロファイルでは残します。削除するには `--remove-duplicate-classes`（JavaScript では `removeDuplicateClasses: true`）を指定するか、`removeDuplicates: true` のクラス順を使います。このオプションはクラス順なしでも使えます。その場合、クラスは元の順のまま、重複だけが削除されます。
 - **静的な `class` 属性のみ。** `:class` のバインドや `clsx()` のような呼び出しは式なので、annealer は読みません。
 
 ## 並び順の決まり方

@@ -30,6 +30,36 @@ struct Cli {
     #[arg(long)]
     class_order: Option<String>,
 
+    /// Self-close empty elements and components in Vue templates
+    /// (`vue/html-self-closing`): `<div />`, `<MyComp />`. Off in the built-in
+    /// profiles. Void elements (`<br />`) follow `selfClosing.void` always.
+    #[arg(long, overrides_with = "no_self_closing")]
+    self_closing: bool,
+
+    /// Do not self-close empty elements and components.
+    #[arg(long, overrides_with = "self_closing")]
+    no_self_closing: bool,
+
+    /// Put the content of multiline elements on lines of its own
+    /// (`vue/multiline-html-element-content-newline`). Off in the built-in
+    /// profiles.
+    #[arg(long, overrides_with = "no_content_newline")]
+    content_newline: bool,
+
+    /// Do not put the content of multiline elements on lines of its own.
+    #[arg(long, overrides_with = "content_newline")]
+    no_content_newline: bool,
+
+    /// Drop repeated classes in static `class` attributes, keeping the first.
+    /// Works with or without `--class-order`. By default the class order's
+    /// `removeDuplicates` decides (off in `tailwind`).
+    #[arg(long, overrides_with = "keep_duplicate_classes")]
+    remove_duplicate_classes: bool,
+
+    /// Keep repeated classes.
+    #[arg(long, overrides_with = "remove_duplicate_classes")]
+    keep_duplicate_classes: bool,
+
     /// Language of stdin input.
     #[arg(short, long, value_enum, default_value = "html")]
     language: LanguageArg,
@@ -74,10 +104,18 @@ fn load_class_order(spec: &str) -> Result<ClassOrder, String> {
     ClassOrder::from_yaml(&yaml).map_err(|error| format!("{spec}: {error}"))
 }
 
-/// What every file shares: the `--profile` and `--class-order` options.
+/// `Some(true)` for `--flag`, `Some(false)` for `--no-flag`, else `None`.
+fn switch(on: bool, off: bool) -> Option<bool> {
+    (on || off).then_some(on)
+}
+
+/// What every file shares: the profile, class order and layout options.
 struct Options {
     profile: Option<Profile>,
     class_order: Option<ClassOrder>,
+    self_closing: Option<bool>,
+    content_newline: Option<bool>,
+    remove_duplicate_classes: Option<bool>,
 }
 
 fn config_for(language: Language, options: &Options) -> Config {
@@ -85,10 +123,14 @@ fn config_for(language: Language, options: &Options) -> Config {
         Some(profile) => Config::new(language, profile.clone()),
         None => Config::for_language(language),
     };
-    match &options.class_order {
+    let config = match &options.class_order {
         Some(class_order) => config.with_class_order(Some(class_order.clone())),
         None => config,
-    }
+    };
+    config
+        .with_self_closing(options.self_closing)
+        .with_content_newline(options.content_newline)
+        .with_remove_duplicate_classes(options.remove_duplicate_classes)
 }
 
 /// Returns whether the file changed.
@@ -126,6 +168,9 @@ fn run(cli: &Cli) -> Result<bool, String> {
             .as_deref()
             .map(load_class_order)
             .transpose()?,
+        self_closing: switch(cli.self_closing, cli.no_self_closing),
+        content_newline: switch(cli.content_newline, cli.no_content_newline),
+        remove_duplicate_classes: switch(cli.remove_duplicate_classes, cli.keep_duplicate_classes),
     };
 
     if cli.files.is_empty() {

@@ -6,7 +6,14 @@ description: 複数行の開始タグ、自己終了要素、要素のコンテ�
 
 属性を並べ替えると、タグの元の行構成が崩れることがあります。プロファイルの `layout` セクションで、並べ替え後のタグのレイアウトを定めます。各規則は eslint-plugin-vue のルールに対応しているため、それらのルールを残しているプロジェクトでも結果が食い違いません。
 
-どちらの組み込みプロファイルでも、以下の規則はすべて有効です。
+どちらの組み込みプロファイルでも `closingBracketNewline`、`oneAttributePerLine`、`selfClosing.void`（`<br />`、`<hr />`、`<wbr />` など）は有効です。空要素以外の自己終了（`selfClosing.normal`/`component`）と `contentNewline` は並べ替えに必要な範囲を超えてマークアップを書き換えるため、組み込みプロファイルでは設定値だけを定義し、無効（`enabled: false`）にしています。必要なときに有効にしてください。
+
+| 規則             | CLI                 | JavaScript             | プロファイル                   |
+| ---------------- | ------------------- | ---------------------- | ------------------------------ |
+| `selfClosing`    | `--self-closing`    | `selfClosing: true`    | `selfClosing.enabled: true`    |
+| `contentNewline` | `--content-newline` | `contentNewline: true` | `contentNewline.enabled: true` |
+
+CLI のフラグと JavaScript のオプションは、プロファイルの `enabled` より優先されます。`--no-self-closing` / `--no-content-newline`（または `false`）で、規則を有効にしているプロファイルでも無効にできます。
 
 ## `closingBracketNewline`
 
@@ -33,7 +40,7 @@ description: 複数行の開始タグ、自己終了要素、要素のコンテ�
 
 ## `selfClosing`
 
-`vue/html-self-closing` 相当です。要素の種類ごとに `always`、`never`、`preserve` のいずれかを指定します。
+`vue/html-self-closing` 相当です。要素の種類ごとに `always`、`never`、`preserve` のいずれかを指定します。`void` は常に適用し、`enabled`（組み込み `vue` プロファイルでは無効、上記参照）は `normal` と `component` だけを切り替えます。
 
 | 種類        | 例           | 組み込み `html` | 組み込み `vue` |
 | ----------- | ------------ | --------------- | -------------- |
@@ -51,7 +58,7 @@ description: 複数行の開始タグ、自己終了要素、要素のコンテ�
 
 ## `contentNewline`
 
-`vue/multiline-html-element-content-newline` 相当です。キーを省略すると無効、`{}` を指定すると既定値で有効になります。
+`vue/multiline-html-element-content-newline` 相当です。組み込みプロファイルでは無効です（上記参照）。独自のプロファイルでは、キーを省略するか `enabled: false` にすると無効、`{}` を指定すると既定値で有効になります。キーのないプロファイルに `--content-newline` を指定した場合も既定値が使われます。
 
 - 終了タグが開始タグより後の行で始まる要素を**複数行**の要素とみなします（ESLint ルールの定義と同じ）。その要素のコンテンツは、ちょうど 1 つの改行で始まり、1 つの改行で終わるようにします。
 - `allowEmptyLines: true` にすると、空行をまとめずに残します。
@@ -68,7 +75,7 @@ description: 複数行の開始タグ、自己終了要素、要素のコンテ�
     id="x"><MyComp></MyComp></div>
 </template>
 
-<!-- 出力（vue プロファイル） -->
+<!-- 出力（vue プロファイル、--self-closing --content-newline） -->
 <template>
   <div
     id="x"
@@ -79,6 +86,6 @@ description: 複数行の開始タグ、自己終了要素、要素のコンテ�
 </template>
 ```
 
-この規則は HTML プロファイルでも有効です。ブロックレベルのコンテンツの先頭と末尾の空白は表示されず、表示されうる要素は `ignore` リストで除外しているためです。
+この規則は HTML プロファイルにも定義しています。ブロックレベルのコンテンツの先頭と末尾の空白は表示されず、表示されうる要素は `ignore` リストで除外しているためです。
 
 コンテンツを新しい行に移すと、入れ子のタグの閉じ括弧がそろえるインデントが変わることがあります。そのため annealer は、結果が安定するまで文書を繰り返し整形します（最大 4 回、通常は 2 回）。

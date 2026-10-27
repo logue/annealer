@@ -72,7 +72,7 @@ CSS property order is the exception: malva already has a configurable `declarati
 
 - Attribute reordering in HTML and in Vue 3 SFC `<template>` blocks.
 - Attribute normalization: `v-bind:` → `:`, `v-on:` → `@`, camelCase → kebab-case on component props.
-- Layout rules for multiline tags, equivalent to `vue/html-closing-bracket-newline`, `vue/max-attributes-per-line` (multiline), `vue/html-self-closing` and `vue/multiline-html-element-content-newline`.
+- Layout rules for multiline tags, equivalent to `vue/html-closing-bracket-newline`, `vue/max-attributes-per-line` (multiline), `vue/html-self-closing` (void elements always, the rest opt-in) and, opt-in, `vue/multiline-html-element-content-newline`.
 - Declaration order for CSS/SCSS/Sass/Less, in `<style>` blocks and in standalone files, via malva.
 - Opt-in declaration order inside static `style` attributes.
 - [Disable directives](../features/disable-directives.md) in markup and stylesheet comments.
@@ -89,4 +89,6 @@ CSS property order is the exception: malva already has a configurable `declarati
 ## Next steps
 
 - [Getting started](./getting-started.md): run annealer from the CLI or from JavaScript.
+- [Using with other tools](./integration.md): configuration for Rslint/`rs fmt`, oxlint/oxfmt and Biome.
+- [Limitations](./limitations.md): what annealer does not do yet.
 - [Attribute order](../concepts/attribute-order.md): how attributes are classified and sorted.

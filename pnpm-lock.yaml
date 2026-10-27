@@ -217,6 +217,9 @@ importers:
       react:
         specifier: ^19.3.1
         version: 19.3.1
+      react-dom:
+        specifier: ^19.3.1
+        version: 19.3.1(react@19.3.1)
       rimraf:
         specifier: ^6.1.3
         version: 6.1.3
@@ -809,8 +812,8 @@ packages:
     cpu: [arm64]
     os: [darwin]
 
-  '@rspack/binding-darwin-arm64@2.3.0-beta.1':
-    resolution: {integrity: sha512-MY51chNCxpS4pAOF5jXkKMLsHpJGYlsdX6An3OoMlihQnRRK9jaPjATJRAtowyYMlz4+nyBMJLTH9aLSkxB+hw==}
+  '@rspack/binding-darwin-arm64@2.3.0-rc.0':
+    resolution: {integrity: sha512-+zbYaxv7nmSfrgK6la5UNX2RU7Qdyy94grGehG6XcUPVJ3/v9x43l6VzFNjSX2DLduLD5I4n4sYdeyN3saLK9g==}
     cpu: [arm64]
     os: [darwin]
 
@@ -819,8 +822,8 @@ packages:
     cpu: [x64]
     os: [darwin]
 
-  '@rspack/binding-darwin-x64@2.3.0-beta.1':
-    resolution: {integrity: sha512-WWt9bKn+Gda2XA8GRIWjKhhAkMtgcFaVUxE1NB9n/VxWP8x7XSLkpjGViNm91xXptf+b00FbpVkqQGm2JbzuAA==}
+  '@rspack/binding-darwin-x64@2.3.0-rc.0':
+    resolution: {integrity: sha512-0IqTC/BiJWjIWLVebB7dwFH8xKXZEDAxvybbkEAEHZckq1yyC77eAxfOdoUSLTHw88TvmoUA9xwsYGQAiRiBIQ==}
     cpu: [x64]
     os: [darwin]
 
@@ -830,8 +833,8 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@rspack/binding-linux-arm64-gnu@2.3.0-beta.1':
-    resolution: {integrity: sha512-e2kmMHGK3y8e3VATacqtsE2DuCAeYVhXpLNTxkvS5iW4hZM6r+rFn/i+mvtPJIlOCz97pe/nOzqegkYITTd8Cg==}
+  '@rspack/binding-linux-arm64-gnu@2.3.0-rc.0':
+    resolution: {integrity: sha512-rrcgbN01C72vDOuRxGRWsYFHTy8HMRbRzRg4mRo24KqBjXM/E1lKT+srbo4hKzts9pkO7yZn8GquRu1J+3sZ7Q==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
@@ -842,8 +845,8 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@rspack/binding-linux-arm64-musl@2.3.0-beta.1':
-    resolution: {integrity: sha512-3bHDU2e+DzcR1JceeyaIe+DsMfbdNDrKt08YJ5SF1+OI5wv1I7FNo6/iD+vcmpMVKs31gh/6a+Ox+bXAGxw9Pg==}
+  '@rspack/binding-linux-arm64-musl@2.3.0-rc.0':
+    resolution: {integrity: sha512-EO+claUHjzK9YMvuCxYvVhK35qAgJURh9EvQhjgD/nKTnhSffk2pTMTzpEfK1WT8VlIUZrteHTb81QdGlwQshQ==}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
@@ -854,8 +857,8 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@rspack/binding-linux-ppc64-gnu@2.3.0-beta.1':
-    resolution: {integrity: sha512-22wx/9v2o4cgD0bdYiMIrocHoMKfZP1Jlv2bQpvLVyyDgbmAlzV+ttXpG6ZudmOIGyNOPbZ//Igf1qC8c2I4vA==}
+  '@rspack/binding-linux-ppc64-gnu@2.3.0-rc.0':
+    resolution: {integrity: sha512-B6Cq+wEeUxKOjb7VIzcgoEgg+D/FoG4+lk+AJMWsgaW9co9GWj3zvYvqlfLySMs95V5LWoR0EqU/FOMPQpJyYg==}
     cpu: [ppc64]
     os: [linux]
     libc: [glibc]
@@ -866,8 +869,8 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@rspack/binding-linux-riscv64-gnu@2.3.0-beta.1':
-    resolution: {integrity: sha512-7j31Jk83zBlyLpczEExIebN6f7ud6hNgC460Ztj60UBVCGdzuUlAYmJBIyOCy9r0FsSBomxOHZ598OeXl3QgUw==}
+  '@rspack/binding-linux-riscv64-gnu@2.3.0-rc.0':
+    resolution: {integrity: sha512-Nl5bCdXs0esE0XPx3yyWTJqy+5o7etDPaNOYJc49lwziaKVvVRC5NxclZKJ71rWGMwhD8q0m9niGkoLZS4zHsQ==}
     cpu: [riscv64]
     os: [linux]
     libc: [glibc]
@@ -878,8 +881,8 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@rspack/binding-linux-riscv64-musl@2.3.0-beta.1':
-    resolution: {integrity: sha512-HFRztoFBXFziHaO5R2smTcauDFaIbj6Mg2R/2wdM5CYwr7nA76o+EOaKyb/XcGCiBsKPcMT2xK5pEE+qezpUvA==}
+  '@rspack/binding-linux-riscv64-musl@2.3.0-rc.0':
+    resolution: {integrity: sha512-SeCLJkYg9r0YhfzM5WZPp9Ac4owQxPRaXyUbWMxls8w1ZLFVru9lYF20CZc7hGcivtMr+W6XXcX6ODNRW9zwAw==}
     cpu: [riscv64]
     os: [linux]
     libc: [musl]
@@ -890,8 +893,8 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@rspack/binding-linux-s390x-gnu@2.3.0-beta.1':
-    resolution: {integrity: sha512-8ra54iSlw93eT5Oy7jv4oojK7JF1BUM7ofbJQxwUQKMwLqq9NQiOoHRiGLoHzWOEXb3Qw7udlvBF2AdgXpejmQ==}
+  '@rspack/binding-linux-s390x-gnu@2.3.0-rc.0':
+    resolution: {integrity: sha512-Xk4q0xd9g3doBFTUrbXuWVLy3kHe2dHO6tjaZpLJzFP1a6lHe3EIO9pNQinF93nMaV5+sMOI6yl21kOuLLwQPA==}
     cpu: [s390x]
     os: [linux]
     libc: [glibc]
@@ -902,8 +905,8 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@rspack/binding-linux-x64-gnu@2.3.0-beta.1':
-    resolution: {integrity: sha512-ZMS6g+gS9LK3xKP0oujIYurfbR38hG6oksiAygZX1DBUlGrenIImJLaq7DxUvSlWnw8mcOoBHqdTTHP2wAtEmA==}
+  '@rspack/binding-linux-x64-gnu@2.3.0-rc.0':
+    resolution: {integrity: sha512-SnOEpaRFuPFsa6Pl63V9C+brPuafqD43FiGBuQuoOcEPgBrK7LUVj3/nl4tsOUDsK/H1fEiTY31XMpsaDdQTxQ==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
@@ -914,8 +917,8 @@ packages:
     os: [linux]
     libc: [musl]
 
-  '@rspack/binding-linux-x64-musl@2.3.0-beta.1':
-    resolution: {integrity: sha512-tSfUD8yRL1ZH0RlUYFLfQuk0a4yxlyYNMzLG0DrcySoPFZ2re0l4T6Ut1CgL8tD1Lup7225U1dzt6B/MWf8SIA==}
+  '@rspack/binding-linux-x64-musl@2.3.0-rc.0':
+    resolution: {integrity: sha512-CTOjshRMGPfcRl0oDpyxxcSy4CDSJgtReItlQ0U8M8M+QnVuDtfDg27ijJ49bwKTaP1qeK5kQ4+r1P/kVsCOaA==}
     cpu: [x64]
     os: [linux]
     libc: [musl]
@@ -924,8 +927,8 @@ packages:
     resolution: {integrity: sha512-+29JEBiUi2TMDOGYmT3Tm3JGk3f19+CbjxNEt1bVreR8axuZZj+wOSwB/sx85lKQkL5fuNPh0BhOZ7cdkDxQpA==}
     cpu: [wasm32]
 
-  '@rspack/binding-wasm32-wasi@2.3.0-beta.1':
-    resolution: {integrity: sha512-Hn/qzKyrkBA/ppuJYwpFpWCwf4P2ce9CuCT8CW2CkqsCpH/p7xCvM8m58YspPPZDh3TPK4F/tQgg2l4D3vkeCw==}
+  '@rspack/binding-wasm32-wasi@2.3.0-rc.0':
+    resolution: {integrity: sha512-Iw4KN81EvD2uc1nbSyiVtJY8w3ycKngt4zDcb7OfJWzEK7Qv1nO8lncrS8N5jpqdBrqSMbg7/BVVgc/QY+AgKg==}
     cpu: [wasm32]
 
   '@rspack/binding-win32-arm64-msvc@2.2.9':
@@ -933,8 +936,8 @@ packages:
     cpu: [arm64]
     os: [win32]
 
-  '@rspack/binding-win32-arm64-msvc@2.3.0-beta.1':
-    resolution: {integrity: sha512-voecMdHGIePUkhSaBAu8EJEJTbtSfz5u+3bUq5PlXk/kxHCIME3zVJpPfMxZr/Xf3YJWEGQQVKU1rXk0i2x3FQ==}
+  '@rspack/binding-win32-arm64-msvc@2.3.0-rc.0':
+    resolution: {integrity: sha512-U1YfJ3fTqQjjdI1Ib54+SC+TwdC058baekv5h9fWiDBvID7djPQlyKxoKjeZbVn9ino+bHjJTS0gRvzu7bApvg==}
     cpu: [arm64]
     os: [win32]
 
@@ -943,8 +946,8 @@ packages:
     cpu: [ia32]
     os: [win32]
 
-  '@rspack/binding-win32-ia32-msvc@2.3.0-beta.1':
-    resolution: {integrity: sha512-vKKx7KPxlSN/KTIJYWm/UZe29sMMrphaCDBMHnugkrb4OATroc5riBBa09YH4XVXCYynxSg776ZW8IFM6yYMwA==}
+  '@rspack/binding-win32-ia32-msvc@2.3.0-rc.0':
+    resolution: {integrity: sha512-9dYgyZciH9Cze96G4jWmXVeP/SD8MxVEhXT6i3WfwwEzi11449CW++A6HRMapudQpB4ZzAM5IATv19wdgjDLBA==}
     cpu: [ia32]
     os: [win32]
 
@@ -953,16 +956,16 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@rspack/binding-win32-x64-msvc@2.3.0-beta.1':
-    resolution: {integrity: sha512-to8QGzbmiL8Mvlbg0CbuTbse0LIVozRH37F3WoV1Tk9RGw4VtzRnkMRMYhmMEgf65rON9kcKQ3a5efmNYUYeaA==}
+  '@rspack/binding-win32-x64-msvc@2.3.0-rc.0':
+    resolution: {integrity: sha512-y0wTMDVuRqDuS8wGtsbVBGKm3Mpe0OzjtHla6wYDjIdtPx+wKKkeOX35oIKk3oAU3ZEVVFy/9aEkhy0osoD9JA==}
     cpu: [x64]
     os: [win32]
 
   '@rspack/binding@2.2.9':
     resolution: {integrity: sha512-Y8wDJoRo8n0KXDGq6J3KGVekkUQcOcUHSppMHoJv8JLbNBEsyaaKiDx4ljNTGEDtTON0CRbMEWbSiLRe+bJxOQ==}
 
-  '@rspack/binding@2.3.0-beta.1':
-    resolution: {integrity: sha512-D/9lWn0gYkub0j5YiTnD/VOofEIv+AukPCkNnOrPQlF/OW/KzOCLy1F98eLwfCxEO8grVMfMJa7O6xSPM5Mjng==}
+  '@rspack/binding@2.3.0-rc.0':
+    resolution: {integrity: sha512-qDAfXa3ifPccTI4X+ddvpg6V6e0AGSA58ZwYeI0WkLzgyBf3biproo4Bhil2Z1u6dHNCg9B4FPkjHsxFMO4BUQ==}
 
   '@rspack/core@2.2.9':
     resolution: {integrity: sha512-Tp6/ZdM5UrGB3BeLfvh69l1iX03PZ46IgXjKqubVEuJVAhnOjpshooH/YAxcxR0AymcBLKA997Z4v+LV2aXzCw==}
@@ -976,8 +979,8 @@ packages:
       '@swc/helpers':
         optional: true
 
-  '@rspack/core@2.3.0-beta.1':
-    resolution: {integrity: sha512-zqQLyj5POKs9VMI4hIkVzixy7ikFfUOqZMTgaC0PNx4pPBrBJvmRV/Y2IQlRGDVhkzN2RezSUWjcFju7pVxeqg==}
+  '@rspack/core@2.3.0-rc.0':
+    resolution: {integrity: sha512-+NbKzmOoe7dRLcGNmnj3sJ+GyrfsyyACwaU1ZzcB4jAlDd4dDinn/ANlXjBZpjX3g762CbgtUYXz2kfzR9HFCA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       '@module-federation/runtime-tools': ^0.24.1 || ^2.0.0
@@ -2204,8 +2207,8 @@ packages:
       '@types/mdast':
         optional: true
 
-  mdast-util-to-markdown@2.2.0:
-    resolution: {integrity: sha512-2Jn/ADrHFFyyniBMi0bncTbJqU78K3/TEYvzvwrWWzD9MYPUa/Gm4r3nOeKFQg/PDM5BsbDYdc8ackW4NTY6NA==}
+  mdast-util-to-markdown@2.2.1:
+    resolution: {integrity: sha512-ThatlCBxG2GE+mljhNSfZPv56d3QrGiRh97jjYgIk80IzS4uU6d7cHAaexCYSAmUCCcOs3grJ07kX3oTGsFUOw==}
 
   mdast-util-to-string@4.0.0:
     resolution: {integrity: sha512-0H44vDimn51F0YwvxSJSm0eCDOJTRlmN0R1yBh4HLj9wiV1Dn0QoXGbvFAWj2hSItVTlCmBF1hqKlIyUBVFLPg==}
@@ -3431,7 +3434,7 @@ snapshots:
 
   '@rsbuild/core@2.3.0-beta.0':
     dependencies:
-      '@rspack/core': 2.3.0-beta.1(@swc/helpers@0.5.23)
+      '@rspack/core': 2.3.0-rc.0(@swc/helpers@0.5.23)
       '@swc/helpers': 0.5.23
     transitivePeerDependencies:
       - '@module-federation/runtime-tools'
@@ -3656,61 +3659,61 @@ snapshots:
   '@rspack/binding-darwin-arm64@2.2.9':
     optional: true
 
-  '@rspack/binding-darwin-arm64@2.3.0-beta.1':
+  '@rspack/binding-darwin-arm64@2.3.0-rc.0':
     optional: true
 
   '@rspack/binding-darwin-x64@2.2.9':
     optional: true
 
-  '@rspack/binding-darwin-x64@2.3.0-beta.1':
+  '@rspack/binding-darwin-x64@2.3.0-rc.0':
     optional: true
 
   '@rspack/binding-linux-arm64-gnu@2.2.9':
     optional: true
 
-  '@rspack/binding-linux-arm64-gnu@2.3.0-beta.1':
+  '@rspack/binding-linux-arm64-gnu@2.3.0-rc.0':
     optional: true
 
   '@rspack/binding-linux-arm64-musl@2.2.9':
     optional: true
 
-  '@rspack/binding-linux-arm64-musl@2.3.0-beta.1':
+  '@rspack/binding-linux-arm64-musl@2.3.0-rc.0':
     optional: true
 
   '@rspack/binding-linux-ppc64-gnu@2.2.9':
     optional: true
 
-  '@rspack/binding-linux-ppc64-gnu@2.3.0-beta.1':
+  '@rspack/binding-linux-ppc64-gnu@2.3.0-rc.0':
     optional: true
 
   '@rspack/binding-linux-riscv64-gnu@2.2.9':
     optional: true
 
-  '@rspack/binding-linux-riscv64-gnu@2.3.0-beta.1':
+  '@rspack/binding-linux-riscv64-gnu@2.3.0-rc.0':
     optional: true
 
   '@rspack/binding-linux-riscv64-musl@2.2.9':
     optional: true
 
-  '@rspack/binding-linux-riscv64-musl@2.3.0-beta.1':
+  '@rspack/binding-linux-riscv64-musl@2.3.0-rc.0':
     optional: true
 
   '@rspack/binding-linux-s390x-gnu@2.2.9':
     optional: true
 
-  '@rspack/binding-linux-s390x-gnu@2.3.0-beta.1':
+  '@rspack/binding-linux-s390x-gnu@2.3.0-rc.0':
     optional: true
 
   '@rspack/binding-linux-x64-gnu@2.2.9':
     optional: true
 
-  '@rspack/binding-linux-x64-gnu@2.3.0-beta.1':
+  '@rspack/binding-linux-x64-gnu@2.3.0-rc.0':
     optional: true
 
   '@rspack/binding-linux-x64-musl@2.2.9':
     optional: true
 
-  '@rspack/binding-linux-x64-musl@2.3.0-beta.1':
+  '@rspack/binding-linux-x64-musl@2.3.0-rc.0':
     optional: true
 
   '@rspack/binding-wasm32-wasi@2.2.9':
@@ -3720,7 +3723,7 @@ snapshots:
       '@napi-rs/wasm-runtime': 1.1.6(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)
     optional: true
 
-  '@rspack/binding-wasm32-wasi@2.3.0-beta.1':
+  '@rspack/binding-wasm32-wasi@2.3.0-rc.0':
     dependencies:
       '@emnapi/core': 1.11.3
       '@emnapi/runtime': 1.11.3
@@ -3730,19 +3733,19 @@ snapshots:
   '@rspack/binding-win32-arm64-msvc@2.2.9':
     optional: true
 
-  '@rspack/binding-win32-arm64-msvc@2.3.0-beta.1':
+  '@rspack/binding-win32-arm64-msvc@2.3.0-rc.0':
     optional: true
 
   '@rspack/binding-win32-ia32-msvc@2.2.9':
     optional: true
 
-  '@rspack/binding-win32-ia32-msvc@2.3.0-beta.1':
+  '@rspack/binding-win32-ia32-msvc@2.3.0-rc.0':
     optional: true
 
   '@rspack/binding-win32-x64-msvc@2.2.9':
     optional: true
 
-  '@rspack/binding-win32-x64-msvc@2.3.0-beta.1':
+  '@rspack/binding-win32-x64-msvc@2.3.0-rc.0':
     optional: true
 
   '@rspack/binding@2.2.9':
@@ -3762,22 +3765,22 @@ snapshots:
       '@rspack/binding-win32-ia32-msvc': 2.2.9
       '@rspack/binding-win32-x64-msvc': 2.2.9
 
-  '@rspack/binding@2.3.0-beta.1':
+  '@rspack/binding@2.3.0-rc.0':
     optionalDependencies:
-      '@rspack/binding-darwin-arm64': 2.3.0-beta.1
-      '@rspack/binding-darwin-x64': 2.3.0-beta.1
-      '@rspack/binding-linux-arm64-gnu': 2.3.0-beta.1
-      '@rspack/binding-linux-arm64-musl': 2.3.0-beta.1
-      '@rspack/binding-linux-ppc64-gnu': 2.3.0-beta.1
-      '@rspack/binding-linux-riscv64-gnu': 2.3.0-beta.1
-      '@rspack/binding-linux-riscv64-musl': 2.3.0-beta.1
-      '@rspack/binding-linux-s390x-gnu': 2.3.0-beta.1
-      '@rspack/binding-linux-x64-gnu': 2.3.0-beta.1
-      '@rspack/binding-linux-x64-musl': 2.3.0-beta.1
-      '@rspack/binding-wasm32-wasi': 2.3.0-beta.1
-      '@rspack/binding-win32-arm64-msvc': 2.3.0-beta.1
-      '@rspack/binding-win32-ia32-msvc': 2.3.0-beta.1
-      '@rspack/binding-win32-x64-msvc': 2.3.0-beta.1
+      '@rspack/binding-darwin-arm64': 2.3.0-rc.0
+      '@rspack/binding-darwin-x64': 2.3.0-rc.0
+      '@rspack/binding-linux-arm64-gnu': 2.3.0-rc.0
+      '@rspack/binding-linux-arm64-musl': 2.3.0-rc.0
+      '@rspack/binding-linux-ppc64-gnu': 2.3.0-rc.0
+      '@rspack/binding-linux-riscv64-gnu': 2.3.0-rc.0
+      '@rspack/binding-linux-riscv64-musl': 2.3.0-rc.0
+      '@rspack/binding-linux-s390x-gnu': 2.3.0-rc.0
+      '@rspack/binding-linux-x64-gnu': 2.3.0-rc.0
+      '@rspack/binding-linux-x64-musl': 2.3.0-rc.0
+      '@rspack/binding-wasm32-wasi': 2.3.0-rc.0
+      '@rspack/binding-win32-arm64-msvc': 2.3.0-rc.0
+      '@rspack/binding-win32-ia32-msvc': 2.3.0-rc.0
+      '@rspack/binding-win32-x64-msvc': 2.3.0-rc.0
 
   '@rspack/core@2.2.9(@swc/helpers@0.5.23)':
     dependencies:
@@ -3785,9 +3788,9 @@ snapshots:
     optionalDependencies:
       '@swc/helpers': 0.5.23
 
-  '@rspack/core@2.3.0-beta.1(@swc/helpers@0.5.23)':
+  '@rspack/core@2.3.0-rc.0(@swc/helpers@0.5.23)':
     dependencies:
-      '@rspack/binding': 2.3.0-beta.1
+      '@rspack/binding': 2.3.0-rc.0
     optionalDependencies:
       '@swc/helpers': 0.5.23
 
@@ -4955,7 +4958,7 @@ snapshots:
       devlop: 1.1.0
       escape-string-regexp: 5.0.0
       mdast-util-from-markdown: 2.1.0
-      mdast-util-to-markdown: 2.2.0
+      mdast-util-to-markdown: 2.2.1
       micromark-extension-frontmatter: 2.0.0
     transitivePeerDependencies:
       - supports-color
@@ -4973,7 +4976,7 @@ snapshots:
       '@types/mdast': 4.0.4
       devlop: 1.1.0
       mdast-util-from-markdown: 2.1.0
-      mdast-util-to-markdown: 2.2.0
+      mdast-util-to-markdown: 2.2.1
       micromark-util-normalize-identifier: 2.0.1
     transitivePeerDependencies:
       - supports-color
@@ -4982,7 +4985,7 @@ snapshots:
     dependencies:
       '@types/mdast': 4.0.4
       mdast-util-from-markdown: 2.1.0
-      mdast-util-to-markdown: 2.2.0
+      mdast-util-to-markdown: 2.2.1
     transitivePeerDependencies:
       - supports-color
 
@@ -4992,7 +4995,7 @@ snapshots:
       devlop: 1.1.0
       markdown-table: 3.0.4
       mdast-util-from-markdown: 2.1.0
-      mdast-util-to-markdown: 2.2.0
+      mdast-util-to-markdown: 2.2.1
     transitivePeerDependencies:
       - supports-color
 
@@ -5001,7 +5004,7 @@ snapshots:
       '@types/mdast': 4.0.4
       devlop: 1.1.0
       mdast-util-from-markdown: 2.1.0
-      mdast-util-to-markdown: 2.2.0
+      mdast-util-to-markdown: 2.2.1
     transitivePeerDependencies:
       - supports-color
 
@@ -5013,7 +5016,7 @@ snapshots:
       mdast-util-gfm-strikethrough: 2.0.1
       mdast-util-gfm-table: 2.0.0
       mdast-util-gfm-task-list-item: 2.0.0
-      mdast-util-to-markdown: 2.2.0
+      mdast-util-to-markdown: 2.2.1
     transitivePeerDependencies:
       - supports-color
 
@@ -5024,7 +5027,7 @@ snapshots:
       devlop: 1.1.0
       longest-streak: 3.1.0
       mdast-util-from-markdown: 2.1.0
-      mdast-util-to-markdown: 2.2.0
+      mdast-util-to-markdown: 2.2.1
       unist-util-remove-position: 5.0.0
     transitivePeerDependencies:
       - supports-color
@@ -5036,7 +5039,7 @@ snapshots:
       '@types/mdast': 4.0.4
       devlop: 1.1.0
       mdast-util-from-markdown: 2.1.0
-      mdast-util-to-markdown: 2.2.0
+      mdast-util-to-markdown: 2.2.1
     transitivePeerDependencies:
       - supports-color
 
@@ -5049,7 +5052,7 @@ snapshots:
       ccount: 2.0.1
       devlop: 1.1.0
       mdast-util-from-markdown: 2.1.0
-      mdast-util-to-markdown: 2.2.0
+      mdast-util-to-markdown: 2.2.1
       parse-entities: 4.0.2
       stringify-entities: 4.0.4
       unist-util-stringify-position: 4.0.0
@@ -5063,7 +5066,7 @@ snapshots:
       mdast-util-mdx-expression: 2.0.1
       mdast-util-mdx-jsx: 3.2.0
       mdast-util-mdxjs-esm: 2.0.1
-      mdast-util-to-markdown: 2.2.0
+      mdast-util-to-markdown: 2.2.1
     transitivePeerDependencies:
       - supports-color
 
@@ -5074,7 +5077,7 @@ snapshots:
       '@types/mdast': 4.0.4
       devlop: 1.1.0
       mdast-util-from-markdown: 2.1.0
-      mdast-util-to-markdown: 2.2.0
+      mdast-util-to-markdown: 2.2.1
     transitivePeerDependencies:
       - supports-color
 
@@ -5098,7 +5101,7 @@ snapshots:
   mdast-util-to-markdown-cjk-friendly-gfm-strikethrough@1.0.1(@types/mdast@4.0.4)(micromark-util-types@2.0.3):
     dependencies:
       mdast-util-gfm-strikethrough: 2.0.1
-      mdast-util-to-markdown: 2.2.0
+      mdast-util-to-markdown: 2.2.1
       mdast-util-to-markdown-cjk-friendly: 1.0.1(@types/mdast@4.0.4)(micromark-util-types@2.0.3)
     optionalDependencies:
       '@types/mdast': 4.0.4
@@ -5108,7 +5111,7 @@ snapshots:
 
   mdast-util-to-markdown-cjk-friendly@1.0.1(@types/mdast@4.0.4)(micromark-util-types@2.0.3):
     dependencies:
-      mdast-util-to-markdown: 2.2.0
+      mdast-util-to-markdown: 2.2.1
       micromark-extension-cjk-friendly-util: 3.0.1(micromark-util-types@2.0.3)
       micromark-util-character: 2.1.1
       micromark-util-classify-character: 2.0.1
@@ -5118,7 +5121,7 @@ snapshots:
     transitivePeerDependencies:
       - micromark-util-types
 
-  mdast-util-to-markdown@2.2.0:
+  mdast-util-to-markdown@2.2.1:
     dependencies:
       '@types/mdast': 4.0.4
       '@types/unist': 3.0.3
@@ -5769,7 +5772,7 @@ snapshots:
   remark-stringify@11.0.0:
     dependencies:
       '@types/mdast': 4.0.4
-      mdast-util-to-markdown: 2.2.0
+      mdast-util-to-markdown: 2.2.1
       unified: 11.0.5
 
   restore-cursor@5.1.0:

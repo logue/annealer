@@ -12,14 +12,18 @@ layout:
   closingBracketNewline: true
   oneAttributePerLine: true
   selfClosing:
-    # `<br />`: makes the element's end explicit in the source.
+    # `<br />`: makes the element's end explicit in the source. Always applied.
     void: always
     # `normal`/`component` only apply to Vue templates.
+  # Rewrites markup beyond attribute order, so it is off here. Turn it on with
+  # `--content-newline` (CLI), `contentNewline` (JS), or `enabled: true` in a
+  # profile.
   # Content of a multiline element goes on lines of its own
   # (vue/multiline-html-element-content-newline). `pre`, `textarea` and inline
   # elements (`a`, `span`, `strong`, …) are left alone by default, because the
   # added whitespace could be visible there.
-  contentNewline: {}
+  contentNewline:
+    enabled: false
 
 groups:
   # 1. Global awareness

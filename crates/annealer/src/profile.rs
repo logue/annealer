@@ -65,6 +65,30 @@ pub struct Layout {
     pub content_newline: Option<ContentNewline>,
 }
 
+impl Layout {
+    /// Turns the optional rules on or off; `None` keeps the profile's setting.
+    /// Turning on `contentNewline` in a profile without it uses its defaults.
+    pub(crate) fn enable(&mut self, self_closing: Option<bool>, content_newline: Option<bool>) {
+        if let Some(enabled) = self_closing {
+            self.self_closing.enabled = enabled;
+        }
+        match (content_newline, &mut self.content_newline) {
+            (Some(enabled), Some(rule)) => rule.enabled = enabled,
+            (Some(true), None) => self.content_newline = Some(ContentNewline::default()),
+            _ => {}
+        }
+    }
+
+    /// The `contentNewline` rule, if it is on.
+    pub(crate) fn content_newline(&self) -> Option<&ContentNewline> {
+        self.content_newline.as_ref().filter(|rule| rule.enabled)
+    }
+}
+
+fn enabled() -> bool {
+    true
+}
+
 /// Puts the content of a multiline element on lines of its own, like
 /// `vue/multiline-html-element-content-newline`.
 ///
@@ -73,6 +97,10 @@ pub struct Layout {
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ContentNewline {
+    /// Whether the rule applies. Off in the built-in profiles; turned on by
+    /// `--content-newline` or the `contentNewline` format option.
+    #[serde(default = "enabled")]
+    pub enabled: bool,
     /// Elements left alone, together with everything inside them. Element
     /// names match case-insensitively; component names match exactly.
     #[serde(default = "default_content_newline_ignore")]
@@ -81,6 +109,16 @@ pub struct ContentNewline {
     /// them to a single line break.
     #[serde(default)]
     pub allow_empty_lines: bool,
+}
+
+impl Default for ContentNewline {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            ignore: default_content_newline_ignore(),
+            allow_empty_lines: false,
+        }
+    }
 }
 
 /// `vue/multiline-html-element-content-newline`'s default `ignores`: `pre`,
@@ -113,10 +151,15 @@ pub enum SelfClosing {
 }
 
 /// Self-closing style per element kind, mirroring `vue/html-self-closing`.
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SelfClosingRules {
-    /// Void elements (`br`, `img`, `input`, …).
+    /// Whether the `normal` and `component` rules apply. Off in the built-in
+    /// profiles; turned on by `--self-closing` or the `selfClosing` format
+    /// option. `void` always applies.
+    #[serde(default = "enabled")]
+    pub enabled: bool,
+    /// Void elements (`br`, `img`, `input`, …). Applies regardless of `enabled`.
     #[serde(default)]
     pub void: SelfClosing,
     /// Empty non-void HTML/SVG elements. Vue templates only: in plain HTML,
@@ -126,6 +169,17 @@ pub struct SelfClosingRules {
     /// Empty components. Vue templates only.
     #[serde(default)]
     pub component: SelfClosing,
+}
+
+impl Default for SelfClosingRules {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            void: SelfClosing::default(),
+            normal: SelfClosing::default(),
+            component: SelfClosing::default(),
+        }
+    }
 }
 
 #[derive(Deserialize)]

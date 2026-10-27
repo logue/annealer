@@ -24,9 +24,16 @@ normalize:
 layout:
   closingBracketNewline: true
   oneAttributePerLine: true
+  # `normal`/`component` and `contentNewline` rewrite markup beyond attribute
+  # order, so they are off here. Turn them on with `--self-closing` /
+  # `--content-newline` (CLI), `selfClosing` / `contentNewline` (JS), or
+  # `enabled: true` in a profile.
   selfClosing:
-    # `<br />`. Note: vue/html-self-closing defaults to `never` for void
-    # elements; set `html.void: always` there if you use that rule.
+    # `enabled` covers `normal` and `component` only.
+    enabled: false
+    # `<br />`, always applied. Note: vue/html-self-closing defaults to
+    # `never` for void elements; set `html.void: always` there if you use
+    # that rule.
     void: always
     # `<div></div>` -> `<div />`, `<MyComp></MyComp>` -> `<MyComp />`
     # (vue/html-self-closing defaults).
@@ -36,7 +43,8 @@ layout:
   # (vue/multiline-html-element-content-newline). `pre`, `textarea` and inline
   # elements (`a`, `span`, `strong`, …) are left alone by default, because the
   # added whitespace could be visible there.
-  contentNewline: {}
+  contentNewline:
+    enabled: false
 
 groups:
   - name: definition

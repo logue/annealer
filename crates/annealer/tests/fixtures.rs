@@ -1,5 +1,6 @@
 //! Fixture tests: every `tests/fixtures/<name>.<ext>` is formatted with the
-//! built-in profile for its language and compared with
+//! built-in profile for its language, with the optional layout rules
+//! (`selfClosing`, `contentNewline`) turned on, and compared with
 //! `tests/fixtures/<name>.expected.<ext>`. Formatting the expected output
 //! again must not change it.
 //!
@@ -43,7 +44,9 @@ fn fixtures_match_expected_output() {
         let name = input_path.file_name().unwrap().to_string_lossy();
         let language = Language::from_path(&input_path)
             .unwrap_or_else(|| panic!("{name}: unsupported extension"));
-        let config = Config::for_language(language);
+        let config = Config::for_language(language)
+            .with_self_closing(Some(true))
+            .with_content_newline(Some(true));
         let input = fs::read_to_string(&input_path).unwrap();
         let output = format(&input, &config).unwrap_or_else(|error| panic!("{name}: {error}"));
 

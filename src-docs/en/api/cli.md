@@ -12,15 +12,18 @@ Formats each file and prints the result. Reads stdin when no file is given.
 
 ## Options
 
-| Option                        | Description                                                                                                                                                            |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-w`, `--write`               | Overwrite files in place. Can't be combined with `--check`.                                                                                                            |
-| `-c`, `--check`               | Print the paths of files that would change, and exit with status 1 if any would.                                                                                       |
-| `-p`, `--profile <PROFILE>`   | A built-in profile name (`html`, `vue`) or the path to a profile YAML file. Defaults to the built-in profile for each file's language.                                 |
-| `--class-order <CLASS_ORDER>` | Order the classes of static `class` attributes: a built-in class order name (`tailwind`) or the path to a class order YAML file. Overrides the profile's `classOrder`. |
-| `-l`, `--language <LANGUAGE>` | Language of stdin input: `html` (default), `vue`, `css`, `scss`, `sass`, `less`.                                                                                       |
-| `-h`, `--help`                | Show help.                                                                                                                                                             |
-| `-V`, `--version`             | Show the version.                                                                                                                                                      |
+| Option                        | Description                                                                                                                                                                                                                                                                       |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-w`, `--write`               | Overwrite files in place. Can't be combined with `--check`.                                                                                                                                                                                                                       |
+| `-c`, `--check`               | Print the paths of files that would change, and exit with status 1 if any would.                                                                                                                                                                                                  |
+| `-p`, `--profile <PROFILE>`   | A built-in profile name (`html`, `vue`) or the path to a profile YAML file. Defaults to the built-in profile for each file's language.                                                                                                                                            |
+| `--class-order <CLASS_ORDER>` | Order the classes of static `class` attributes: a built-in class order name (`tailwind`) or the path to a class order YAML file. Overrides the profile's `classOrder`.                                                                                                            |
+| `--remove-duplicate-classes`  | Drop repeated classes in static `class` attributes, keeping the first. Works with or without `--class-order`. By default the class order's `removeDuplicates` decides (off in `tailwind`). `--keep-duplicate-classes` keeps them.                                                 |
+| `--self-closing`              | Self-close empty elements and components in Vue templates (`layout.selfClosing.normal`/`component`, `vue/html-self-closing`): `<div />`, `<MyComp />`. Off in the built-in profiles. `--no-self-closing` turns it off. Void elements (`<br />`) always follow `selfClosing.void`. |
+| `--content-newline`           | Put the content of multiline elements on lines of its own (`vue/multiline-html-element-content-newline`). Off in the built-in profiles. `--no-content-newline` turns it off.                                                                                                      |
+| `-l`, `--language <LANGUAGE>` | Language of stdin input: `html` (default), `vue`, `css`, `scss`, `sass`, `less`.                                                                                                                                                                                                  |
+| `-h`, `--help`                | Show help.                                                                                                                                                                                                                                                                        |
+| `-V`, `--version`             | Show the version.                                                                                                                                                                                                                                                                 |
 
 ## Languages
 
@@ -52,5 +55,7 @@ anyl --write src/**/*.vue                 # format in place
 anyl --check index.html                   # use in CI
 anyl --profile my-profile.yaml page.html  # custom profile
 anyl --class-order tailwind src/**/*.vue  # order Tailwind classes
+anyl --class-order tailwind --remove-duplicate-classes src/**/*.vue  # and drop repeated ones
+anyl --self-closing --content-newline src/**/*.vue  # also apply the optional layout rules
 cat App.vue | anyl --language vue         # stdin
 ```

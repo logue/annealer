@@ -8,11 +8,24 @@ fn vue(input: &str) -> String {
     run(input, Language::Vue)
 }
 
-/// Formats and asserts that a second pass is a no-op.
+/// Formats with the built-in profile and asserts that a second pass is a no-op.
 fn run(input: &str, language: Language) -> String {
-    let config = Config::for_language(language);
-    let once = format(input, &config).unwrap();
-    let twice = format(&once, &config).unwrap();
+    run_with(input, &Config::for_language(language))
+}
+
+/// Like [`run`], with the optional layout rules (`selfClosing`,
+/// `contentNewline`) of the built-in profile turned on.
+fn run_with_layout_rules(input: &str, language: Language) -> String {
+    let config = Config::for_language(language)
+        .with_self_closing(Some(true))
+        .with_content_newline(Some(true));
+    run_with(input, &config)
+}
+
+/// Formats and asserts that a second pass is a no-op.
+fn run_with(input: &str, config: &Config) -> String {
+    let once = format(input, config).unwrap();
+    let twice = format(&once, config).unwrap();
     assert_eq!(once, twice, "formatting is not idempotent");
     once
 }
@@ -115,8 +128,7 @@ mod html_profile {
     fn keeps_closing_bracket_of_single_line_tags_on_that_line() {
         assert_eq!(
             html("<a href=\"/\" title=\"t\"\n  >x</a><br\n/><p\n>y</p>"),
-            // `<p>` spans two lines in the input, so its content is broken too.
-            "<a title=\"t\" href=\"/\">x</a><br /><p>\n  y\n</p>"
+            "<a title=\"t\" href=\"/\">x</a><br /><p>y</p>"
         );
     }
 
@@ -218,7 +230,7 @@ mod vue_profile {
                 r#"<MyComp :itemCount="n" maxLength="3" @updateValue="u"><input maxLength="3"><svg><clipPath clipPathUnits="x"/></svg></MyComp>"#
             )),
             sfc(
-                r#"<MyComp :item-count="n" max-length="3" @updateValue="u"><input maxLength="3" /><svg><clipPath clipPathUnits="x" /></svg></MyComp>"#
+                r#"<MyComp :item-count="n" max-length="3" @updateValue="u"><input maxLength="3" /><svg><clipPath clipPathUnits="x"/></svg></MyComp>"#
             )
         );
     }
@@ -270,6 +282,14 @@ mod vue_profile {
 
 mod content_newline {
     use super::*;
+
+    fn html(input: &str) -> String {
+        run_with_layout_rules(input, Language::Html)
+    }
+
+    fn vue(input: &str) -> String {
+        run_with_layout_rules(input, Language::Vue)
+    }
 
     #[test]
     fn breaks_content_of_elements_with_multiline_start_tags() {
@@ -355,6 +375,38 @@ mod content_newline {
             "<div\r\n  id=\"i\"\r\n>\r\n  x\r\n</div>"
         );
     }
+
+    #[test]
+    fn is_off_in_the_built_in_profiles() {
+        let input = sfc("<section>text\n  more</section>");
+        assert_eq!(super::vue(&input), input);
+    }
+
+    #[test]
+    fn uses_the_defaults_when_turned_on_for_a_profile_without_it() {
+        let profile = Profile::from_yaml(
+            "schemaVersion: 1\nname: x\ngroups:\n  - name: rest\n    fallback: true\n",
+        )
+        .unwrap();
+        let config = Config::new(Language::Html, profile).with_content_newline(Some(true));
+        assert_eq!(
+            run_with("<div>a\nb</div><span>a\nb</span>", &config),
+            "<div>\n  a\nb\n</div><span>a\nb</span>"
+        );
+    }
+
+    #[test]
+    fn follows_enabled_in_the_profile() {
+        let profile = Profile::from_yaml(
+            "schemaVersion: 1\nname: x\nlayout:\n  contentNewline:\n    enabled: false\ngroups:\n  - name: rest\n    fallback: true\n",
+        )
+        .unwrap();
+        let input = "<div>a\nb</div>";
+        assert_eq!(
+            run_with(input, &Config::new(Language::Html, profile)),
+            input
+        );
+    }
 }
 
 mod style_attribute {
@@ -422,6 +474,14 @@ mod style_attribute {
 
 mod self_closing {
     use super::*;
+
+    fn html(input: &str) -> String {
+        run_with_layout_rules(input, Language::Html)
+    }
+
+    fn vue(input: &str) -> String {
+        run_with_layout_rules(input, Language::Vue)
+    }
 
     #[test]
     fn self_closes_void_elements_in_html() {
@@ -495,6 +555,28 @@ mod self_closing {
             sfc("<MyComp a=\"b\"></MyComp><div></div><br><img src=\"a\">")
         );
     }
+
+    #[test]
+    fn self_closes_only_void_elements_in_the_built_in_profiles() {
+        assert_eq!(
+            super::vue(&sfc("<div></div><MyComp></MyComp><br><img src=\"a\"/>")),
+            sfc("<div></div><MyComp></MyComp><br /><img src=\"a\" />")
+        );
+    }
+
+    #[test]
+    fn can_be_turned_off_for_a_profile_that_enables_it() {
+        let profile = Profile::from_yaml(
+            "schemaVersion: 1\nname: x\nlayout:\n  selfClosing:\n    void: always\n    normal: always\ngroups:\n  - name: rest\n    fallback: true\n",
+        )
+        .unwrap();
+        let config = Config::new(Language::Vue, profile);
+        let input = sfc("<div></div><br>");
+        assert_eq!(format(&input, &config).unwrap(), sfc("<div /><br />"));
+        let config = config.with_self_closing(Some(false));
+        // `void` applies regardless of `enabled`.
+        assert_eq!(format(&input, &config).unwrap(), sfc("<div></div><br />"));
+    }
 }
 
 mod directives {
@@ -512,7 +594,7 @@ mod directives {
             "<a title=\"t\" id=\"i\"><br></a>\n",
             "<a id=\"i\" title=\"t\"><br /></a>\n",
         );
-        assert_eq!(html(input), expected);
+        assert_eq!(run_with_layout_rules(input, Language::Html), expected);
     }
 
     #[test]
@@ -925,6 +1007,33 @@ mod class_order {
             tailwind("<p class=\"\n  p-4\n  card\n  m-2\n\">", Language::Html),
             // The value spans lines, so the tag is multiline (`closingBracketNewline`).
             "<p class=\"\n  card\n  m-2\n  p-4\n\"\n>"
+        );
+    }
+
+    #[test]
+    fn removes_duplicate_classes_when_asked() {
+        let input = r#"<p class="p-4 m-2 p-4">"#;
+        assert_eq!(
+            tailwind(input, Language::Html),
+            r#"<p class="m-2 p-4 p-4">"#
+        );
+        let config = Config::for_language(Language::Html)
+            .with_class_order(ClassOrder::builtin("tailwind"))
+            .with_remove_duplicate_classes(Some(true));
+        assert_eq!(format(input, &config).unwrap(), r#"<p class="m-2 p-4">"#);
+    }
+
+    #[test]
+    fn removes_duplicate_classes_without_a_class_order() {
+        let config = Config::for_language(Language::Vue).with_remove_duplicate_classes(Some(true));
+        assert_eq!(
+            format(
+                &sfc(r#"<p class="card  is-active card" :class="['a', 'a']">"#),
+                &config
+            )
+            .unwrap(),
+            // Source order stays; bound classes are expressions and stay as written.
+            sfc(r#"<p class="card  is-active" :class="['a', 'a']">"#)
         );
     }
 

@@ -21,13 +21,20 @@ fn language(name: &str) -> Result<Language, JsError> {
 /// `profile` is a built-in profile name (`html`, `vue`) or a profile's YAML
 /// text; when omitted, the built-in profile for `language` is used.
 /// `class_order` is a built-in class order name (`tailwind`) or a class order
-/// YAML text; it overrides the profile's `classOrder`.
+/// YAML text; it overrides the profile's `classOrder`. `self_closing` and
+/// `content_newline` turn those layout rules on or off; when omitted, the
+/// profile's setting is kept. `remove_duplicate_classes` drops repeated
+/// classes, with or without a class order; when omitted, the class order's
+/// `removeDuplicates` is kept.
 #[wasm_bindgen]
 pub fn format(
     input: &str,
     language: &str,
     profile: Option<String>,
     class_order: Option<String>,
+    self_closing: Option<bool>,
+    content_newline: Option<bool>,
+    remove_duplicate_classes: Option<bool>,
 ) -> Result<String, JsError> {
     let language = self::language(language)?;
     let config = match profile {
@@ -46,7 +53,10 @@ pub fn format(
             Some(class_order) => class_order,
             None => ClassOrder::from_yaml(&spec)?,
         })),
-    };
+    }
+    .with_self_closing(self_closing)
+    .with_content_newline(content_newline)
+    .with_remove_duplicate_classes(remove_duplicate_classes);
     Ok(crate::format(input, &config)?)
 }
 

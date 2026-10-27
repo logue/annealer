@@ -270,46 +270,15 @@ impl ClassOrder {
         self.description.as_deref()
     }
 
-    /// Reorders the classes of a `class` attribute value. Whitespace stays
-    /// where it is: classes move between the separators. Returns `None` when
-    /// nothing changes.
+    /// Reorders the classes of a `class` attribute value, dropping repeated
+    /// ones when the profile asks for it. Returns `None` when nothing changes.
+    #[cfg(test)]
     pub(crate) fn sort_value(&self, value: &str) -> Option<String> {
-        let mut classes: Vec<&str> = Vec::new();
-        let mut spaces: Vec<&str> = Vec::new();
-        let mut rest = value;
-        loop {
-            let space_end = rest.len() - rest.trim_start_matches(is_space).len();
-            spaces.push(&rest[..space_end]);
-            rest = &rest[space_end..];
-            if rest.is_empty() {
-                break;
-            }
-            let class_end = rest.find(is_space).unwrap_or(rest.len());
-            classes.push(&rest[..class_end]);
-            rest = &rest[class_end..];
+        Classes {
+            order: Some(self),
+            remove_duplicates: self.remove_duplicates,
         }
-        // `spaces` has one more entry than `classes`: before each class, and
-        // after the last one.
-
-        let sorted = self.sort(&classes);
-        let mut kept: Vec<&str> = Vec::with_capacity(sorted.len());
-        for class in sorted {
-            if !(self.remove_duplicates && kept.contains(&class)) {
-                kept.push(class);
-            }
-        }
-        if kept == classes {
-            return None;
-        }
-
-        // Removed duplicates take the separator before them along.
-        let mut text = String::with_capacity(value.len());
-        for (space, class) in spaces.iter().zip(&kept) {
-            text.push_str(space);
-            text.push_str(class);
-        }
-        text.push_str(spaces[spaces.len() - 1]);
-        Some(text)
+        .rewrite(value)
     }
 
     /// Returns the classes in output order.
@@ -442,6 +411,75 @@ pub(crate) fn builtin_yaml(name: &str) -> Option<&'static str> {
     match name {
         "tailwind" => Some(TAILWIND),
         _ => None,
+    }
+}
+
+/// What happens to the classes of static `class` attributes: a class order,
+/// duplicate removal, or both.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct Classes<'a> {
+    pub(crate) order: Option<&'a ClassOrder>,
+    /// Drop repeated classes, keeping the first.
+    pub(crate) remove_duplicates: bool,
+}
+
+impl<'a> Classes<'a> {
+    /// `remove_duplicates` overrides the class order's `removeDuplicates`.
+    pub(crate) fn new(order: Option<&'a ClassOrder>, remove_duplicates: Option<bool>) -> Self {
+        Self {
+            order,
+            remove_duplicates: remove_duplicates
+                .unwrap_or_else(|| order.is_some_and(|order| order.remove_duplicates)),
+        }
+    }
+
+    pub(crate) fn is_active(&self) -> bool {
+        self.order.is_some() || self.remove_duplicates
+    }
+
+    /// Rewrites a `class` attribute value. Whitespace stays where it is:
+    /// classes move between the separators. Returns `None` when nothing
+    /// changes.
+    pub(crate) fn rewrite(&self, value: &str) -> Option<String> {
+        let mut classes: Vec<&str> = Vec::new();
+        let mut spaces: Vec<&str> = Vec::new();
+        let mut rest = value;
+        loop {
+            let space_end = rest.len() - rest.trim_start_matches(is_space).len();
+            spaces.push(&rest[..space_end]);
+            rest = &rest[space_end..];
+            if rest.is_empty() {
+                break;
+            }
+            let class_end = rest.find(is_space).unwrap_or(rest.len());
+            classes.push(&rest[..class_end]);
+            rest = &rest[class_end..];
+        }
+        // `spaces` has one more entry than `classes`: before each class, and
+        // after the last one.
+
+        let sorted = match self.order {
+            Some(order) => order.sort(&classes),
+            None => classes.clone(),
+        };
+        let mut kept: Vec<&str> = Vec::with_capacity(sorted.len());
+        for class in sorted {
+            if !(self.remove_duplicates && kept.contains(&class)) {
+                kept.push(class);
+            }
+        }
+        if kept == classes {
+            return None;
+        }
+
+        // Removed duplicates take the separator before them along.
+        let mut text = String::with_capacity(value.len());
+        for (space, class) in spaces.iter().zip(&kept) {
+            text.push_str(space);
+            text.push_str(class);
+        }
+        text.push_str(spaces[spaces.len() - 1]);
+        Some(text)
     }
 }
 
@@ -732,6 +770,33 @@ mod tests {
         let order = ClassOrder::from_yaml(&yaml).unwrap();
         assert_eq!(order.sort_value("p-4 m-2 p-4").unwrap(), "m-2 p-4");
         assert_eq!(tailwind().sort_value("p-4 m-2 p-4").unwrap(), "m-2 p-4 p-4");
+    }
+
+    #[test]
+    fn removes_duplicates_without_a_class_order() {
+        let classes = Classes::new(None, Some(true));
+        assert_eq!(classes.rewrite("b a b  c a").unwrap(), "b a c");
+        assert_eq!(classes.rewrite("a b"), None);
+        assert!(!Classes::new(None, None).is_active());
+    }
+
+    #[test]
+    fn the_override_wins_over_the_class_order() {
+        let yaml = TAILWIND.replace("removeDuplicates: false", "removeDuplicates: true");
+        let order = ClassOrder::from_yaml(&yaml).unwrap();
+        assert_eq!(
+            Classes::new(Some(&order), Some(false))
+                .rewrite("p-4 p-4")
+                .as_deref(),
+            None
+        );
+        let tailwind = tailwind();
+        assert_eq!(
+            Classes::new(Some(&tailwind), Some(true))
+                .rewrite("p-4 m-2 p-4")
+                .unwrap(),
+            "m-2 p-4"
+        );
     }
 
     #[test]
