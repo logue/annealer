@@ -60,6 +60,12 @@ struct Cli {
     #[arg(long, overrides_with = "remove_duplicate_classes")]
     keep_duplicate_classes: bool,
 
+    /// Line width of stylesheets and `<style>` blocks
+    /// (`stylesheet.malva.printWidth`). Match your formatter: 80 for Prettier
+    /// and Biome, 100 for oxfmt. Defaults to the profile's (80).
+    #[arg(long, value_parser = clap::value_parser!(u16).range(1..))]
+    print_width: Option<u16>,
+
     /// Language of stdin input.
     #[arg(short, long, value_enum, default_value = "html")]
     language: LanguageArg,
@@ -116,6 +122,7 @@ struct Options {
     self_closing: Option<bool>,
     content_newline: Option<bool>,
     remove_duplicate_classes: Option<bool>,
+    print_width: Option<usize>,
 }
 
 fn config_for(language: Language, options: &Options) -> Config {
@@ -131,6 +138,7 @@ fn config_for(language: Language, options: &Options) -> Config {
         .with_self_closing(options.self_closing)
         .with_content_newline(options.content_newline)
         .with_remove_duplicate_classes(options.remove_duplicate_classes)
+        .with_print_width(options.print_width)
 }
 
 /// Returns whether the file changed.
@@ -171,6 +179,7 @@ fn run(cli: &Cli) -> Result<bool, String> {
         self_closing: switch(cli.self_closing, cli.no_self_closing),
         content_newline: switch(cli.content_newline, cli.no_content_newline),
         remove_duplicate_classes: switch(cli.remove_duplicate_classes, cli.keep_duplicate_classes),
+        print_width: cli.print_width.map(usize::from),
     };
 
     if cli.files.is_empty() {

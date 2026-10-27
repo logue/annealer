@@ -1,12 +1,18 @@
 ---
-description: annealer を Rslint と rs fmt（Prettier）、oxlint と oxfmt、Biome と組み合わせる方法。互いの出力を打ち消し合わないための設定例を示します。
+description: annealer を Rslint と rs fmt（Prettier）、eslint-plugin-vue、oxlint と oxfmt、Biome と組み合わせる方法。互いの出力を打ち消し合わないための設定例を示します。
 ---
 
 # 他のツールとの併用
 
 annealer が行うのは並べ替え（属性、クラス、宣言）だけで、行幅やインデントはフォーマッターに任せます。このページでは、よく使われるツールチェーンと組み合わせて、どちらのツールも相手の出力を打ち消さないようにする方法を示します。
 
-例は [Prettier](https://prettier.io/) 3.9（`rs fmt` 経由）、[oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) 0.74、[oxlint](https://oxc.rs/docs/guide/usage/linter.html) 1.89、[Biome](https://biomejs.dev/) 2.6 で確認しました。
+例は次のバージョンで確認しました。
+
+- [Prettier](https://prettier.io/) 3.9（`rs fmt` 経由）
+- [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) 0.74
+- [oxlint](https://oxc.rs/docs/guide/usage/linter.html) 1.89
+- [eslint-plugin-vue](https://eslint.vuejs.org/) 10.11（[eslint-config-prettier](https://npm.im/eslint-config-prettier) 10.1 と併用）
+- [Biome](https://biomejs.dev/) 2.6
 
 ## 実行順 {#run-order}
 
@@ -37,13 +43,23 @@ annealer の組み込みプロファイルは次の値を使います。フォ�
 | --------------------------- | -------------------------------------- | ---------------------------------- | ---------------------- | ------------------------------------------------ |
 | CSS の文字列の引用符        | シングル（`quotes: prefer-single`）    | `singleQuote: true`                | `singleQuote: true`    | `css.formatter.quoteStyle: "single"`             |
 | スタイルシートのインデント  | スペース 2 つ（malva の既定）          | 既定のまま                         | 既定のまま             | `formatter.indentStyle: "space"`                 |
-| スタイルシートの行幅        | 80（malva の既定）                     | 既定のまま                         | `printWidth: 80`       | 既定のまま                                       |
+| スタイルシートの行幅        | 80（`--print-width` で変更）           | 既定のまま（80）                   | `--print-width 100`    | 既定のまま（80）                                 |
 | 空要素                      | `<br />`（常時）                       | 既定のまま                         | 既定のまま             | `html.formatter.selfCloseVoidElements: "always"` |
-| 属性の並べ替え              | annealer                               | なし                               | なし                   | `useSortedAttributes` を無効（既定）             |
-| 宣言の並べ替え              | annealer（`declarationOrder: smacss`） | なし                               | なし                   | `useSortedProperties` を無効（既定）             |
+| 属性の並べ替え              | annealer                               | なし                               | なし                   | `useSortedAttributes` を無効（必須）             |
+| 宣言の並べ替え              | annealer（`declarationOrder: smacss`） | なし                               | なし                   | `useSortedProperties` を無効（必須）             |
 | Tailwind のクラスの並べ替え | `--class-order tailwind`（オプトイン） | `prettier-plugin-tailwindcss` なし | `sortTailwindcss` なし | `useTailwindSortedClasses` を無効                |
 
 ダブルクォートを使いたい場合は、フォーマッターではなくプロファイルを変更します。組み込みプロファイル（`crates/annealer/profiles/*.yaml`）をコピーし、`stylesheet.malva.quotes: prefer-double` を指定してください。
+
+### アルファベット順に並べ替えない {#no-alphabetical-sorting}
+
+annealer の目的は、属性や宣言を意味のある順に並べることです。識別子を先頭に、要素が何でありどう振る舞うかを表す属性、ARIA、データ属性、イベントの順に並べます。アルファベット順はその意味を捨ててしまうため、属性や宣言をアルファベット順に並べ替えるツールは annealer の考え方と相容れず、互いの出力を書き換え続けます。次の設定を無効にしてください。
+
+| ツール            | 設定                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| eslint-plugin-vue | `vue/attributes-order`: `alphabetical: false`（既定）のままにする                           |
+| Biome             | `assist.actions.source.useSortedAttributes` と `useSortedProperties`: `off`                 |
+| Stylelint         | annealer が並べるファイルに `stylelint-order` の `properties-alphabetical-order` を使わない |
 
 ### Tailwind のクラス: 並べ替えはどれか 1 つで {#tailwind-classes-pick-one-sorter}
 
@@ -91,6 +107,31 @@ define.staged({
 
 staged の glob には、annealer が対応する拡張子だけを含めてください。それ以外のファイルはエラー（`unsupported file type`）になります。
 
+## eslint-plugin-vue {#eslint-plugin-vue}
+
+`vue/attributes-order`（`flat/recommended` に含まれる）は、annealer の `vue` プロファイルと同じ階層を検査するので、annealer の出力はこのルールを満たします。`alphabetical` は既定の `false` のままにしてください（[アルファベット順に並べ替えない](#no-alphabetical-sorting)を参照）。Prettier と併用する場合は、最後に `eslint-config-prettier` を追加します。レイアウトのルール（`vue/html-self-closing`、`vue/max-attributes-per-line` など）が無効になり、レイアウトは Prettier が決めます。
+
+```js title="eslint.config.js"
+import vue from 'eslint-plugin-vue';
+import prettier from 'eslint-config-prettier';
+
+export default [
+  ...vue.configs['flat/recommended'],
+  prettier,
+  {
+    rules: {
+      // annealer は「その他の属性」の階層を意味で並べる。
+      'vue/attributes-order': ['warn', { alphabetical: false }]
+    }
+  }
+];
+```
+
+- **スプレッド:** Vue 3 では後に書いた方が優先されるため、annealer は `v-bind="object"` をまたいで属性を動かしません。`vue/attributes-order` はスプレッドをまたいだ順序も検査し、`--fix` では属性をまたいで動かします（`title="t" v-bind="obj"` が `v-bind="obj" title="t"` になり、`title` が `obj.title` を上書きするようになります）。このようなタグは手で並べ替えるか、`eslint-disable` コメントを付けてください。
+- **annealer が書き換えないもの:** `vue/v-on-event-hyphenation`（`@myEvent` → `@my-event`）と `vue/v-slot-style`（`v-slot:item` → `#item`）。`eslint --fix` が書き換え、annealer はその結果に手を加えません。
+
+annealer、Prettier、`eslint --fix` の順に実行します。その結果に対して `anyl --check` は通ります。
+
 ## oxlint と oxfmt（Oxc） {#oxlint-and-oxfmt-oxc}
 
 oxlint の `vue` プラグインが検査するのは `<script>` のコードだけで、`vue/attributes-order` のようなテンプレートのルールはありません。無効にする必要があるものはありません。
@@ -104,17 +145,16 @@ oxlint の `vue` プラグインが検査するのは `<script>` のコードだ
 }
 ```
 
-oxfmt は `.vue` と `.html` を同梱の Prettier で、CSS/SCSS/Less をネイティブに整形します。既定値は引用符（ダブル）と行幅（100）が annealer と異なります。
+oxfmt は `.vue` と `.html` を同梱の Prettier で、CSS/SCSS/Less をネイティブに整形します。既定値は引用符（ダブル）と行幅（80 ではなく 100）が annealer と異なります。引用符は oxfmt 側で設定します。
 
 ```json title=".oxfmtrc.json"
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "singleQuote": true,
-  "printWidth": 80
+  "singleQuote": true
 }
 ```
 
-`printWidth: 80` はスタイルシートの行幅を malva に合わせるためのものです。すべてのファイルに適用されるので、JavaScript では 100 のままにしたい場合は指定せず、実行順に任せてください。annealer がクラスを並べ替える場合は `sortTailwindcss` を無効のままにします。oxfmt に並べ替えさせる場合は、有効にして `--class-order` を外します。
+行幅は oxfmt ではなく annealer 側を合わせます。`--print-width 100`（JavaScript では `printWidth: 100`）を指定すると、スタイルシートと `<style>` ブロックが oxfmt と同じ位置で折り返されます。`.oxfmtrc.json` で `printWidth` を指定している場合は、同じ値を `--print-width` に渡してください。annealer がクラスを並べ替える場合は `sortTailwindcss` を無効のままにします。oxfmt に並べ替えさせる場合は、有効にして `--class-order` を外します。
 
 ```json title=".oxfmtrc.json（oxfmt が Tailwind のクラスを並べ替える場合）"
 {
@@ -129,7 +169,7 @@ oxfmt は `.vue` と `.html` を同梱の Prettier で、CSS/SCSS/Less をネイ
 そのうえで、annealer を oxfmt より先に実行します。
 
 ```bash
-git ls-files -z '*.vue' '*.html' '*.css' '*.scss' '*.less' | xargs -0 anyl --write
+git ls-files -z '*.vue' '*.html' '*.css' '*.scss' '*.less' | xargs -0 anyl --write --print-width 100
 oxfmt
 ```
 
@@ -160,7 +200,7 @@ Biome の既定値は、4 つの点で annealer と衝突します。タブ、�
 }
 ```
 
-- `useSortedAttributes` は HTML と Vue の属性をアルファベット順に、`useSortedProperties` は CSS の宣言を並べ替えます。どちらも既定で無効ですが、有効にすると `biome check --write` のたびに annealer の順序が崩れるため、上の設定では明示的に無効にしています。
+- **`useSortedAttributes` と `useSortedProperties` は無効にしてください。** `useSortedAttributes` は HTML と Vue の属性をアルファベット順に、`useSortedProperties` は CSS の宣言を独自の順に並べ替えます。どちらも annealer の意味による並べ替えと衝突し、`biome check --write` のたびに annealer の順序を崩します（[アルファベット順に並べ替えない](#no-alphabetical-sorting)を参照）。既定では無効ですが、共有設定などで有効にならないよう、上のように明示的に `off` を指定します。
 - `useTailwindSortedClasses` は nursery のルールです。annealer がクラスを並べ替える場合は無効にします。
 - タブを使い続ける場合は、`indentStyle` を変える代わりに、プロファイルで `stylesheet.malva.useTabs: true` を指定してください。
 

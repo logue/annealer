@@ -21,7 +21,7 @@ annealer is still under development. This page lists what it does not do yet, an
 
 - **No DOM.** annealer reads start tags with a lexer. It doesn't validate HTML or fix broken markup. Deprecated markup (`<center>`, `bgcolor`) is parsed but never reported or changed.
 - **No reflow.** annealer adds or removes line breaks only where a layout rule needs them. It never re-indents lines or wraps text to a line width; that is the formatter's job ([Using with other tools](./integration.md)).
-- **Spreads are boundaries.** Attributes don't move across `v-bind="object"`, except compile-time directives (`spreadSafe` groups). A tag with a spread can therefore stay partly unordered ([Attribute order](../concepts/attribute-order.md)).
+- **Spreads are boundaries.** Attributes don't move across `v-bind="object"`, except compile-time directives (`spreadSafe` groups). A tag with a spread can therefore stay partly unordered, and `vue/attributes-order` reports it ([Attribute order](../concepts/attribute-order.md), [eslint-plugin-vue](./integration.md#eslint-plugin-vue)).
 - **Same-name clusters keep source order**, except for `class`, where the static form goes before the bound one. `style` and other duplicates stay as written because their order can change behavior.
 
 ## Layout
@@ -47,6 +47,6 @@ annealer is still under development. This page lists what it does not do yet, an
 ## Profiles and the CLI
 
 - **No profile composition (`extends`).** To change one setting of a built-in profile, copy the whole profile (`crates/annealer/profiles/*.yaml` or `builtinProfile()`) and edit the copy.
-- **No configuration file.** Options such as `--profile`, `--class-order` and `--self-closing` are passed on every run (put them in a `package.json` script).
+- **No configuration file.** Options such as `--profile`, `--class-order`, `--self-closing` and `--print-width` are passed on every run (put them in a `package.json` script).
 - **`anyl` takes file paths only.** It doesn't walk directories, expand globs or read ignore files. Pass the paths from your shell or from `git ls-files`.
 - No editor extension, language server or Prettier plugin. Run annealer from the CLI, a Git hook or the JavaScript API.

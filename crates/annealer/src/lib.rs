@@ -84,6 +84,10 @@ pub struct Config {
     /// Works with or without a class order. `None` keeps the class order's
     /// `removeDuplicates` (off without a class order).
     pub remove_duplicate_classes: Option<bool>,
+    /// Line width of stylesheets (`stylesheet.malva.printWidth`), for
+    /// stylesheet files and `<style>` blocks. `None` keeps the profile's
+    /// setting (80, malva's default, in the built-in profiles).
+    pub print_width: Option<usize>,
 }
 
 impl Config {
@@ -95,6 +99,7 @@ impl Config {
             self_closing: None,
             content_newline: None,
             remove_duplicate_classes: None,
+            print_width: None,
         }
     }
 
@@ -120,15 +125,28 @@ impl Config {
         self
     }
 
-    /// The profile with the layout overrides applied.
+    /// Sets the line width of stylesheets (Prettier and Biome: 80, oxfmt: 100).
+    #[must_use]
+    pub fn with_print_width(mut self, print_width: Option<usize>) -> Self {
+        self.print_width = print_width;
+        self
+    }
+
+    /// The profile with the layout and line width overrides applied.
     fn effective_profile(&self) -> Cow<'_, Profile> {
-        if self.self_closing.is_none() && self.content_newline.is_none() {
+        if self.self_closing.is_none()
+            && self.content_newline.is_none()
+            && self.print_width.is_none()
+        {
             return Cow::Borrowed(&self.profile);
         }
         let mut profile = self.profile.clone();
         profile
             .layout
             .enable(self.self_closing, self.content_newline);
+        if let (Some(width), Some(stylesheet)) = (self.print_width, &mut profile.stylesheet) {
+            stylesheet.malva.layout.print_width = width;
+        }
         Cow::Owned(profile)
     }
 
@@ -149,7 +167,8 @@ impl Config {
 
 /// Formats `input`. Pure function: no file I/O.
 pub fn format(input: &str, config: &Config) -> Result<String, FormatError> {
-    let stylesheet = |lang| match &config.profile.stylesheet {
+    let profile = config.effective_profile();
+    let stylesheet = |lang| match &profile.stylesheet {
         Some(options) => {
             stylesheet::format(input, lang, options).map_err(|message| FormatError::Stylesheet {
                 line: 1,
@@ -167,10 +186,8 @@ pub fn format(input: &str, config: &Config) -> Result<String, FormatError> {
         config.remove_duplicate_classes,
     );
     match config.language {
-        Language::Html => {
-            markup::Scanner::format(input, &config.effective_profile(), classes, false)
-        }
-        Language::Vue => markup::Scanner::format(input, &config.effective_profile(), classes, true),
+        Language::Html => markup::Scanner::format(input, &profile, classes, false),
+        Language::Vue => markup::Scanner::format(input, &profile, classes, true),
         Language::Css => stylesheet(stylesheet::StyleLang::Css),
         Language::Scss => stylesheet(stylesheet::StyleLang::Scss),
         Language::Sass => stylesheet(stylesheet::StyleLang::Sass),

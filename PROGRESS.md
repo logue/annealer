@@ -187,6 +187,15 @@
         stable, but `anyl --check` alone fails on formatter output. Options:
         an order-only check mode, or leaving layout to the formatter.
 
+- [x] Stylesheet line width override (2026-10-27): `--print-width <N>`,
+      `Config::print_width`, JS `printWidth` set `stylesheet.malva.printWidth`
+      for stylesheets and `<style>` blocks without copying the profile. Default
+      stays 80 (Prettier/Biome); oxfmt users pass 100. Pipeline
+      `anyl --print-width 100` -> oxfmt verified stable. The malva comma-list
+      layout difference is separate and still open
+      (seen in both directions: an 81-column `transition` stays on one line,
+      while `font-family` goes one per line where Prettier fills lines).
+
 ## Decisions made during implementation (please confirm)
 
 1. **HTML profile order (agreed).** The plan's table had no place for

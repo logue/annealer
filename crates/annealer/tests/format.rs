@@ -1102,3 +1102,28 @@ mod class_order {
         ));
     }
 }
+
+mod print_width {
+    use super::*;
+
+    const INPUT: &str = "a { width: calc(100% - var(--sidebar-width) - var(--gutter-width) - var(--scrollbar-width)); }\n";
+    const WIDE: &str = "  width: calc(100% - var(--sidebar-width) - var(--gutter-width) - var(--scrollbar-width));\n";
+
+    #[test]
+    fn defaults_to_80() {
+        let output = format(INPUT, &Config::for_language(Language::Css)).unwrap();
+        assert!(output.lines().all(|line| line.len() <= 80), "{output}");
+    }
+
+    #[test]
+    fn can_be_widened_for_stylesheets_and_style_blocks() {
+        let config = Config::for_language(Language::Css).with_print_width(Some(100));
+        assert_eq!(format(INPUT, &config).unwrap(), format!("a {{\n{WIDE}}}\n"));
+
+        let sfc = format!("<template><p></p></template>\n<style>\n{INPUT}</style>\n");
+        let config = Config::for_language(Language::Vue).with_print_width(Some(100));
+        assert!(format(&sfc, &config).unwrap().contains(WIDE));
+        let output = format(&sfc, &Config::for_language(Language::Vue)).unwrap();
+        assert!(!output.contains(WIDE), "{output}");
+    }
+}

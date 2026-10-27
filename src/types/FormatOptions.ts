@@ -37,6 +37,12 @@ export type FormatOptions = {
    * without a class order).
    */
   removeDuplicateClasses?: boolean;
+  /**
+   * Line width of stylesheets and `<style>` blocks
+   * (`stylesheet.malva.printWidth`). Match your formatter: 80 for Prettier and
+   * Biome, 100 for oxfmt. By default the profile's setting is kept (80).
+   */
+  printWidth?: number;
 };
 
 /** Default `format` options. */

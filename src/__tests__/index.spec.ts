@@ -55,6 +55,16 @@ describe('format', () => {
     ).toBe('<p class="m-2 p-4">');
   });
 
+  test('sets the line width of stylesheets', () => {
+    const input =
+      'a { width: calc(100% - var(--sidebar-width) - var(--gutter-width) - var(--scrollbar-width)); }\n';
+    expect(format(input, { language: 'css' })).toContain('calc(\n');
+    expect(format(input, { language: 'css', printWidth: 100 })).toBe(
+      'a {\n  width: calc(100% - var(--sidebar-width) - var(--gutter-width) - var(--scrollbar-width));\n}\n'
+    );
+    expect(() => format(input, { language: 'css', printWidth: 0 })).toThrow();
+  });
+
   test('orders stylesheet declarations', () => {
     expect(
       format('a { color: red; display: block; }\n', { language: 'css' })

@@ -25,8 +25,13 @@ fn language(name: &str) -> Result<Language, JsError> {
 /// `content_newline` turn those layout rules on or off; when omitted, the
 /// profile's setting is kept. `remove_duplicate_classes` drops repeated
 /// classes, with or without a class order; when omitted, the class order's
-/// `removeDuplicates` is kept.
+/// `removeDuplicates` is kept. `print_width` sets the line width of
+/// stylesheets; when omitted, the profile's (80) is kept.
 #[wasm_bindgen]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "positional for wasm-bindgen; `src/index.ts` exposes an options object"
+)]
 pub fn format(
     input: &str,
     language: &str,
@@ -35,8 +40,12 @@ pub fn format(
     self_closing: Option<bool>,
     content_newline: Option<bool>,
     remove_duplicate_classes: Option<bool>,
+    print_width: Option<u32>,
 ) -> Result<String, JsError> {
     let language = self::language(language)?;
+    if print_width == Some(0) {
+        return Err(JsError::new("`printWidth` must be at least 1"));
+    }
     let config = match profile {
         None => Config::for_language(language),
         Some(spec) => {
@@ -56,7 +65,8 @@ pub fn format(
     }
     .with_self_closing(self_closing)
     .with_content_newline(content_newline)
-    .with_remove_duplicate_classes(remove_duplicate_classes);
+    .with_remove_duplicate_classes(remove_duplicate_classes)
+    .with_print_width(print_width.map(|width| width as usize));
     Ok(crate::format(input, &config)?)
 }
 

@@ -64,7 +64,8 @@ export const format = (input: string, options: FormatOptions = {}): string => {
     options.classOrder,
     options.selfClosing,
     options.contentNewline,
-    options.removeDuplicateClasses
+    options.removeDuplicateClasses,
+    options.printWidth
   );
 };
 
