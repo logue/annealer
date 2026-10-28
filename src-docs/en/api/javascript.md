@@ -34,7 +34,7 @@ Reorders attributes (HTML, Vue) or declarations (CSS, SCSS, Sass, Less).
 - `options.selfClosing`: `true` self-closes empty elements and components in Vue templates (`layout.selfClosing.normal`/`component`: `<div />`, `<MyComp />`); `false` turns that off. Default: the profile's setting (off in the built-in profiles). Void elements (`<br />`) always follow `layout.selfClosing.void`.
 - `options.contentNewline`: `true` puts the content of multiline elements on lines of its own, with the rule's defaults when the profile has no `layout.contentNewline`; `false` turns it off. Default: the profile's setting (off in the built-in profiles). See [Layout](../guide/features/layout.md).
 
-Throws an `Error` when the input or the profile is invalid.
+Throws an `Error` when the input or the profile is invalid, including when the input has a `<template>` or `<style>` in Pug or Stylus (`lang="pug"`, `"jade"`, `"stylus"`, `"styl"`), which are not supported.
 
 ```ts
 format('<a title="Home" href="/" id="home">Home</a>');

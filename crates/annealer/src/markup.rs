@@ -20,6 +20,10 @@ const VOID_ELEMENTS: &[&str] = &[
 /// Elements where whitespace-only content is significant.
 const WHITESPACE_SENSITIVE: &[&str] = &["pre", "textarea"];
 
+/// `lang` values of `<template>` and `<style>` that annealer rejects instead of
+/// skipping: Pug and Stylus are not supported yet.
+const UNSUPPORTED_LANGS: &[&str] = &["pug", "jade", "stylus", "styl"];
+
 /// Elements whose content is raw text and must not be scanned for tags.
 ///
 /// Obsolete elements (`xmp`, `noembed`, `noframes`) are listed only because
@@ -211,6 +215,9 @@ impl<'a> Scanner<'a> {
                 }
                 let name = tag.name.to_ascii_lowercase();
                 let lang = tag.attribute("lang").map(str::to_ascii_lowercase);
+                if matches!(name.as_str(), "template" | "style") {
+                    reject_unsupported(self.src, tag.start, lang.as_deref())?;
+                }
                 match name.as_str() {
                     "template" if lang.as_deref().is_none_or(|lang| lang == "html") => {
                         self.scan_markup(true)?;
@@ -273,10 +280,13 @@ impl<'a> Scanner<'a> {
                     self.flush(self.pos);
                     open.push(self.open_element(&tag, tag_out_start, open.last()));
                 }
+                let lang = tag.attribute("lang").map(str::to_ascii_lowercase);
+                if name == "style" {
+                    reject_unsupported(self.src, tag.start, lang.as_deref())?;
+                }
                 if name == "template" {
                     template_depth += 1;
                 } else if name == "style" && !tag.disabled {
-                    let lang = tag.attribute("lang").map(str::to_ascii_lowercase);
                     self.style_element(lang.as_deref())?;
                 } else if RAW_TEXT_ELEMENTS.contains(&name.as_str()) {
                     self.raw_text(&name);
@@ -812,6 +822,22 @@ impl<'a> Scanner<'a> {
             text.push('>');
         }
         text
+    }
+}
+
+/// Fails on a `lang` listed in [`UNSUPPORTED_LANGS`], so the block is reported
+/// rather than silently skipped or scanned as markup.
+fn reject_unsupported(src: &str, offset: usize, lang: Option<&str>) -> Result<(), FormatError> {
+    match lang {
+        Some(lang) if UNSUPPORTED_LANGS.contains(&lang) => {
+            let (line, column) = line_col(src, offset);
+            Err(FormatError::UnsupportedLanguage {
+                line,
+                column,
+                lang: lang.to_owned(),
+            })
+        }
+        _ => Ok(()),
     }
 }
 

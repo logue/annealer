@@ -269,14 +269,55 @@ mod vue_profile {
     }
 
     #[test]
-    fn leaves_script_custom_blocks_and_non_html_templates_alone() {
+    fn leaves_script_and_custom_blocks_alone() {
         let input = concat!(
             "<script setup lang=\"ts\">\nconst s = '<a title=\"t\" id=\"i\">';\n</script>\n",
             "<i18n lang=\"json\">{ \"a\": \"<a title='t' id='i'>\" }</i18n>\n",
-            "<template lang=\"pug\">\na(title=\"t\" id=\"i\")\n</template>\n",
-            "<style lang=\"stylus\">\na { color: red; display: block; }\n</style>\n",
         );
         assert_eq!(vue(input), input);
+    }
+
+    #[test]
+    fn rejects_pug_and_stylus_blocks() {
+        let cases = [
+            (
+                "<template lang=\"pug\">\na(title=\"t\" id=\"i\")\n</template>\n",
+                "pug",
+            ),
+            (
+                "<template lang=\"jade\">\na(title=\"t\")\n</template>\n",
+                "jade",
+            ),
+            (
+                "<template>\n<a />\n</template>\n<style lang=\"Stylus\">\na\n  color red\n</style>\n",
+                "stylus",
+            ),
+            ("<style lang=\"styl\">\na\n  color red\n</style>\n", "styl"),
+        ];
+        for (input, expected) in cases {
+            let error = format(input, &Config::for_language(Language::Vue)).unwrap_err();
+            assert!(
+                matches!(&error, FormatError::UnsupportedLanguage { lang, .. } if lang == expected),
+                "{input}: {error}"
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_stylus_style_elements_in_html() {
+        let error = format(
+            "<p>\n  <style lang=\"stylus\">a\n  color red</style>\n</p>\n",
+            &Config::for_language(Language::Html),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            error,
+            FormatError::UnsupportedLanguage {
+                line: 2,
+                column: 3,
+                ..
+            }
+        ));
     }
 }
 

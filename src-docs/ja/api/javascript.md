@@ -34,7 +34,7 @@ function format(input: string, options?: FormatOptions): string;
 - `options.selfClosing`: `true` で Vue テンプレートの空要素と空のコンポーネントを自己終了にし（`layout.selfClosing.normal`/`component`: `<div />`、`<MyComp />`）、`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。空要素（`<br />`）は常に `layout.selfClosing.void` に従います。
 - `options.contentNewline`: `true` で複数行の要素のコンテンツを独立した行に置きます。プロファイルに `layout.contentNewline` がなければ規則の既定値を使います。`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。[レイアウト](../guide/features/layout.md)を参照してください。
 
-入力やプロファイルが不正な場合は `Error` を投げます。
+入力やプロファイルが不正な場合は `Error` を投げます。未対応の Pug や Stylus の `<template>`・`<style>`（`lang="pug"`、`"jade"`、`"stylus"`、`"styl"`）を含む入力もエラーになります。
 
 ```ts
 format('<a title="Home" href="/" id="home">Home</a>');

@@ -36,15 +36,15 @@ The language of a file is taken from its extension:
 | `.vue`                            | `vue`      | `vue`                             |
 | `.css`, `.scss`, `.sass`, `.less` | stylesheet | `html` (its `stylesheet` section) |
 
-Other extensions are reported as unsupported.
+Other extensions, including `.pug`, `.jade`, `.styl` and `.stylus`, are reported as unsupported without the file being read. A file with a `<template>` or `<style>` in Pug or Stylus (`lang="pug"`, `"jade"`, `"stylus"`, `"styl"`) is an error too; see [Limitations](../guide/start/limitations.md#supported-input).
 
 ## Exit codes
 
-| Code | Meaning                                                                                                             |
-| ---- | ------------------------------------------------------------------------------------------------------------------- |
-| `0`  | Success. With `--check`: no file would change.                                                                      |
-| `1`  | With `--check`: at least one file would change.                                                                     |
-| `2`  | Error: unreadable file, unsupported file type, invalid profile, invalid input or an unknown `annealer-*` directive. |
+| Code | Meaning                                                                                                                                              |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0`  | Success. With `--check`: no file would change.                                                                                                       |
+| `1`  | With `--check`: at least one file would change.                                                                                                      |
+| `2`  | Error: unreadable file, unsupported file type, invalid profile, invalid input (including Pug or Stylus blocks) or an unknown `annealer-*` directive. |
 
 When several files are given, annealer formats all of them, reports each error, and exits with `2` if any failed.
 

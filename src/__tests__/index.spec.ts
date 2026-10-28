@@ -92,6 +92,19 @@ describe('format', () => {
     );
   });
 
+  test('throws on Pug and Stylus blocks', () => {
+    expect(() =>
+      format('<template lang="pug">\na(id="i")\n</template>\n', {
+        language: 'vue'
+      })
+    ).toThrow(/unsupported language `pug`/u);
+    expect(() =>
+      format('<style lang="stylus">\na\n  color red\n</style>\n', {
+        language: 'vue'
+      })
+    ).toThrow(/unsupported language `stylus`/u);
+  });
+
   test('orders classes with a class order', () => {
     const input = '<p class="p-3 m-4 lg:p-4 flex card">';
     expect(format(input)).toBe(input);

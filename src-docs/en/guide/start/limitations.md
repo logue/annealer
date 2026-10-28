@@ -15,7 +15,8 @@ annealer is still under development. This page lists what it does not do yet, an
 
 - HTML, Vue 3 SFC templates, and CSS, SCSS, Sass (indented syntax) and Less. Anything else is reported as an unsupported file type.
 - **Not supported:** JSX/TSX, Svelte, Astro, Angular templates, Markdown/MDX, and Vue 2 syntax (`.sync`, `.native`). Svelte is planned for later.
-- In `.vue` files, `<script>`, custom blocks and templates in other languages (`<template lang="pug">`) are left alone.
+- **Pug and Stylus are not supported.** `.pug`, `.jade`, `.styl` and `.stylus` files are reported as unsupported file types without being read. A `<template>` or `<style>` with `lang="pug"`, `lang="jade"`, `lang="stylus"` or `lang="styl"` fails the whole file (`unsupported language`) instead of being skipped, so annealer never scans Pug as markup or leaves the other blocks half-formatted. Exclude such files from the paths you pass to annealer.
+- In `.vue` files, `<script>` and custom blocks (`<i18n>`) are left alone.
 
 ## Markup
 

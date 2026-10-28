@@ -16,6 +16,13 @@ pub enum FormatError {
         message: String,
     },
 
+    #[error("unsupported language `{lang}` at {line}:{column} (Pug and Stylus are not supported)")]
+    UnsupportedLanguage {
+        line: usize,
+        column: usize,
+        lang: String,
+    },
+
     #[error("failed to format stylesheet starting at {line}:{column}: {message}")]
     Stylesheet {
         line: usize,
