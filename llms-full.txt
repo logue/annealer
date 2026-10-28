@@ -433,7 +433,8 @@ annealer is still under development. This page lists what it does not do yet, an
 
 - HTML, Vue 3 SFC templates, and CSS, SCSS, Sass (indented syntax) and Less. Anything else is reported as an unsupported file type.
 - **Not supported:** JSX/TSX, Svelte, Astro, Angular templates, Markdown/MDX, and Vue 2 syntax (`.sync`, `.native`). Svelte is planned for later.
-- In `.vue` files, `<script>`, custom blocks and templates in other languages (`<template lang="pug">`) are left alone.
+- **Pug and Stylus are not supported.** `.pug`, `.jade`, `.styl` and `.stylus` files are reported as unsupported file types without being read. A `<template>` or `<style>` with `lang="pug"`, `lang="jade"`, `lang="stylus"` or `lang="styl"` fails the whole file (`unsupported language`) instead of being skipped, so annealer never scans Pug as markup or leaves the other blocks half-formatted. Exclude such files from the paths you pass to annealer.
+- In `.vue` files, `<script>` and custom blocks (`<i18n>`) are left alone.
 
 ## Markup
 
@@ -1141,15 +1142,15 @@ The language of a file is taken from its extension:
 | `.vue`                            | `vue`      | `vue`                             |
 | `.css`, `.scss`, `.sass`, `.less` | stylesheet | `html` (its `stylesheet` section) |
 
-Other extensions are reported as unsupported.
+Other extensions, including `.pug`, `.jade`, `.styl` and `.stylus`, are reported as unsupported without the file being read. A file with a `<template>` or `<style>` in Pug or Stylus (`lang="pug"`, `"jade"`, `"stylus"`, `"styl"`) is an error too; see [Limitations](/annealer/guide/start/limitations.md#supported-input).
 
 ## Exit codes
 
-| Code | Meaning                                                                                                             |
-| ---- | ------------------------------------------------------------------------------------------------------------------- |
-| `0`  | Success. With `--check`: no file would change.                                                                      |
-| `1`  | With `--check`: at least one file would change.                                                                     |
-| `2`  | Error: unreadable file, unsupported file type, invalid profile, invalid input or an unknown `annealer-*` directive. |
+| Code | Meaning                                                                                                                                              |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0`  | Success. With `--check`: no file would change.                                                                                                       |
+| `1`  | With `--check`: at least one file would change.                                                                                                      |
+| `2`  | Error: unreadable file, unsupported file type, invalid profile, invalid input (including Pug or Stylus blocks) or an unknown `annealer-*` directive. |
 
 When several files are given, annealer formats all of them, reports each error, and exits with `2` if any failed.
 
@@ -1207,7 +1208,7 @@ Reorders attributes (HTML, Vue) or declarations (CSS, SCSS, Sass, Less).
 - `options.selfClosing`: `true` self-closes empty elements and components in Vue templates (`layout.selfClosing.normal`/`component`: `<div />`, `<MyComp />`); `false` turns that off. Default: the profile's setting (off in the built-in profiles). Void elements (`<br />`) always follow `layout.selfClosing.void`.
 - `options.contentNewline`: `true` puts the content of multiline elements on lines of its own, with the rule's defaults when the profile has no `layout.contentNewline`; `false` turns it off. Default: the profile's setting (off in the built-in profiles). See [Layout](/annealer/guide/features/layout.md).
 
-Throws an `Error` when the input or the profile is invalid.
+Throws an `Error` when the input or the profile is invalid, including when the input has a `<template>` or `<style>` in Pug or Stylus (`lang="pug"`, `"jade"`, `"stylus"`, `"styl"`), which are not supported.
 
 ```ts
 format('<a title="Home" href="/" id="home">Home</a>');

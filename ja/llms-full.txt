@@ -433,7 +433,8 @@ annealer は開発中です。このページでは、まだ対応していな�
 
 - HTML、Vue 3 SFC のテンプレート、CSS、SCSS、Sass（インデント構文）、Less。それ以外は未対応のファイル形式として報告します。
 - **未対応:** JSX/TSX、Svelte、Astro、Angular のテンプレート、Markdown/MDX、Vue 2 の構文（`.sync`、`.native`）。Svelte は今後対応する予定です。
-- `.vue` ファイルの `<script>`、カスタムブロック、他言語のテンプレート（`<template lang="pug">`）には手を加えません。
+- **Pug と Stylus は未対応です。** `.pug`、`.jade`、`.styl`、`.stylus` のファイルは読み込まずに未対応のファイル形式として報告します。`lang="pug"`、`lang="jade"`、`lang="stylus"`、`lang="styl"` の `<template>` や `<style>` を含むファイルは、そのブロックを読み飛ばすのではなく、ファイル全体をエラー（`unsupported language`）にします。Pug をマークアップとして走査したり、他のブロックだけを整形したりしないためです。これらのファイルは annealer に渡すパスから除外してください。
+- `.vue` ファイルの `<script>` とカスタムブロック（`<i18n>`）には手を加えません。
 
 ## マークアップ \{#markup}
 
@@ -1141,15 +1142,15 @@ anyl [OPTIONS] [FILES]...
 | `.vue`                         | `vue`   | `vue`                         |
 | `.css`、`.scss`、`.sass`、`.less` | スタイルシート | `html`（その `stylesheet` セクション） |
 
-それ以外の拡張子は未対応として報告します。
+それ以外の拡張子（`.pug`、`.jade`、`.styl`、`.stylus` を含む）は、ファイルを読み込まずに未対応として報告します。Pug や Stylus の `<template>`・`<style>`（`lang="pug"`、`"jade"`、`"stylus"`、`"styl"`）を含むファイルもエラーになります。[制約事項](/annealer/ja/guide/start/limitations.md#supported-input)を参照してください。
 
 ## 終了コード
 
-| コード | 意味                                                                  |
-| --- | ------------------------------------------------------------------- |
-| `0` | 成功。`--check` の場合は、変更が必要なファイルがない。                                    |
-| `1` | `--check` の場合に、変更が必要なファイルが 1 つ以上ある。                                 |
-| `2` | エラー: ファイルを読めない、未対応のファイル形式、不正なプロファイル、不正な入力、未知の `annealer-*` ディレクティブ。 |
+| コード | 意味                                                                                         |
+| --- | ------------------------------------------------------------------------------------------ |
+| `0` | 成功。`--check` の場合は、変更が必要なファイルがない。                                                           |
+| `1` | `--check` の場合に、変更が必要なファイルが 1 つ以上ある。                                                        |
+| `2` | エラー: ファイルを読めない、未対応のファイル形式、不正なプロファイル、不正な入力（Pug や Stylus のブロックを含む）、未知の `annealer-*` ディレクティブ。 |
 
 複数のファイルを指定した場合は、すべてを処理してエラーを個別に報告し、1 つでも失敗があれば `2` で終了します。
 
@@ -1207,7 +1208,7 @@ function format(input: string, options?: FormatOptions): string;
 - `options.selfClosing`: `true` で Vue テンプレートの空要素と空のコンポーネントを自己終了にし（`layout.selfClosing.normal`/`component`: `<div />`、`<MyComp />`）、`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。空要素（`<br />`）は常に `layout.selfClosing.void` に従います。
 - `options.contentNewline`: `true` で複数行の要素のコンテンツを独立した行に置きます。プロファイルに `layout.contentNewline` がなければ規則の既定値を使います。`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。[レイアウト](/annealer/ja/guide/features/layout.md)を参照してください。
 
-入力やプロファイルが不正な場合は `Error` を投げます。
+入力やプロファイルが不正な場合は `Error` を投げます。未対応の Pug や Stylus の `<template>`・`<style>`（`lang="pug"`、`"jade"`、`"stylus"`、`"styl"`）を含む入力もエラーになります。
 
 ```ts
 format('<a title="Home" href="/" id="home">Home</a>');

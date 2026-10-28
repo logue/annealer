@@ -6,12 +6,12 @@
 <script>{;var defaultLang = "en", langs = ["en","ja"];if (!/bot|spider|crawl|lighthouse/i.test(window.navigator.userAgent)) {;var firstVisitKey = 'rspress-visited', visited = localStorage.getItem(firstVisitKey);if (!visited) {;localStorage.setItem(firstVisitKey, '1');var targetLang = window.navigator.language.split('-')[0], { pathname, search } = window.location, base = "/annealer", cleanPathname = pathname.startsWith(base) ? pathname.slice(base.length) || '/' : pathname, pathSegments = cleanPathname.split('/').filter(Boolean), currentLang = langs.includes(pathSegments[0]) ? pathSegments[0] : defaultLang;if (langs.includes(targetLang) && targetLang !== currentLang) {;var newPathSegments = pathSegments.slice();if (targetLang === defaultLang) {;newPathSegments.splice(0, 1);} else if (currentLang === defaultLang) {;newPathSegments.splice(0, 0, targetLang);} else {;newPathSegments[0] = targetLang;};;var newPathname = '/' + newPathSegments.join('/'), trailingSlash = newPathname !== '/' && cleanPathname.endsWith('/') ? '/' : '';window.location['replace'](base + newPathname + trailingSlash + search);};};};}</script>
 <script>{;const saved = localStorage.getItem('rspress-theme-appearance');const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches;const defaultTheme = 'auto';const theme = saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : defaultTheme;const isDark = theme === 'auto' ? preferDark : theme === 'dark';document.documentElement.classList.toggle('dark', isDark);document.documentElement.classList.toggle('rp-dark', isDark);document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';}</script>
 <link href="/annealer/static/css/styles.108df18aec.css" rel="stylesheet">
-<link rel="preload" href="/annealer/static/js/async/route-1d470afc56e3.d15618e573.js" as="script">
+<link rel="preload" href="/annealer/static/js/async/route-1d470afc56e3.5ad8973d0d.js" as="script">
 <script defer src="/annealer/static/js/styles.086edf5527.js"></script>
 <script defer src="/annealer/static/js/lib-react.f1a7a127be.js"></script>
-<script defer src="/annealer/static/js/lib-router.5117c5d8ad.js"></script>
-<script defer src="/annealer/static/js/b.954b852ff0.js"></script>
-<script defer src="/annealer/static/js/index.c744084b68.js"></script>
+<script defer src="/annealer/static/js/lib-router.efa68c81da.js"></script>
+<script defer src="/annealer/static/js/b.e3c91685ba.js"></script>
+<script defer src="/annealer/static/js/index.be056e313e.js"></script>
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="generator" content="Rspress v2.0.23">
 <link rel="alternate" hreflang="en" href="/annealer/guide/start/limitations.html">
@@ -35,7 +35,8 @@
 <ul>
 <li>HTML、Vue 3 SFC のテンプレート、CSS、SCSS、Sass（インデント構文）、Less。それ以外は未対応のファイル形式として報告します。</li>
 <li><strong>未対応:</strong> JSX/TSX、Svelte、Astro、Angular のテンプレート、Markdown/MDX、Vue 2 の構文（<code>.sync</code>、<code>.native</code>）。Svelte は今後対応する予定です。</li>
-<li><code>.vue</code> ファイルの <code>&lt;script&gt;</code>、カスタムブロック、他言語のテンプレート（<code>&lt;template lang=&quot;pug&quot;&gt;</code>）には手を加えません。</li>
+<li><strong>Pug と Stylus は未対応です。</strong> <code>.pug</code>、<code>.jade</code>、<code>.styl</code>、<code>.stylus</code> のファイルは読み込まずに未対応のファイル形式として報告します。<code>lang=&quot;pug&quot;</code>、<code>lang=&quot;jade&quot;</code>、<code>lang=&quot;stylus&quot;</code>、<code>lang=&quot;styl&quot;</code> の <code>&lt;template&gt;</code> や <code>&lt;style&gt;</code> を含むファイルは、そのブロックを読み飛ばすのではなく、ファイル全体をエラー（<code>unsupported language</code>）にします。Pug をマークアップとして走査したり、他のブロックだけを整形したりしないためです。これらのファイルは annealer に渡すパスから除外してください。</li>
+<li><code>.vue</code> ファイルの <code>&lt;script&gt;</code> とカスタムブロック（<code>&lt;i18n&gt;</code>）には手を加えません。</li>
 </ul>
 <h2 class="rp-toc-include" id="markup"><a href="#markup" class="rp-header-anchor rp-link" aria-hidden="true">#</a>マークアップ</h2>
 <ul>

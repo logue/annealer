@@ -13,7 +13,8 @@ annealer は開発中です。このページでは、まだ対応していな�
 
 - HTML、Vue 3 SFC のテンプレート、CSS、SCSS、Sass（インデント構文）、Less。それ以外は未対応のファイル形式として報告します。
 - **未対応:** JSX/TSX、Svelte、Astro、Angular のテンプレート、Markdown/MDX、Vue 2 の構文（`.sync`、`.native`）。Svelte は今後対応する予定です。
-- `.vue` ファイルの `<script>`、カスタムブロック、他言語のテンプレート（`<template lang="pug">`）には手を加えません。
+- **Pug と Stylus は未対応です。** `.pug`、`.jade`、`.styl`、`.stylus` のファイルは読み込まずに未対応のファイル形式として報告します。`lang="pug"`、`lang="jade"`、`lang="stylus"`、`lang="styl"` の `<template>` や `<style>` を含むファイルは、そのブロックを読み飛ばすのではなく、ファイル全体をエラー（`unsupported language`）にします。Pug をマークアップとして走査したり、他のブロックだけを整形したりしないためです。これらのファイルは annealer に渡すパスから除外してください。
+- `.vue` ファイルの `<script>` とカスタムブロック（`<i18n>`）には手を加えません。
 
 ## マークアップ \{#markup}
 
