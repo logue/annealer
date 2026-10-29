@@ -618,6 +618,197 @@ mod self_closing {
         // `void` applies regardless of `enabled`.
         assert_eq!(format(&input, &config).unwrap(), sfc("<div></div><br />"));
     }
+
+    #[test]
+    fn void_self_closing_overrides_the_profile() {
+        let input = r#"<input type="text"><meta charset="utf-8" /><br/>"#;
+        let config = Config::for_language(Language::Html);
+        assert_eq!(
+            run_with(input, &config.clone().with_void_self_closing(Some(true))),
+            r#"<input type="text" /><meta charset="utf-8" /><br />"#
+        );
+        assert_eq!(
+            run_with(input, &config.with_void_self_closing(Some(false))),
+            r#"<input type="text"><meta charset="utf-8"><br>"#
+        );
+        let config = Config::for_language(Language::Vue).with_void_self_closing(Some(false));
+        assert_eq!(
+            run_with(&sfc("<img src=\"a\" /><Link />"), &config),
+            sfc("<img src=\"a\"><Link />")
+        );
+    }
+
+    #[test]
+    fn expand_non_void_is_off_by_default() {
+        let input = "<div /><my-el/>";
+        assert_eq!(super::html(input), input);
+    }
+
+    #[test]
+    fn expand_non_void_adds_end_tags_in_html() {
+        let config = Config::for_language(Language::Html).with_expand_non_void(Some(true));
+        assert_eq!(
+            run_with(
+                r#"<div class="a" /><my-el/><P/><span></span><br/>"#,
+                &config
+            ),
+            r#"<div class="a"></div><my-el></my-el><P></P><span></span><br />"#
+        );
+        assert_eq!(
+            run_with("<div\n  id=\"a\"\n  class=\"b\"\n/>", &config),
+            "<div\n  id=\"a\"\n  class=\"b\"\n></div>"
+        );
+    }
+
+    #[test]
+    fn expand_non_void_leaves_svg_and_math_alone() {
+        let config = Config::for_language(Language::Html).with_expand_non_void(Some(true));
+        let input =
+            "<svg><g><path d=\"M0\" /></g><circle r=\"1\"/></svg><math><mi /></math><svg />";
+        assert_eq!(run_with(input, &config), input);
+        assert_eq!(
+            run_with("<svg><rect /></svg><div />", &config),
+            "<svg><rect /></svg><div></div>"
+        );
+    }
+
+    #[test]
+    fn expand_non_void_follows_the_profile_and_skips_vue() {
+        let profile = Profile::from_yaml(
+            "schemaVersion: 1\nname: x\nlayout:\n  selfClosing:\n    expandNonVoid: true\ngroups:\n  - name: rest\n    fallback: true\n",
+        )
+        .unwrap();
+        let config = Config::new(Language::Html, profile.clone());
+        assert_eq!(run_with("<div />", &config), "<div></div>");
+        assert_eq!(
+            run_with("<div />", &config.with_expand_non_void(Some(false))),
+            "<div />"
+        );
+        // Vue templates use `normal` / `component` instead.
+        let input = sfc("<div />");
+        assert_eq!(
+            run_with(&input, &Config::new(Language::Vue, profile)),
+            input
+        );
+    }
+}
+
+/// SVG, MathML and namespaced XML (RDF) are left as written for now, with
+/// every rule that rewrites markup turned on.
+mod foreign_content {
+    use super::*;
+
+    use annealer::ClassOrder;
+
+    fn everything(language: Language) -> Config {
+        let yaml = include_str!("../profiles/html.yaml").replace(
+            "  vendorPrefix: start\n",
+            "  vendorPrefix: start\n  styleAttribute: true\n",
+        );
+        let profile = match language {
+            Language::Vue => Profile::builtin("vue").unwrap(),
+            _ => Profile::from_yaml(&yaml).unwrap(),
+        };
+        Config::new(language, profile)
+            .with_class_order(ClassOrder::builtin("tailwind"))
+            .with_remove_duplicate_classes(Some(true))
+            .with_self_closing(Some(true))
+            .with_void_self_closing(Some(false))
+            .with_expand_non_void(Some(true))
+            .with_content_newline(Some(true))
+    }
+
+    fn html(input: &str) -> String {
+        run_with(input, &everything(Language::Html))
+    }
+
+    fn vue(input: &str) -> String {
+        run_with(input, &everything(Language::Vue))
+    }
+
+    const SVG: &str = r##"<svg width="24" class="p-4 m-2 p-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id="icon">
+<style>circle { fill: red; display: block }</style>
+<title>Icon</title><desc></desc>
+<g style="opacity: 1; display: block" class="b a"><path fill="none" d="M0 0h24v24H0z" /><circle r="4" cy="12" cx="12"></circle></g>
+<use href="#a"/><foreignObject width="10" height="10"><div title="t" id="d"/><br /></foreignObject>
+</svg>"##;
+
+    const MATHML: &str = r#"<math display="block" class="b a"><mrow>
+<mi mathvariant="normal">x</mi><mo>=</mo><mfrac linethickness="0"><mn>1</mn><mn>2</mn></mfrac>
+<mspace width="1em" /><annotation-xml encoding="text/html"><p title="t" id="p">a</p></annotation-xml>
+</mrow></math>"#;
+
+    const RDF: &str = r##"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<rdf:Description rdf:about="" dc:format="image/svg+xml"><dc:title>T</dc:title><dc:creator /></rdf:Description>
+</rdf:RDF>"##;
+
+    #[test]
+    fn leaves_inline_svg_alone() {
+        assert_eq!(html(SVG), SVG);
+    }
+
+    #[test]
+    fn leaves_mathml_alone() {
+        assert_eq!(html(MATHML), MATHML);
+    }
+
+    #[test]
+    fn leaves_rdf_alone() {
+        assert_eq!(html(RDF), RDF);
+    }
+
+    #[test]
+    fn leaves_rdf_inside_svg_metadata_alone() {
+        let input = format!(
+            "<svg viewBox=\"0 0 1 1\" id=\"s\"><metadata>\n{RDF}\n</metadata><rect height=\"1\" width=\"1\"/></svg>"
+        );
+        assert_eq!(html(&input), input);
+    }
+
+    #[test]
+    fn matches_foreign_roots_case_insensitively_in_html() {
+        let input = r#"<SVG width="1" id="s"><Path d="M0" /></SVG><MATH><mi /></MATH>"#;
+        assert_eq!(html(input), input);
+    }
+
+    #[test]
+    fn formats_markup_around_foreign_content() {
+        let input = format!(
+            "<p title=\"a\" id=\"b\" class=\"b a b\"><br/>\n{SVG}\n<span id=\"x\" class=\"p-4 m-2\" /></p>\n{MATHML}\n<div title=\"c\" id=\"d\"><input type=\"text\" /></div>"
+        );
+        let expected = format!(
+            "<p id=\"b\" class=\"b a\" title=\"a\">\n  <br>\n{SVG}\n<span id=\"x\" class=\"m-2 p-4\"></span>\n</p>\n{MATHML}\n<div id=\"d\" title=\"c\"><input type=\"text\"></div>"
+        );
+        assert_eq!(html(&input), expected);
+    }
+
+    #[test]
+    fn leaves_unclosed_foreign_content_alone_to_the_end() {
+        let input = r#"<div title="a" id="b"></div><svg><path d="M0" /><div title="a" id="b" />"#;
+        assert_eq!(
+            html(input),
+            r#"<div id="b" title="a"></div><svg><path d="M0" /><div title="a" id="b" />"#
+        );
+    }
+
+    #[test]
+    fn leaves_svg_and_mathml_in_vue_templates_alone() {
+        let template = r#"<svg :width="size" v-if="show" class="b a" viewBox="0 0 24 24"><template v-for="p in paths" :key="p"><path :d="p"></path></template><MyIcon v-bind:name="n"></MyIcon></svg>
+<math><mi v-text="x"></mi></math>
+<div v-if="show" id="a"></div>"#;
+        let expected = r#"<svg :width="size" v-if="show" class="b a" viewBox="0 0 24 24"><template v-for="p in paths" :key="p"><path :d="p"></path></template><MyIcon v-bind:name="n"></MyIcon></svg>
+<math><mi v-text="x"></mi></math>
+<div v-if="show" id="a" />"#;
+        assert_eq!(vue(&sfc(template)), sfc(expected));
+    }
+
+    #[test]
+    fn treats_capitalized_names_as_components_in_vue() {
+        assert_eq!(
+            vue(&sfc(r#"<Svg title="a" v-if="b"></Svg>"#)),
+            sfc(r#"<Svg v-if="b" title="a" />"#)
+        );
+    }
 }
 
 mod directives {

@@ -23,12 +23,13 @@ annealer is still under development. This page lists what it does not do yet, an
 - **No DOM.** annealer reads start tags with a lexer. It doesn't validate HTML or fix broken markup. Deprecated markup (`<center>`, `bgcolor`) is parsed but never reported or changed.
 - **No reflow.** annealer adds or removes line breaks only where a layout rule needs them. It never re-indents lines or wraps text to a line width; that is the formatter's job ([Using with other tools](./integration.md)).
 - **Spreads are boundaries.** Attributes don't move across `v-bind="object"`, except compile-time directives (`spreadSafe` groups). A tag with a spread can therefore stay partly unordered, and `vue/attributes-order` reports it ([Attribute order](../concepts/attribute-order.md), [eslint-plugin-vue](./integration.md#eslint-plugin-vue)).
+- **Foreign content is left as written.** Inline SVG (`<svg>`), MathML (`<math>`) and namespaced XML elements such as RDF (`<rdf:RDF>`), with everything inside them, are not touched: no attribute order, class order, self-closing, `contentNewline` or `<style>` formatting. In plain HTML, `<svg>` and `<math>` match case-insensitively; in Vue templates, `<Svg>` is a component.
 - **Same-name clusters keep source order**, except for `class`, where the static form goes before the bound one. `style` and other duplicates stay as written because their order can change behavior.
 
 ## Layout
 
-- **Void elements are always self-closed** (`<br />`, `<hr />`, `<wbr />`). This differs from the default of `vue/html-self-closing` (`html.void: never`); set `html.void: always` there, or `void: never` in your profile.
-- **Self-closing empty elements and components (`<div />`, `<MyComp />`) and `contentNewline` are off by default.** Turn them on with `--self-closing` / `--content-newline` ([Layout](../features/layout.md)). `<div />` is applied in Vue templates only, because it is an unclosed start tag in plain HTML.
+- **Void elements are self-closed by default** (`<br />`, `<hr />`, `<wbr />`). This differs from the default of `vue/html-self-closing` (`html.void: never`); set `html.void: always` there, or pass `--no-void-self-closing` (`void: never` in your profile).
+- **Self-closing empty elements and components (`<div />`, `<MyComp />`) and `contentNewline` are off by default.** Turn them on with `--self-closing` / `--content-newline` ([Layout](../features/layout.md)). `<div />` is applied in Vue templates only, because it is an unclosed start tag in plain HTML; there, `--expand-non-void` rewrites it to `<div></div>` instead.
 - `contentNewline` adds line breaks but doesn't re-indent the content. Elements that are closed implicitly (`<li>` without `</li>`) are left alone.
 
 ## Class order

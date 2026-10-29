@@ -47,6 +47,8 @@ const removeDuplicateClasses = element(
   'remove-duplicate-classes'
 ) as HTMLInputElement;
 const selfClosing = element('self-closing') as HTMLInputElement;
+const noVoidSelfClosing = element('no-void-self-closing') as HTMLInputElement;
+const expandNonVoid = element('expand-non-void') as HTMLInputElement;
 const contentNewline = element('content-newline') as HTMLInputElement;
 const profileEditor = element('profile-editor') as HTMLDetailsElement;
 const profileYaml = element('profile-yaml') as HTMLTextAreaElement;
@@ -65,6 +67,8 @@ const render = (): void => {
       // Unchecked keeps the profile's (or class order's) setting.
       removeDuplicateClasses: removeDuplicateClasses.checked || undefined,
       selfClosing: selfClosing.checked || undefined,
+      voidSelfClosing: noVoidSelfClosing.checked ? false : undefined,
+      expandNonVoid: expandNonVoid.checked || undefined,
       contentNewline: contentNewline.checked || undefined
     });
     error.textContent = '';
@@ -92,6 +96,8 @@ profile.addEventListener('change', () => {
 classOrder.addEventListener('change', render);
 removeDuplicateClasses.addEventListener('change', render);
 selfClosing.addEventListener('change', render);
+noVoidSelfClosing.addEventListener('change', render);
+expandNonVoid.addEventListener('change', render);
 contentNewline.addEventListener('change', render);
 profileYaml.addEventListener('input', render);
 input.addEventListener('input', render);

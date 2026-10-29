@@ -25,6 +25,8 @@ mod wasm;
 use std::borrow::Cow;
 use std::path::Path;
 
+use profile::SelfClosing;
+
 pub use class_order::{ClassOrder, UnknownPosition};
 pub use error::{FormatError, ProfileError};
 pub use profile::{GroupSort, Profile};
@@ -76,6 +78,14 @@ pub struct Config {
     /// Turns the profile's `layout.selfClosing` rules on or off. `None` keeps
     /// the profile's setting (off in the built-in profiles).
     pub self_closing: Option<bool>,
+    /// Self-closes void elements (`<input />`) when `true`, or drops the slash
+    /// (`<input>`) when `false`. `None` keeps the profile's
+    /// `layout.selfClosing.void` (`always` in the built-in profiles).
+    pub void_self_closing: Option<bool>,
+    /// Gives non-void elements written self-closing in plain HTML (`<div />`)
+    /// an end tag (`<div></div>`). `None` keeps the profile's
+    /// `layout.selfClosing.expandNonVoid` (off in the built-in profiles).
+    pub expand_non_void: Option<bool>,
     /// Turns the profile's `layout.contentNewline` rule on or off, with its
     /// defaults when the profile has none. `None` keeps the profile's setting
     /// (off in the built-in profiles).
@@ -97,6 +107,8 @@ impl Config {
             profile,
             class_order: None,
             self_closing: None,
+            void_self_closing: None,
+            expand_non_void: None,
             content_newline: None,
             remove_duplicate_classes: None,
             print_width: None,
@@ -107,6 +119,22 @@ impl Config {
     #[must_use]
     pub fn with_self_closing(mut self, enabled: Option<bool>) -> Self {
         self.self_closing = enabled;
+        self
+    }
+
+    /// Sets `layout.selfClosing.void`: `<input />` (`true`) or `<input>`
+    /// (`false`).
+    #[must_use]
+    pub fn with_void_self_closing(mut self, enabled: Option<bool>) -> Self {
+        self.void_self_closing = enabled;
+        self
+    }
+
+    /// Turns `layout.selfClosing.expandNonVoid` on or off: `<div />` →
+    /// `<div></div>` in plain HTML.
+    #[must_use]
+    pub fn with_expand_non_void(mut self, enabled: Option<bool>) -> Self {
+        self.expand_non_void = enabled;
         self
     }
 
@@ -135,6 +163,8 @@ impl Config {
     /// The profile with the layout and line width overrides applied.
     fn effective_profile(&self) -> Cow<'_, Profile> {
         if self.self_closing.is_none()
+            && self.void_self_closing.is_none()
+            && self.expand_non_void.is_none()
             && self.content_newline.is_none()
             && self.print_width.is_none()
         {
@@ -144,6 +174,17 @@ impl Config {
         profile
             .layout
             .enable(self.self_closing, self.content_newline);
+        let rules = &mut profile.layout.self_closing;
+        if let Some(enabled) = self.void_self_closing {
+            rules.void = if enabled {
+                SelfClosing::Always
+            } else {
+                SelfClosing::Never
+            };
+        }
+        if let Some(enabled) = self.expand_non_void {
+            rules.expand_non_void = enabled;
+        }
         if let (Some(width), Some(stylesheet)) = (self.print_width, &mut profile.stylesheet) {
             stylesheet.malva.layout.print_width = width;
         }

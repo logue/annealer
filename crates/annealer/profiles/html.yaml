@@ -12,9 +12,15 @@ layout:
   closingBracketNewline: true
   oneAttributePerLine: true
   selfClosing:
-    # `<br />`: makes the element's end explicit in the source. Always applied.
+    # `<br />`: makes the element's end explicit in the source. Always applied;
+    # `--no-void-self-closing` (CLI) or `voidSelfClosing: false` (JS) writes
+    # `<br>` instead.
     void: always
     # `normal`/`component` only apply to Vue templates.
+    # `<div />` -> `<div></div>`: HTML ignores the slash, so the element would
+    # stay open. Rewrites markup beyond attribute order, so it is off here.
+    # Turn it on with `--expand-non-void` (CLI) or `expandNonVoid` (JS).
+    expandNonVoid: false
   # Rewrites markup beyond attribute order, so it is off here. Turn it on with
   # `--content-newline` (CLI), `contentNewline` (JS), or `enabled: true` in a
   # profile.

@@ -32,13 +32,34 @@ struct Cli {
 
     /// Self-close empty elements and components in Vue templates
     /// (`vue/html-self-closing`): `<div />`, `<MyComp />`. Off in the built-in
-    /// profiles. Void elements (`<br />`) follow `selfClosing.void` always.
+    /// profiles. Void elements (`<br />`) follow `--void-self-closing`.
     #[arg(long, overrides_with = "no_self_closing")]
     self_closing: bool,
 
     /// Do not self-close empty elements and components.
     #[arg(long, overrides_with = "self_closing")]
     no_self_closing: bool,
+
+    /// Self-close void elements: `<input />`, `<meta />`
+    /// (`selfClosing.void: always`, the built-in profiles' setting).
+    #[arg(long, overrides_with = "no_void_self_closing")]
+    void_self_closing: bool,
+
+    /// Write void elements without a slash: `<input>`, `<meta>`
+    /// (`selfClosing.void: never`).
+    #[arg(long, overrides_with = "void_self_closing")]
+    no_void_self_closing: bool,
+
+    /// In plain HTML, give non-void elements written self-closing an end tag:
+    /// `<div />` -> `<div></div>` (`selfClosing.expandNonVoid`). HTML ignores
+    /// the slash, so `<div />` leaves the element open. Elements inside
+    /// `<svg>` and `<math>` are left alone. Off in the built-in profiles.
+    #[arg(long, overrides_with = "no_expand_non_void")]
+    expand_non_void: bool,
+
+    /// Leave non-void elements written self-closing alone.
+    #[arg(long, overrides_with = "expand_non_void")]
+    no_expand_non_void: bool,
 
     /// Put the content of multiline elements on lines of its own
     /// (`vue/multiline-html-element-content-newline`). Off in the built-in
@@ -120,6 +141,8 @@ struct Options {
     profile: Option<Profile>,
     class_order: Option<ClassOrder>,
     self_closing: Option<bool>,
+    void_self_closing: Option<bool>,
+    expand_non_void: Option<bool>,
     content_newline: Option<bool>,
     remove_duplicate_classes: Option<bool>,
     print_width: Option<usize>,
@@ -136,6 +159,8 @@ fn config_for(language: Language, options: &Options) -> Config {
     };
     config
         .with_self_closing(options.self_closing)
+        .with_void_self_closing(options.void_self_closing)
+        .with_expand_non_void(options.expand_non_void)
         .with_content_newline(options.content_newline)
         .with_remove_duplicate_classes(options.remove_duplicate_classes)
         .with_print_width(options.print_width)
@@ -177,6 +202,8 @@ fn run(cli: &Cli) -> Result<bool, String> {
             .map(load_class_order)
             .transpose()?,
         self_closing: switch(cli.self_closing, cli.no_self_closing),
+        void_self_closing: switch(cli.void_self_closing, cli.no_void_self_closing),
+        expand_non_void: switch(cli.expand_non_void, cli.no_expand_non_void),
         content_newline: switch(cli.content_newline, cli.no_content_newline),
         remove_duplicate_classes: switch(cli.remove_duplicate_classes, cli.keep_duplicate_classes),
         print_width: cli.print_width.map(usize::from),

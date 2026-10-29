@@ -31,7 +31,9 @@ function format(input: string, options?: FormatOptions): string;
 - `options.classOrder`: 組み込みのクラス順の名前（`'tailwind'`）またはクラス順の YAML テキスト。静的な `class` 属性のクラスを並べ替え、プロファイルの `classOrder` より優先されます。既定ではクラスは元の順のままです。[クラス順](../guide/features/class-order.md)を参照してください。
 - `options.removeDuplicateClasses`: `true` で静的な `class` 属性の重複したクラスを、最初のものを残して削除します。`classOrder` の有無にかかわらず使えます。`false` で残します。既定はクラス順の `removeDuplicates`（`tailwind` では無効、クラス順がなければ無効）。
 - `options.printWidth`: スタイルシートと `<style>` ブロックの行幅（`stylesheet.malva.printWidth`、1 以上）。フォーマッターに合わせます。Prettier と Biome は 80、oxfmt は 100。既定はプロファイルの値（80）。
-- `options.selfClosing`: `true` で Vue テンプレートの空要素と空のコンポーネントを自己終了にし（`layout.selfClosing.normal`/`component`: `<div />`、`<MyComp />`）、`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。空要素（`<br />`）は常に `layout.selfClosing.void` に従います。
+- `options.selfClosing`: `true` で Vue テンプレートの空要素と空のコンポーネントを自己終了にし（`layout.selfClosing.normal`/`component`: `<div />`、`<MyComp />`）、`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。空要素（`<br />`）は `voidSelfClosing` に従います。
+- `options.voidSelfClosing`: `true` で空要素を自己終了にし（`<input />`、`<meta />`。`layout.selfClosing.void: always`）、`false` でスラッシュを外します（`<input>`、`<meta>`。`never`）。既定はプロファイルの設定（組み込みプロファイルでは `always`）。
+- `options.expandNonVoid`: `true` で、素の HTML で自己終了で書かれた空要素以外の要素に終了タグを付けます（`<div />` → `<div></div>`。`layout.selfClosing.expandNonVoid`）。HTML はスラッシュを無視するため、`<div />` は要素が閉じられません。`<svg>` と `<math>` の中の要素には手を加えません。`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。
 - `options.contentNewline`: `true` で複数行の要素のコンテンツを独立した行に置きます。プロファイルに `layout.contentNewline` がなければ規則の既定値を使います。`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。[レイアウト](../guide/features/layout.md)を参照してください。
 
 入力やプロファイルが不正な場合は `Error` を投げます。未対応の Pug や Stylus の `<template>`・`<style>`（`lang="pug"`、`"jade"`、`"stylus"`、`"styl"`）を含む入力もエラーになります。
@@ -45,6 +47,7 @@ format(source, { language: 'html', profile: yamlText });
 format(source, { language: 'vue', classOrder: 'tailwind' });
 format(source, { classOrder: 'tailwind', removeDuplicateClasses: true });
 format(source, { language: 'vue', selfClosing: true, contentNewline: true });
+format(source, { expandNonVoid: true, voidSelfClosing: false });
 ```
 
 ## `init()`
@@ -99,6 +102,8 @@ type FormatOptions = {
   removeDuplicateClasses?: boolean;
   printWidth?: number;
   selfClosing?: boolean;
+  voidSelfClosing?: boolean;
+  expandNonVoid?: boolean;
   contentNewline?: boolean;
 };
 

@@ -20,9 +20,24 @@ export type FormatOptions = {
    * (`layout.selfClosing.normal`/`component`, `vue/html-self-closing`):
    * `<div />`, `<MyComp />`. `false` turns that off. By default the profile's
    * setting is kept (off in the built-in profiles). Void elements (`<br />`)
-   * always follow `layout.selfClosing.void`.
+   * follow `voidSelfClosing`.
    */
   selfClosing?: boolean;
+  /**
+   * Writes void elements (`input`, `meta`, `br`, …) self-closing, `<input />`
+   * (`layout.selfClosing.void: always`); `false` drops the slash, `<input>`
+   * (`never`). By default the profile's setting is kept (`always` in the
+   * built-in profiles).
+   */
+  voidSelfClosing?: boolean;
+  /**
+   * In plain HTML, gives non-void elements written self-closing an end tag:
+   * `<div />` → `<div></div>` (`layout.selfClosing.expandNonVoid`). HTML
+   * ignores the slash, so `<div />` leaves the element open. Elements inside
+   * `<svg>` and `<math>`, where self-closing is valid, are left alone. By
+   * default the profile's setting is kept (off in the built-in profiles).
+   */
+  expandNonVoid?: boolean;
   /**
    * Puts the content of multiline elements on lines of its own
    * (`vue/multiline-html-element-content-newline`), with the rule's defaults

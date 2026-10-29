@@ -42,6 +42,26 @@ describe('format', () => {
     ).toBe('<template>\n<div>\n  a\nb\n</div><MyComp /><br />\n</template>\n');
   });
 
+  test('writes void elements with or without a slash', () => {
+    expect(format('<input type="text"><meta charset="utf-8">')).toBe(
+      '<input type="text" /><meta charset="utf-8" />'
+    );
+    expect(
+      format('<input type="text" /><meta charset="utf-8"/>', {
+        voidSelfClosing: false
+      })
+    ).toBe('<input type="text"><meta charset="utf-8">');
+  });
+
+  test('adds end tags to self-closing non-void elements when asked', () => {
+    expect(format('<div /><svg><path /></svg>')).toBe(
+      '<div /><svg><path /></svg>'
+    );
+    expect(format('<div /><svg><path /></svg>', { expandNonVoid: true })).toBe(
+      '<div></div><svg><path /></svg>'
+    );
+  });
+
   test('removes duplicate classes when asked', () => {
     expect(format('<p class="b a b">')).toBe('<p class="b a b">');
     expect(format('<p class="b a b">', { removeDuplicateClasses: true })).toBe(

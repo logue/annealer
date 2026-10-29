@@ -17,6 +17,10 @@ const VOID_ELEMENTS: &[&str] = &[
     "track", "wbr",
 ];
 
+/// Roots of foreign content (SVG, MathML), left as written for now.
+/// Namespaced XML elements (`<rdf:RDF>`) are foreign content too.
+const FOREIGN_ELEMENTS: &[&str] = &["svg", "math"];
+
 /// Elements where whitespace-only content is significant.
 const WHITESPACE_SENSITIVE: &[&str] = &["pre", "textarea"];
 
@@ -72,6 +76,8 @@ struct OpenElement<'a> {
     break_content: bool,
     /// Inside an element `layout.contentNewline` ignores.
     in_ignored: bool,
+    /// The element is, or is inside, foreign content.
+    in_foreign: bool,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -209,7 +215,7 @@ impl<'a> Scanner<'a> {
             } else if self.at("<!") || self.at("<?") || self.at("</") {
                 self.skip_past(">");
             } else if self.at_start_tag() {
-                let tag = self.start_tag(false)?;
+                let tag = self.start_tag(false, false)?;
                 if tag.closed {
                     continue;
                 }
@@ -269,7 +275,8 @@ impl<'a> Scanner<'a> {
             } else if self.at_start_tag() {
                 self.flush(self.pos);
                 let tag_out_start = self.out.len();
-                let tag = self.start_tag(true)?;
+                let in_foreign = open.last().is_some_and(|element| element.in_foreign);
+                let tag = self.start_tag(true, in_foreign)?;
                 if tag.closed {
                     continue;
                 }
@@ -324,6 +331,7 @@ impl<'a> Scanner<'a> {
             attribute_indent,
             break_content: rule.is_some() && !in_ignored && !tag.disabled,
             in_ignored,
+            in_foreign: parent.is_some_and(|parent| parent.in_foreign) || self.is_foreign(tag.name),
         }
     }
 
@@ -491,9 +499,15 @@ impl<'a> Scanner<'a> {
 
     /// Tokenizes the start tag at `self.pos`, rewrites it, and advances past it.
     /// With `self_closing_rules`, applies the profile's self-closing style.
-    fn start_tag(&mut self, self_closing_rules: bool) -> Result<StartTag<'a>, FormatError> {
+    /// Tags of foreign content (`in_foreign`, or a foreign root) are left as
+    /// written, like those an `annealer-disable*` directive covers.
+    fn start_tag(
+        &mut self,
+        self_closing_rules: bool,
+        in_foreign: bool,
+    ) -> Result<StartTag<'a>, FormatError> {
         let mut tag = self.parse_start_tag(self.pos)?;
-        if self.disabled.covers(tag.start) {
+        if in_foreign || self.is_foreign(tag.name) || self.disabled.covers(tag.start) {
             tag.disabled = true;
             self.pos = tag.end;
             return Ok(tag);
@@ -510,6 +524,20 @@ impl<'a> Scanner<'a> {
             self.replace(tag.start, end, &text);
         }
         Ok(tag)
+    }
+
+    /// Whether `name` starts foreign content: `<svg>`, `<math>`, or a
+    /// namespaced XML element (`<rdf:RDF>`).
+    fn is_foreign(&self, name: &str) -> bool {
+        // Vue matches `svg` and `math` case-sensitively, like void elements.
+        name.contains(':')
+            || if self.vue {
+                FOREIGN_ELEMENTS.contains(&name)
+            } else {
+                FOREIGN_ELEMENTS
+                    .iter()
+                    .any(|foreign| foreign.eq_ignore_ascii_case(name))
+            }
     }
 
     fn element_kind(&self, name: &str) -> ElementKind {
@@ -536,8 +564,11 @@ impl<'a> Scanner<'a> {
         let kind = self.element_kind(tag.name);
         let policy = match kind {
             ElementKind::Void => rules.void,
-            // `<div />` is an unclosed start tag in plain HTML.
-            _ if !self.vue || !rules.enabled => SelfClosing::Preserve,
+            // `<div />` is an unclosed start tag in plain HTML: it may only be
+            // expanded there.
+            _ if !self.vue && rules.expand_non_void => SelfClosing::Never,
+            _ if !self.vue => SelfClosing::Preserve,
+            _ if !rules.enabled => SelfClosing::Preserve,
             ElementKind::Normal => rules.normal,
             ElementKind::Component => rules.component,
         };

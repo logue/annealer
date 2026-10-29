@@ -156,7 +156,7 @@ pub enum SelfClosing {
 pub struct SelfClosingRules {
     /// Whether the `normal` and `component` rules apply. Off in the built-in
     /// profiles; turned on by `--self-closing` or the `selfClosing` format
-    /// option. `void` always applies.
+    /// option. `void` and `expandNonVoid` always apply.
     #[serde(default = "enabled")]
     pub enabled: bool,
     /// Void elements (`br`, `img`, `input`, …). Applies regardless of `enabled`.
@@ -169,6 +169,14 @@ pub struct SelfClosingRules {
     /// Empty components. Vue templates only.
     #[serde(default)]
     pub component: SelfClosing,
+    /// Plain HTML only: give non-void elements written self-closing
+    /// (`<div />`) an end tag (`<div></div>`). HTML ignores the `/`, so
+    /// `<div />` leaves the element open. Elements inside `<svg>` and `<math>`,
+    /// where self-closing is valid, are left alone. Applies regardless of
+    /// `enabled`; turned on by `--expand-non-void` or the `expandNonVoid`
+    /// format option.
+    #[serde(default)]
+    pub expand_non_void: bool,
 }
 
 impl Default for SelfClosingRules {
@@ -178,6 +186,7 @@ impl Default for SelfClosingRules {
             void: SelfClosing::default(),
             normal: SelfClosing::default(),
             component: SelfClosing::default(),
+            expand_non_void: false,
         }
     }
 }

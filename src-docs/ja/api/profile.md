@@ -69,18 +69,19 @@ JSON Schema（draft-07）は `crates/annealer/schema/profile.schema.json` にあ
 
 詳しくは[レイアウト](../guide/features/layout.md)を参照してください。
 
-| キー                             | 型                                | 既定                              | 説明                                                                                                                                                 |
-| -------------------------------- | --------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `closingBracketNewline`          | 真偽値                            | `false`                           | 複数行の開始タグの閉じ括弧を独立した行に置く                                                                                                         |
-| `oneAttributePerLine`            | 真偽値                            | `false`                           | 複数行の開始タグで 1 行に 1 属性                                                                                                                     |
-| `selfClosing.enabled`            | 真偽値                            | `true`                            | `normal` と `component` を適用するか（`void` は常に適用）。組み込み `vue` プロファイルは `false`。`--self-closing` と `selfClosing` オプションが優先 |
-| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`                        | 空要素: `<br />` または `<br>`                                                                                                                       |
-| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`                        | 空の非空要素（`<div />`）。Vue テンプレートのみ                                                                                                      |
-| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`                        | 空のコンポーネント（`<MyComp />`）。Vue テンプレートのみ                                                                                             |
-| `contentNewline`                 | オブジェクト                      | 無効                              | 複数行の要素のコンテンツを独立した行に置く。`{}` で既定値のまま有効                                                                                  |
-| `contentNewline.enabled`         | 真偽値                            | `true`                            | 規則を適用するか。組み込みプロファイルは `false`。`--content-newline` と `contentNewline` オプションが優先                                           |
-| `contentNewline.ignore`          | 文字列の配列                      | `pre`、`textarea`、インライン要素 | 中身も含めて手を加えない要素。要素名は大文字小文字を区別せず、コンポーネント名は完全一致                                                             |
-| `contentNewline.allowEmptyLines` | 真偽値                            | `false`                           | コンテンツの前後の空行を残す                                                                                                                         |
+| キー                             | 型                                | 既定                              | 説明                                                                                                                                                                    |
+| -------------------------------- | --------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `closingBracketNewline`          | 真偽値                            | `false`                           | 複数行の開始タグの閉じ括弧を独立した行に置く                                                                                                                            |
+| `oneAttributePerLine`            | 真偽値                            | `false`                           | 複数行の開始タグで 1 行に 1 属性                                                                                                                                        |
+| `selfClosing.enabled`            | 真偽値                            | `true`                            | `normal` と `component` を適用するか（`void` と `expandNonVoid` は常に適用）。組み込み `vue` プロファイルは `false`。`--self-closing` と `selfClosing` オプションが優先 |
+| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`                        | 空要素: `<br />` または `<br>`。`--void-self-closing` と `voidSelfClosing` オプションが優先                                                                             |
+| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`                        | 空の非空要素（`<div />`）。Vue テンプレートのみ                                                                                                                         |
+| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`                        | 空のコンポーネント（`<MyComp />`）。Vue テンプレートのみ                                                                                                                |
+| `selfClosing.expandNonVoid`      | 真偽値                            | `false`                           | `<div />` → `<div></div>`。素の HTML のみ。`<svg>` と `<math>` の中には手を加えない。`--expand-non-void` と `expandNonVoid` オプションが優先                            |
+| `contentNewline`                 | オブジェクト                      | 無効                              | 複数行の要素のコンテンツを独立した行に置く。`{}` で既定値のまま有効                                                                                                     |
+| `contentNewline.enabled`         | 真偽値                            | `true`                            | 規則を適用するか。組み込みプロファイルは `false`。`--content-newline` と `contentNewline` オプションが優先                                                              |
+| `contentNewline.ignore`          | 文字列の配列                      | `pre`、`textarea`、インライン要素 | 中身も含めて手を加えない要素。要素名は大文字小文字を区別せず、コンポーネント名は完全一致                                                                                |
+| `contentNewline.allowEmptyLines` | 真偽値                            | `false`                           | コンテンツの前後の空行を残す                                                                                                                                            |
 
 ## `groups`
 

@@ -58,12 +58,12 @@
           "additionalProperties": false,
           "properties": {
             "enabled": {
-              "description": "Whether the `normal` and `component` rules apply (`void` always does). The built-in `vue` profile sets this to `false`; `--self-closing` (CLI) and the `selfClosing` format option (JS) override it.",
+              "description": "Whether the `normal` and `component` rules apply (`void` and `expandNonVoid` always do). The built-in `vue` profile sets this to `false`; `--self-closing` (CLI) and the `selfClosing` format option (JS) override it.",
               "type": "boolean",
               "default": true
             },
             "void": {
-              "description": "Void elements (`br`, `img`, `input`, …): `always` → `<br />`, `never` → `<br>`.",
+              "description": "Void elements (`br`, `img`, `input`, …): `always` → `<br />`, `never` → `<br>`. `--void-self-closing` / `--no-void-self-closing` (CLI) and the `voidSelfClosing` format option (JS) override it.",
               "$ref": "#/definitions/selfClosing"
             },
             "normal": {
@@ -73,6 +73,11 @@
             "component": {
               "description": "Empty components: `always` → `<MyComp />`. Applied in Vue templates only.",
               "$ref": "#/definitions/selfClosing"
+            },
+            "expandNonVoid": {
+              "description": "Plain HTML only: give non-void elements written self-closing an end tag (`<div />` → `<div></div>`). HTML ignores the slash, so `<div />` leaves the element open. Elements inside `<svg>` and `<math>`, where self-closing is valid, are left alone. `--expand-non-void` (CLI) and the `expandNonVoid` format option (JS) override it.",
+              "type": "boolean",
+              "default": false
             }
           }
         },
