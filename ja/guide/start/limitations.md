@@ -21,12 +21,13 @@ annealer は開発中です。このページでは、まだ対応していな�
 - **DOM を作りません。** 開始タグを字句解析で読むだけで、HTML の検証や壊れたマークアップの修正は行いません。非推奨のマークアップ（`<center>`、`bgcolor`）も解析はしますが、報告も変更もしません。
 - **再整形しません。** 改行を追加・削除するのは、レイアウト規則が必要とする場所だけです。行のインデントを直したり、テキストを行幅で折り返したりはしません。それはフォーマッターの役割です（[他のツールとの併用](/annealer/ja/guide/start/integration.md)）。
 - **スプレッドは境界です。** 属性は `v-bind="object"` をまたいで移動しません（コンパイル時ディレクティブの `spreadSafe` グループを除く）。そのため、スプレッドを含むタグは一部が並べ替えられないまま残ることがあり、`vue/attributes-order` はそれを報告します（[属性順](/annealer/ja/guide/concepts/attribute-order.md)、[eslint-plugin-vue](/annealer/ja/guide/start/integration.md#eslint-plugin-vue)）。
+- **外部コンテンツは書かれたとおりに残します。** インライン SVG（`<svg>`）、MathML（`<math>`）、RDF などの名前空間付き XML 要素（`<rdf:RDF>`）は、その中身も含めて手を加えません。属性順、クラス順、自己終了、`contentNewline`、`<style>` の整形のいずれも適用しません。素の HTML では `<svg>` と `<math>` を大文字小文字を区別せずに判定し、Vue テンプレートでは `<Svg>` はコンポーネントとして扱います。
 - **同名の属性のまとまりは元の順を保ちます。** 例外は `class` で、静的形式をバインド形式より前に置きます。`style` などの重複は、順序で動作が変わりうるため書かれたままにします。
 
 ## レイアウト \{#layout}
 
-- **空要素は常に自己終了にします**（`<br />`、`<hr />`、`<wbr />`）。これは `vue/html-self-closing` の既定（`html.void: never`）と異なります。そのルール側で `html.void: always` にするか、プロファイルで `void: never` にしてください。
-- **空要素以外の自己終了（`<div />`、`<MyComp />`）と `contentNewline` は既定で無効です。** `--self-closing` / `--content-newline` で有効にします（[レイアウト](/annealer/ja/guide/features/layout.md)）。`<div />` は Vue テンプレートでのみ適用します。素の HTML では閉じられていない開始タグになるためです。
+- **空要素は既定で自己終了にします**（`<br />`、`<hr />`、`<wbr />`）。これは `vue/html-self-closing` の既定（`html.void: never`）と異なります。そのルール側で `html.void: always` にするか、`--no-void-self-closing`（プロファイルでは `void: never`）を指定してください。
+- **空要素以外の自己終了（`<div />`、`<MyComp />`）と `contentNewline` は既定で無効です。** `--self-closing` / `--content-newline` で有効にします（[レイアウト](/annealer/ja/guide/features/layout.md)）。`<div />` は Vue テンプレートでのみ適用します。素の HTML では閉じられていない開始タグになるためです。素の HTML では代わりに `--expand-non-void` で `<div></div>` に書き換えられます。
 - `contentNewline` は改行を追加しますが、コンテンツのインデントは直しません。暗黙に閉じられる要素（`</li>` のない `<li>`）には手を加えません。
 
 ## クラス順 \{#class-order}

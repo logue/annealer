@@ -6,12 +6,12 @@
 <script>{;var defaultLang = "en", langs = ["en","ja"];if (!/bot|spider|crawl|lighthouse/i.test(window.navigator.userAgent)) {;var firstVisitKey = 'rspress-visited', visited = localStorage.getItem(firstVisitKey);if (!visited) {;localStorage.setItem(firstVisitKey, '1');var targetLang = window.navigator.language.split('-')[0], { pathname, search } = window.location, base = "/annealer", cleanPathname = pathname.startsWith(base) ? pathname.slice(base.length) || '/' : pathname, pathSegments = cleanPathname.split('/').filter(Boolean), currentLang = langs.includes(pathSegments[0]) ? pathSegments[0] : defaultLang;if (langs.includes(targetLang) && targetLang !== currentLang) {;var newPathSegments = pathSegments.slice();if (targetLang === defaultLang) {;newPathSegments.splice(0, 1);} else if (currentLang === defaultLang) {;newPathSegments.splice(0, 0, targetLang);} else {;newPathSegments[0] = targetLang;};;var newPathname = '/' + newPathSegments.join('/'), trailingSlash = newPathname !== '/' && cleanPathname.endsWith('/') ? '/' : '';window.location['replace'](base + newPathname + trailingSlash + search);};};};}</script>
 <script>{;const saved = localStorage.getItem('rspress-theme-appearance');const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches;const defaultTheme = 'auto';const theme = saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : defaultTheme;const isDark = theme === 'auto' ? preferDark : theme === 'dark';document.documentElement.classList.toggle('dark', isDark);document.documentElement.classList.toggle('rp-dark', isDark);document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';}</script>
 <link href="/annealer/static/css/styles.108df18aec.css" rel="stylesheet">
-<link rel="preload" href="/annealer/static/js/async/route-1d470afc56e3.5ad8973d0d.js" as="script">
-<script defer src="/annealer/static/js/styles.086edf5527.js"></script>
-<script defer src="/annealer/static/js/lib-react.f1a7a127be.js"></script>
-<script defer src="/annealer/static/js/lib-router.efa68c81da.js"></script>
-<script defer src="/annealer/static/js/b.e3c91685ba.js"></script>
-<script defer src="/annealer/static/js/index.be056e313e.js"></script>
+<link rel="preload" href="/annealer/static/js/async/route-1d470afc56e3.f65303f8b0.js" as="script">
+<script defer src="/annealer/static/js/styles.1b80525499.js"></script>
+<script defer src="/annealer/static/js/lib-react.59eba8835c.js"></script>
+<script defer src="/annealer/static/js/lib-router.3ba35de9d1.js"></script>
+<script defer src="/annealer/static/js/b.6f1772560f.js"></script>
+<script defer src="/annealer/static/js/index.ec0c14c899.js"></script>
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="generator" content="Rspress v2.0.23">
 <link rel="alternate" hreflang="en" href="/annealer/guide/start/limitations.html">
@@ -43,12 +43,13 @@
 <li><strong>DOM を作りません。</strong> 開始タグを字句解析で読むだけで、HTML の検証や壊れたマークアップの修正は行いません。非推奨のマークアップ（<code>&lt;center&gt;</code>、<code>bgcolor</code>）も解析はしますが、報告も変更もしません。</li>
 <li><strong>再整形しません。</strong> 改行を追加・削除するのは、レイアウト規則が必要とする場所だけです。行のインデントを直したり、テキストを行幅で折り返したりはしません。それはフォーマッターの役割です（<a href="/annealer/ja/guide/start/integration.html" class="rp-link">他のツールとの併用</a>）。</li>
 <li><strong>スプレッドは境界です。</strong> 属性は <code>v-bind=&quot;object&quot;</code> をまたいで移動しません（コンパイル時ディレクティブの <code>spreadSafe</code> グループを除く）。そのため、スプレッドを含むタグは一部が並べ替えられないまま残ることがあり、<code>vue/attributes-order</code> はそれを報告します（<a href="/annealer/ja/guide/concepts/attribute-order.html" class="rp-link">属性順</a>、<a href="/annealer/ja/guide/start/integration.html#eslint-plugin-vue" class="rp-link">eslint-plugin-vue</a>）。</li>
+<li><strong>外部コンテンツは書かれたとおりに残します。</strong> インライン SVG（<code>&lt;svg&gt;</code>）、MathML（<code>&lt;math&gt;</code>）、RDF などの名前空間付き XML 要素（<code>&lt;rdf:RDF&gt;</code>）は、その中身も含めて手を加えません。属性順、クラス順、自己終了、<code>contentNewline</code>、<code>&lt;style&gt;</code> の整形のいずれも適用しません。素の HTML では <code>&lt;svg&gt;</code> と <code>&lt;math&gt;</code> を大文字小文字を区別せずに判定し、Vue テンプレートでは <code>&lt;Svg&gt;</code> はコンポーネントとして扱います。</li>
 <li><strong>同名の属性のまとまりは元の順を保ちます。</strong> 例外は <code>class</code> で、静的形式をバインド形式より前に置きます。<code>style</code> などの重複は、順序で動作が変わりうるため書かれたままにします。</li>
 </ul>
 <h2 class="rp-toc-include" id="layout"><a href="#layout" class="rp-header-anchor rp-link" aria-hidden="true">#</a>レイアウト</h2>
 <ul>
-<li><strong>空要素は常に自己終了にします</strong>（<code>&lt;br /&gt;</code>、<code>&lt;hr /&gt;</code>、<code>&lt;wbr /&gt;</code>）。これは <code>vue/html-self-closing</code> の既定（<code>html.void: never</code>）と異なります。そのルール側で <code>html.void: always</code> にするか、プロファイルで <code>void: never</code> にしてください。</li>
-<li><strong>空要素以外の自己終了（<code>&lt;div /&gt;</code>、<code>&lt;MyComp /&gt;</code>）と <code>contentNewline</code> は既定で無効です。</strong> <code>--self-closing</code> / <code>--content-newline</code> で有効にします（<a href="/annealer/ja/guide/features/layout.html" class="rp-link">レイアウト</a>）。<code>&lt;div /&gt;</code> は Vue テンプレートでのみ適用します。素の HTML では閉じられていない開始タグになるためです。</li>
+<li><strong>空要素は既定で自己終了にします</strong>（<code>&lt;br /&gt;</code>、<code>&lt;hr /&gt;</code>、<code>&lt;wbr /&gt;</code>）。これは <code>vue/html-self-closing</code> の既定（<code>html.void: never</code>）と異なります。そのルール側で <code>html.void: always</code> にするか、<code>--no-void-self-closing</code>（プロファイルでは <code>void: never</code>）を指定してください。</li>
+<li><strong>空要素以外の自己終了（<code>&lt;div /&gt;</code>、<code>&lt;MyComp /&gt;</code>）と <code>contentNewline</code> は既定で無効です。</strong> <code>--self-closing</code> / <code>--content-newline</code> で有効にします（<a href="/annealer/ja/guide/features/layout.html" class="rp-link">レイアウト</a>）。<code>&lt;div /&gt;</code> は Vue テンプレートでのみ適用します。素の HTML では閉じられていない開始タグになるためです。素の HTML では代わりに <code>--expand-non-void</code> で <code>&lt;div&gt;&lt;/div&gt;</code> に書き換えられます。</li>
 <li><code>contentNewline</code> は改行を追加しますが、コンテンツのインデントは直しません。暗黙に閉じられる要素（<code>&lt;/li&gt;</code> のない <code>&lt;li&gt;</code>）には手を加えません。</li>
 </ul>
 <h2 class="rp-toc-include" id="class-order"><a href="#class-order" class="rp-header-anchor rp-link" aria-hidden="true">#</a>クラス順</h2>

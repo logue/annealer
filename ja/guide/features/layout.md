@@ -6,10 +6,11 @@
 
 どちらの組み込みプロファイルでも `closingBracketNewline`、`oneAttributePerLine`、`selfClosing.void`（`<br />`、`<hr />`、`<wbr />` など）は有効です。空要素以外の自己終了（`selfClosing.normal`/`component`）と `contentNewline` は並べ替えに必要な範囲を超えてマークアップを書き換えるため、組み込みプロファイルでは設定値だけを定義し、無効（`enabled: false`）にしています。必要なときに有効にしてください。
 
-| 規則               | CLI                 | JavaScript             | プロファイル                         |
-| ---------------- | ------------------- | ---------------------- | ------------------------------ |
-| `selfClosing`    | `--self-closing`    | `selfClosing: true`    | `selfClosing.enabled: true`    |
-| `contentNewline` | `--content-newline` | `contentNewline: true` | `contentNewline.enabled: true` |
+| 規則               | CLI                 | JavaScript             | プロファイル                            |
+| ---------------- | ------------------- | ---------------------- | --------------------------------- |
+| `selfClosing`    | `--self-closing`    | `selfClosing: true`    | `selfClosing.enabled: true`       |
+| `contentNewline` | `--content-newline` | `contentNewline: true` | `contentNewline.enabled: true`    |
+| `expandNonVoid`  | `--expand-non-void` | `expandNonVoid: true`  | `selfClosing.expandNonVoid: true` |
 
 CLI のフラグと JavaScript のオプションは、プロファイルの `enabled` より優先されます。`--no-self-closing` / `--no-content-newline`（または `false`）で、規則を有効にしているプロファイルでも無効にできます。
 
@@ -48,8 +49,28 @@ CLI のフラグと JavaScript のオプションは、プロファイルの `en
 | `component` | `<MyComp />` | –           | `always`   |
 
 - `normal` と `component` は Vue テンプレートでのみ適用します。素の HTML では `<div />` は閉じられていない開始タグになるためです。
+- `--void-self-closing` / `--no-void-self-closing`（JavaScript では `voidSelfClosing: true` / `false`）で、プロファイルを編集せずに `void` を `always` / `never` にできます。
 - 空白だけのコンテンツは空とみなします。ただし `pre` と `textarea` は除きます。
 - SFC のトップレベルブロック（`<template>`、`<script>`、`<style>`）には手を加えません。
+
+### `expandNonVoid`
+
+素の HTML は空要素以外の要素のスラッシュを無視するため、`<div />` は `<div>` と同じ意味になります。要素は閉じられず、後に続く内容を取り込みます。`expandNonVoid: true`（`--expand-non-void`、JavaScript では `expandNonVoid: true`）で、こうした要素に終了タグを付けます。ブラウザーの解釈が変わるため、組み込みプロファイルでは無効です。
+
+<!-- prettier-ignore -->
+
+```html
+<!-- 入力 -->
+<div class="spacer" /><my-icon/>
+<svg><path d="M0 0" /></svg>
+
+<!-- 出力（--expand-non-void） -->
+<div class="spacer"></div><my-icon></my-icon>
+<svg><path d="M0 0" /></svg>
+```
+
+- 外部コンテンツ（`<svg>`、`<math>`、`<rdf:RDF>` などの名前空間付き XML）には手を加えません。そこでは自己終了が有効なためです（[制限事項](/annealer/ja/guide/start/limitations.md)）。
+- Vue テンプレートには影響しません。Vue では `normal: never` / `component: never` を使ってください。
 
 :::warning vue/html-self-closing との違い
 `void: always` は `vue/html-self-closing` の既定（`html.void: never`）と異なります。その ESLint ルールを残す場合は、そちらで `html.void: always` にするか、annealer のプロファイルで `void: never` にしてください。

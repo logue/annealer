@@ -441,12 +441,13 @@ annealer は開発中です。このページでは、まだ対応していな�
 - **DOM を作りません。** 開始タグを字句解析で読むだけで、HTML の検証や壊れたマークアップの修正は行いません。非推奨のマークアップ（`<center>`、`bgcolor`）も解析はしますが、報告も変更もしません。
 - **再整形しません。** 改行を追加・削除するのは、レイアウト規則が必要とする場所だけです。行のインデントを直したり、テキストを行幅で折り返したりはしません。それはフォーマッターの役割です（[他のツールとの併用](/annealer/ja/guide/start/integration.md)）。
 - **スプレッドは境界です。** 属性は `v-bind="object"` をまたいで移動しません（コンパイル時ディレクティブの `spreadSafe` グループを除く）。そのため、スプレッドを含むタグは一部が並べ替えられないまま残ることがあり、`vue/attributes-order` はそれを報告します（[属性順](/annealer/ja/guide/concepts/attribute-order.md)、[eslint-plugin-vue](/annealer/ja/guide/start/integration.md#eslint-plugin-vue)）。
+- **外部コンテンツは書かれたとおりに残します。** インライン SVG（`<svg>`）、MathML（`<math>`）、RDF などの名前空間付き XML 要素（`<rdf:RDF>`）は、その中身も含めて手を加えません。属性順、クラス順、自己終了、`contentNewline`、`<style>` の整形のいずれも適用しません。素の HTML では `<svg>` と `<math>` を大文字小文字を区別せずに判定し、Vue テンプレートでは `<Svg>` はコンポーネントとして扱います。
 - **同名の属性のまとまりは元の順を保ちます。** 例外は `class` で、静的形式をバインド形式より前に置きます。`style` などの重複は、順序で動作が変わりうるため書かれたままにします。
 
 ## レイアウト \{#layout}
 
-- **空要素は常に自己終了にします**（`<br />`、`<hr />`、`<wbr />`）。これは `vue/html-self-closing` の既定（`html.void: never`）と異なります。そのルール側で `html.void: always` にするか、プロファイルで `void: never` にしてください。
-- **空要素以外の自己終了（`<div />`、`<MyComp />`）と `contentNewline` は既定で無効です。** `--self-closing` / `--content-newline` で有効にします（[レイアウト](/annealer/ja/guide/features/layout.md)）。`<div />` は Vue テンプレートでのみ適用します。素の HTML では閉じられていない開始タグになるためです。
+- **空要素は既定で自己終了にします**（`<br />`、`<hr />`、`<wbr />`）。これは `vue/html-self-closing` の既定（`html.void: never`）と異なります。そのルール側で `html.void: always` にするか、`--no-void-self-closing`（プロファイルでは `void: never`）を指定してください。
+- **空要素以外の自己終了（`<div />`、`<MyComp />`）と `contentNewline` は既定で無効です。** `--self-closing` / `--content-newline` で有効にします（[レイアウト](/annealer/ja/guide/features/layout.md)）。`<div />` は Vue テンプレートでのみ適用します。素の HTML では閉じられていない開始タグになるためです。素の HTML では代わりに `--expand-non-void` で `<div></div>` に書き換えられます。
 - `contentNewline` は改行を追加しますが、コンテンツのインデントは直しません。暗黙に閉じられる要素（`</li>` のない `<li>`）には手を加えません。
 
 ## クラス順 \{#class-order}
@@ -690,10 +691,11 @@ url: /annealer/ja/guide/features/layout.md
 
 どちらの組み込みプロファイルでも `closingBracketNewline`、`oneAttributePerLine`、`selfClosing.void`（`<br />`、`<hr />`、`<wbr />` など）は有効です。空要素以外の自己終了（`selfClosing.normal`/`component`）と `contentNewline` は並べ替えに必要な範囲を超えてマークアップを書き換えるため、組み込みプロファイルでは設定値だけを定義し、無効（`enabled: false`）にしています。必要なときに有効にしてください。
 
-| 規則               | CLI                 | JavaScript             | プロファイル                         |
-| ---------------- | ------------------- | ---------------------- | ------------------------------ |
-| `selfClosing`    | `--self-closing`    | `selfClosing: true`    | `selfClosing.enabled: true`    |
-| `contentNewline` | `--content-newline` | `contentNewline: true` | `contentNewline.enabled: true` |
+| 規則               | CLI                 | JavaScript             | プロファイル                            |
+| ---------------- | ------------------- | ---------------------- | --------------------------------- |
+| `selfClosing`    | `--self-closing`    | `selfClosing: true`    | `selfClosing.enabled: true`       |
+| `contentNewline` | `--content-newline` | `contentNewline: true` | `contentNewline.enabled: true`    |
+| `expandNonVoid`  | `--expand-non-void` | `expandNonVoid: true`  | `selfClosing.expandNonVoid: true` |
 
 CLI のフラグと JavaScript のオプションは、プロファイルの `enabled` より優先されます。`--no-self-closing` / `--no-content-newline`（または `false`）で、規則を有効にしているプロファイルでも無効にできます。
 
@@ -732,8 +734,28 @@ CLI のフラグと JavaScript のオプションは、プロファイルの `en
 | `component` | `<MyComp />` | –           | `always`   |
 
 - `normal` と `component` は Vue テンプレートでのみ適用します。素の HTML では `<div />` は閉じられていない開始タグになるためです。
+- `--void-self-closing` / `--no-void-self-closing`（JavaScript では `voidSelfClosing: true` / `false`）で、プロファイルを編集せずに `void` を `always` / `never` にできます。
 - 空白だけのコンテンツは空とみなします。ただし `pre` と `textarea` は除きます。
 - SFC のトップレベルブロック（`<template>`、`<script>`、`<style>`）には手を加えません。
+
+### `expandNonVoid`
+
+素の HTML は空要素以外の要素のスラッシュを無視するため、`<div />` は `<div>` と同じ意味になります。要素は閉じられず、後に続く内容を取り込みます。`expandNonVoid: true`（`--expand-non-void`、JavaScript では `expandNonVoid: true`）で、こうした要素に終了タグを付けます。ブラウザーの解釈が変わるため、組み込みプロファイルでは無効です。
+
+<!-- prettier-ignore -->
+
+```html
+<!-- 入力 -->
+<div class="spacer" /><my-icon/>
+<svg><path d="M0 0" /></svg>
+
+<!-- 出力（--expand-non-void） -->
+<div class="spacer"></div><my-icon></my-icon>
+<svg><path d="M0 0" /></svg>
+```
+
+- 外部コンテンツ（`<svg>`、`<math>`、`<rdf:RDF>` などの名前空間付き XML）には手を加えません。そこでは自己終了が有効なためです（[制限事項](/annealer/ja/guide/start/limitations.md)）。
+- Vue テンプレートには影響しません。Vue では `normal: never` / `component: never` を使ってください。
 
 :::warning vue/html-self-closing との違い
 `void: always` は `vue/html-self-closing` の既定（`html.void: never`）と異なります。その ESLint ルールを残す場合は、そちらで `html.void: always` にするか、annealer のプロファイルで `void: never` にしてください。
@@ -1118,19 +1140,21 @@ anyl [OPTIONS] [FILES]...
 
 ## オプション
 
-| オプション                         | 説明                                                                                                                                                                                                                 |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `-w`, `--write`               | ファイルをその場で上書きします。`--check` とは併用できません。                                                                                                                                                                               |
-| `-c`, `--check`               | 変更が必要なファイルのパスを出力し、1 つでもあれば終了コード 1 で終了します。                                                                                                                                                                          |
-| `-p`, `--profile <PROFILE>`   | 組み込みプロファイル名（`html`、`vue`）またはプロファイル YAML ファイルのパス。既定は各ファイルの言語に対応する組み込みプロファイルです。                                                                                                                                      |
-| `--class-order <CLASS_ORDER>` | 静的な `class` 属性のクラスを並べ替えます。組み込みのクラス順の名前（`tailwind`）またはクラス順 YAML ファイルのパス。プロファイルの `classOrder` より優先されます。                                                                                                              |
-| `--remove-duplicate-classes`  | 静的な `class` 属性で重複したクラスを、最初のものを残して削除します。`--class-order` の有無にかかわらず使えます。既定ではクラス順の `removeDuplicates` に従います（`tailwind` では無効）。`--keep-duplicate-classes` で残します。                                                         |
-| `--self-closing`              | Vue テンプレートの空要素と空のコンポーネントを自己終了にします（`layout.selfClosing.normal`/`component`、`vue/html-self-closing`）: `<div />`、`<MyComp />`。組み込みプロファイルでは無効です。`--no-self-closing` で無効にします。空要素（`<br />`）は常に `selfClosing.void` に従います。 |
-| `--content-newline`           | 複数行の要素のコンテンツを独立した行に置きます（`vue/multiline-html-element-content-newline`）。組み込みプロファイルでは無効です。`--no-content-newline` で無効にします。                                                                                             |
-| `--print-width <PRINT_WIDTH>` | スタイルシートと `<style>` ブロックの行幅（`stylesheet.malva.printWidth`）。フォーマッターに合わせます。Prettier と Biome は 80、oxfmt は 100。既定はプロファイルの値（80）。                                                                                         |
-| `-l`, `--language <LANGUAGE>` | 標準入力の言語: `html`（既定）、`vue`、`css`、`scss`、`sass`、`less`                                                                                                                                                               |
-| `-h`, `--help`                | ヘルプを表示します。                                                                                                                                                                                                         |
-| `-V`, `--version`             | バージョンを表示します。                                                                                                                                                                                                       |
+| オプション                         | 説明                                                                                                                                                                                                                               |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-w`, `--write`               | ファイルをその場で上書きします。`--check` とは併用できません。                                                                                                                                                                                             |
+| `-c`, `--check`               | 変更が必要なファイルのパスを出力し、1 つでもあれば終了コード 1 で終了します。                                                                                                                                                                                        |
+| `-p`, `--profile <PROFILE>`   | 組み込みプロファイル名（`html`、`vue`）またはプロファイル YAML ファイルのパス。既定は各ファイルの言語に対応する組み込みプロファイルです。                                                                                                                                                    |
+| `--class-order <CLASS_ORDER>` | 静的な `class` 属性のクラスを並べ替えます。組み込みのクラス順の名前（`tailwind`）またはクラス順 YAML ファイルのパス。プロファイルの `classOrder` より優先されます。                                                                                                                            |
+| `--remove-duplicate-classes`  | 静的な `class` 属性で重複したクラスを、最初のものを残して削除します。`--class-order` の有無にかかわらず使えます。既定ではクラス順の `removeDuplicates` に従います（`tailwind` では無効）。`--keep-duplicate-classes` で残します。                                                                       |
+| `--self-closing`              | Vue テンプレートの空要素と空のコンポーネントを自己終了にします（`layout.selfClosing.normal`/`component`、`vue/html-self-closing`）: `<div />`、`<MyComp />`。組み込みプロファイルでは無効です。`--no-self-closing` で無効にします。空要素（`<br />`）は `--void-self-closing` に従います。              |
+| `--void-self-closing`         | 空要素を自己終了にします: `<input />`、`<meta />`（`layout.selfClosing.void: always`、組み込みプロファイルの設定）。`--no-void-self-closing` で `<input>`、`<meta>` にします（`never`）。                                                                               |
+| `--expand-non-void`           | 素の HTML で、自己終了で書かれた空要素以外の要素に終了タグを付けます: `<div />` → `<div></div>`（`layout.selfClosing.expandNonVoid`）。HTML はスラッシュを無視するため、`<div />` は要素が閉じられません。`<svg>` と `<math>` の中の要素には手を加えません。組み込みプロファイルでは無効です。`--no-expand-non-void` で無効にします。 |
+| `--content-newline`           | 複数行の要素のコンテンツを独立した行に置きます（`vue/multiline-html-element-content-newline`）。組み込みプロファイルでは無効です。`--no-content-newline` で無効にします。                                                                                                           |
+| `--print-width <PRINT_WIDTH>` | スタイルシートと `<style>` ブロックの行幅（`stylesheet.malva.printWidth`）。フォーマッターに合わせます。Prettier と Biome は 80、oxfmt は 100。既定はプロファイルの値（80）。                                                                                                       |
+| `-l`, `--language <LANGUAGE>` | 標準入力の言語: `html`（既定）、`vue`、`css`、`scss`、`sass`、`less`                                                                                                                                                                             |
+| `-h`, `--help`                | ヘルプを表示します。                                                                                                                                                                                                                       |
+| `-V`, `--version`             | バージョンを表示します。                                                                                                                                                                                                                     |
 
 ## 言語
 
@@ -1205,7 +1229,9 @@ function format(input: string, options?: FormatOptions): string;
 - `options.classOrder`: 組み込みのクラス順の名前（`'tailwind'`）またはクラス順の YAML テキスト。静的な `class` 属性のクラスを並べ替え、プロファイルの `classOrder` より優先されます。既定ではクラスは元の順のままです。[クラス順](/annealer/ja/guide/features/class-order.md)を参照してください。
 - `options.removeDuplicateClasses`: `true` で静的な `class` 属性の重複したクラスを、最初のものを残して削除します。`classOrder` の有無にかかわらず使えます。`false` で残します。既定はクラス順の `removeDuplicates`（`tailwind` では無効、クラス順がなければ無効）。
 - `options.printWidth`: スタイルシートと `<style>` ブロックの行幅（`stylesheet.malva.printWidth`、1 以上）。フォーマッターに合わせます。Prettier と Biome は 80、oxfmt は 100。既定はプロファイルの値（80）。
-- `options.selfClosing`: `true` で Vue テンプレートの空要素と空のコンポーネントを自己終了にし（`layout.selfClosing.normal`/`component`: `<div />`、`<MyComp />`）、`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。空要素（`<br />`）は常に `layout.selfClosing.void` に従います。
+- `options.selfClosing`: `true` で Vue テンプレートの空要素と空のコンポーネントを自己終了にし（`layout.selfClosing.normal`/`component`: `<div />`、`<MyComp />`）、`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。空要素（`<br />`）は `voidSelfClosing` に従います。
+- `options.voidSelfClosing`: `true` で空要素を自己終了にし（`<input />`、`<meta />`。`layout.selfClosing.void: always`）、`false` でスラッシュを外します（`<input>`、`<meta>`。`never`）。既定はプロファイルの設定（組み込みプロファイルでは `always`）。
+- `options.expandNonVoid`: `true` で、素の HTML で自己終了で書かれた空要素以外の要素に終了タグを付けます（`<div />` → `<div></div>`。`layout.selfClosing.expandNonVoid`）。HTML はスラッシュを無視するため、`<div />` は要素が閉じられません。`<svg>` と `<math>` の中の要素には手を加えません。`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。
 - `options.contentNewline`: `true` で複数行の要素のコンテンツを独立した行に置きます。プロファイルに `layout.contentNewline` がなければ規則の既定値を使います。`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。[レイアウト](/annealer/ja/guide/features/layout.md)を参照してください。
 
 入力やプロファイルが不正な場合は `Error` を投げます。未対応の Pug や Stylus の `<template>`・`<style>`（`lang="pug"`、`"jade"`、`"stylus"`、`"styl"`）を含む入力もエラーになります。
@@ -1219,6 +1245,7 @@ format(source, { language: 'html', profile: yamlText });
 format(source, { language: 'vue', classOrder: 'tailwind' });
 format(source, { classOrder: 'tailwind', removeDuplicateClasses: true });
 format(source, { language: 'vue', selfClosing: true, contentNewline: true });
+format(source, { expandNonVoid: true, voidSelfClosing: false });
 ```
 
 ## `init()`
@@ -1273,6 +1300,8 @@ type FormatOptions = {
   removeDuplicateClasses?: boolean;
   printWidth?: number;
   selfClosing?: boolean;
+  voidSelfClosing?: boolean;
+  expandNonVoid?: boolean;
   contentNewline?: boolean;
 };
 
@@ -1359,18 +1388,19 @@ JSON Schema（draft-07）は `crates/annealer/schema/profile.schema.json` にあ
 
 詳しくは[レイアウト](/annealer/ja/guide/features/layout.md)を参照してください。
 
-| キー                               | 型                                 | 既定                       | 説明                                                                                                               |
-| -------------------------------- | --------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `closingBracketNewline`          | 真偽値                               | `false`                  | 複数行の開始タグの閉じ括弧を独立した行に置く                                                                                           |
-| `oneAttributePerLine`            | 真偽値                               | `false`                  | 複数行の開始タグで 1 行に 1 属性                                                                                              |
-| `selfClosing.enabled`            | 真偽値                               | `true`                   | `normal` と `component` を適用するか（`void` は常に適用）。組み込み `vue` プロファイルは `false`。`--self-closing` と `selfClosing` オプションが優先 |
-| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`               | 空要素: `<br />` または `<br>`                                                                                         |
-| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`               | 空の非空要素（`<div />`）。Vue テンプレートのみ                                                                                   |
-| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`               | 空のコンポーネント（`<MyComp />`）。Vue テンプレートのみ                                                                             |
-| `contentNewline`                 | オブジェクト                            | 無効                       | 複数行の要素のコンテンツを独立した行に置く。`{}` で既定値のまま有効                                                                             |
-| `contentNewline.enabled`         | 真偽値                               | `true`                   | 規則を適用するか。組み込みプロファイルは `false`。`--content-newline` と `contentNewline` オプションが優先                                     |
-| `contentNewline.ignore`          | 文字列の配列                            | `pre`、`textarea`、インライン要素 | 中身も含めて手を加えない要素。要素名は大文字小文字を区別せず、コンポーネント名は完全一致                                                                     |
-| `contentNewline.allowEmptyLines` | 真偽値                               | `false`                  | コンテンツの前後の空行を残す                                                                                                   |
+| キー                               | 型                                 | 既定                       | 説明                                                                                                                                 |
+| -------------------------------- | --------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `closingBracketNewline`          | 真偽値                               | `false`                  | 複数行の開始タグの閉じ括弧を独立した行に置く                                                                                                             |
+| `oneAttributePerLine`            | 真偽値                               | `false`                  | 複数行の開始タグで 1 行に 1 属性                                                                                                                |
+| `selfClosing.enabled`            | 真偽値                               | `true`                   | `normal` と `component` を適用するか（`void` と `expandNonVoid` は常に適用）。組み込み `vue` プロファイルは `false`。`--self-closing` と `selfClosing` オプションが優先 |
+| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`               | 空要素: `<br />` または `<br>`。`--void-self-closing` と `voidSelfClosing` オプションが優先                                                        |
+| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`               | 空の非空要素（`<div />`）。Vue テンプレートのみ                                                                                                     |
+| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`               | 空のコンポーネント（`<MyComp />`）。Vue テンプレートのみ                                                                                               |
+| `selfClosing.expandNonVoid`      | 真偽値                               | `false`                  | `<div />` → `<div></div>`。素の HTML のみ。`<svg>` と `<math>` の中には手を加えない。`--expand-non-void` と `expandNonVoid` オプションが優先                  |
+| `contentNewline`                 | オブジェクト                            | 無効                       | 複数行の要素のコンテンツを独立した行に置く。`{}` で既定値のまま有効                                                                                               |
+| `contentNewline.enabled`         | 真偽値                               | `true`                   | 規則を適用するか。組み込みプロファイルは `false`。`--content-newline` と `contentNewline` オプションが優先                                                       |
+| `contentNewline.ignore`          | 文字列の配列                            | `pre`、`textarea`、インライン要素 | 中身も含めて手を加えない要素。要素名は大文字小文字を区別せず、コンポーネント名は完全一致                                                                                       |
+| `contentNewline.allowEmptyLines` | 真偽値                               | `false`                  | コンテンツの前後の空行を残す                                                                                                                     |
 
 ## `groups`
 

@@ -6,10 +6,11 @@ Reordering attributes can break the original line layout of a tag. The `layout` 
 
 Both built-in profiles turn `closingBracketNewline`, `oneAttributePerLine` and `selfClosing.void` (`<br />`, `<hr />`, `<wbr />`, …) on. Self-closing empty elements and components (`selfClosing.normal`/`component`) and `contentNewline` rewrite markup beyond what reordering needs, so the built-in profiles define them but leave them off (`enabled: false`). Turn them on when needed:
 
-| Rule             | CLI                 | JavaScript             | Profile                        |
-| ---------------- | ------------------- | ---------------------- | ------------------------------ |
-| `selfClosing`    | `--self-closing`    | `selfClosing: true`    | `selfClosing.enabled: true`    |
-| `contentNewline` | `--content-newline` | `contentNewline: true` | `contentNewline.enabled: true` |
+| Rule             | CLI                 | JavaScript             | Profile                           |
+| ---------------- | ------------------- | ---------------------- | --------------------------------- |
+| `selfClosing`    | `--self-closing`    | `selfClosing: true`    | `selfClosing.enabled: true`       |
+| `contentNewline` | `--content-newline` | `contentNewline: true` | `contentNewline.enabled: true`    |
+| `expandNonVoid`  | `--expand-non-void` | `expandNonVoid: true`  | `selfClosing.expandNonVoid: true` |
 
 The CLI flags and JavaScript options override the profile's `enabled`. `--no-self-closing` / `--no-content-newline` (or `false`) turn a rule off in a profile that enables it.
 
@@ -48,8 +49,28 @@ Equivalent to `vue/html-self-closing`. Set per element kind, each to `always`, `
 | `component` | `<MyComp />` | –               | `always`       |
 
 - `normal` and `component` apply in Vue templates only. In plain HTML, `<div />` is an unclosed start tag.
+- `--void-self-closing` / `--no-void-self-closing` (JavaScript: `voidSelfClosing: true` / `false`) set `void` to `always` / `never` without editing the profile.
 - Whitespace-only content counts as empty, except in `pre` and `textarea`.
 - SFC top-level blocks (`<template>`, `<script>`, `<style>`) are never touched.
+
+### `expandNonVoid`
+
+Plain HTML ignores the slash of a non-void element, so `<div />` is the same as `<div>`: the element stays open and swallows whatever follows. `expandNonVoid: true` (`--expand-non-void`, JavaScript `expandNonVoid: true`) gives such elements an end tag. Off in the built-in profiles, because it changes how browsers parse the markup.
+
+<!-- prettier-ignore -->
+
+```html
+<!-- Input -->
+<div class="spacer" /><my-icon/>
+<svg><path d="M0 0" /></svg>
+
+<!-- Output (--expand-non-void) -->
+<div class="spacer"></div><my-icon></my-icon>
+<svg><path d="M0 0" /></svg>
+```
+
+- Foreign content (`<svg>`, `<math>`, namespaced XML such as `<rdf:RDF>`) is left alone: self-closing is valid there ([Limitations](/annealer/guide/start/limitations.md)).
+- Vue templates are not affected; use `normal: never` / `component: never` there.
 
 :::warning Difference from vue/html-self-closing
 `void: always` differs from the default of `vue/html-self-closing` (`html.void: never`). If you keep that ESLint rule, set `html.void: always` there, or `void: never` in your annealer profile.

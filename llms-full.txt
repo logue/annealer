@@ -441,12 +441,13 @@ annealer is still under development. This page lists what it does not do yet, an
 - **No DOM.** annealer reads start tags with a lexer. It doesn't validate HTML or fix broken markup. Deprecated markup (`<center>`, `bgcolor`) is parsed but never reported or changed.
 - **No reflow.** annealer adds or removes line breaks only where a layout rule needs them. It never re-indents lines or wraps text to a line width; that is the formatter's job ([Using with other tools](/annealer/guide/start/integration.md)).
 - **Spreads are boundaries.** Attributes don't move across `v-bind="object"`, except compile-time directives (`spreadSafe` groups). A tag with a spread can therefore stay partly unordered, and `vue/attributes-order` reports it ([Attribute order](/annealer/guide/concepts/attribute-order.md), [eslint-plugin-vue](/annealer/guide/start/integration.md#eslint-plugin-vue)).
+- **Foreign content is left as written.** Inline SVG (`<svg>`), MathML (`<math>`) and namespaced XML elements such as RDF (`<rdf:RDF>`), with everything inside them, are not touched: no attribute order, class order, self-closing, `contentNewline` or `<style>` formatting. In plain HTML, `<svg>` and `<math>` match case-insensitively; in Vue templates, `<Svg>` is a component.
 - **Same-name clusters keep source order**, except for `class`, where the static form goes before the bound one. `style` and other duplicates stay as written because their order can change behavior.
 
 ## Layout
 
-- **Void elements are always self-closed** (`<br />`, `<hr />`, `<wbr />`). This differs from the default of `vue/html-self-closing` (`html.void: never`); set `html.void: always` there, or `void: never` in your profile.
-- **Self-closing empty elements and components (`<div />`, `<MyComp />`) and `contentNewline` are off by default.** Turn them on with `--self-closing` / `--content-newline` ([Layout](/annealer/guide/features/layout.md)). `<div />` is applied in Vue templates only, because it is an unclosed start tag in plain HTML.
+- **Void elements are self-closed by default** (`<br />`, `<hr />`, `<wbr />`). This differs from the default of `vue/html-self-closing` (`html.void: never`); set `html.void: always` there, or pass `--no-void-self-closing` (`void: never` in your profile).
+- **Self-closing empty elements and components (`<div />`, `<MyComp />`) and `contentNewline` are off by default.** Turn them on with `--self-closing` / `--content-newline` ([Layout](/annealer/guide/features/layout.md)). `<div />` is applied in Vue templates only, because it is an unclosed start tag in plain HTML; there, `--expand-non-void` rewrites it to `<div></div>` instead.
 - `contentNewline` adds line breaks but doesn't re-indent the content. Elements that are closed implicitly (`<li>` without `</li>`) are left alone.
 
 ## Class order
@@ -690,10 +691,11 @@ Reordering attributes can break the original line layout of a tag. The `layout` 
 
 Both built-in profiles turn `closingBracketNewline`, `oneAttributePerLine` and `selfClosing.void` (`<br />`, `<hr />`, `<wbr />`, …) on. Self-closing empty elements and components (`selfClosing.normal`/`component`) and `contentNewline` rewrite markup beyond what reordering needs, so the built-in profiles define them but leave them off (`enabled: false`). Turn them on when needed:
 
-| Rule             | CLI                 | JavaScript             | Profile                        |
-| ---------------- | ------------------- | ---------------------- | ------------------------------ |
-| `selfClosing`    | `--self-closing`    | `selfClosing: true`    | `selfClosing.enabled: true`    |
-| `contentNewline` | `--content-newline` | `contentNewline: true` | `contentNewline.enabled: true` |
+| Rule             | CLI                 | JavaScript             | Profile                           |
+| ---------------- | ------------------- | ---------------------- | --------------------------------- |
+| `selfClosing`    | `--self-closing`    | `selfClosing: true`    | `selfClosing.enabled: true`       |
+| `contentNewline` | `--content-newline` | `contentNewline: true` | `contentNewline.enabled: true`    |
+| `expandNonVoid`  | `--expand-non-void` | `expandNonVoid: true`  | `selfClosing.expandNonVoid: true` |
 
 The CLI flags and JavaScript options override the profile's `enabled`. `--no-self-closing` / `--no-content-newline` (or `false`) turn a rule off in a profile that enables it.
 
@@ -732,8 +734,28 @@ Equivalent to `vue/html-self-closing`. Set per element kind, each to `always`, `
 | `component` | `<MyComp />` | –               | `always`       |
 
 - `normal` and `component` apply in Vue templates only. In plain HTML, `<div />` is an unclosed start tag.
+- `--void-self-closing` / `--no-void-self-closing` (JavaScript: `voidSelfClosing: true` / `false`) set `void` to `always` / `never` without editing the profile.
 - Whitespace-only content counts as empty, except in `pre` and `textarea`.
 - SFC top-level blocks (`<template>`, `<script>`, `<style>`) are never touched.
+
+### `expandNonVoid`
+
+Plain HTML ignores the slash of a non-void element, so `<div />` is the same as `<div>`: the element stays open and swallows whatever follows. `expandNonVoid: true` (`--expand-non-void`, JavaScript `expandNonVoid: true`) gives such elements an end tag. Off in the built-in profiles, because it changes how browsers parse the markup.
+
+<!-- prettier-ignore -->
+
+```html
+<!-- Input -->
+<div class="spacer" /><my-icon/>
+<svg><path d="M0 0" /></svg>
+
+<!-- Output (--expand-non-void) -->
+<div class="spacer"></div><my-icon></my-icon>
+<svg><path d="M0 0" /></svg>
+```
+
+- Foreign content (`<svg>`, `<math>`, namespaced XML such as `<rdf:RDF>`) is left alone: self-closing is valid there ([Limitations](/annealer/guide/start/limitations.md)).
+- Vue templates are not affected; use `normal: never` / `component: never` there.
 
 :::warning Difference from vue/html-self-closing
 `void: always` differs from the default of `vue/html-self-closing` (`html.void: never`). If you keep that ESLint rule, set `html.void: always` there, or `void: never` in your annealer profile.
@@ -1118,19 +1140,21 @@ Formats each file and prints the result. Reads stdin when no file is given.
 
 ## Options
 
-| Option                        | Description                                                                                                                                                                                                                                                                       |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-w`, `--write`               | Overwrite files in place. Can't be combined with `--check`.                                                                                                                                                                                                                       |
-| `-c`, `--check`               | Print the paths of files that would change, and exit with status 1 if any would.                                                                                                                                                                                                  |
-| `-p`, `--profile <PROFILE>`   | A built-in profile name (`html`, `vue`) or the path to a profile YAML file. Defaults to the built-in profile for each file's language.                                                                                                                                            |
-| `--class-order <CLASS_ORDER>` | Order the classes of static `class` attributes: a built-in class order name (`tailwind`) or the path to a class order YAML file. Overrides the profile's `classOrder`.                                                                                                            |
-| `--remove-duplicate-classes`  | Drop repeated classes in static `class` attributes, keeping the first. Works with or without `--class-order`. By default the class order's `removeDuplicates` decides (off in `tailwind`). `--keep-duplicate-classes` keeps them.                                                 |
-| `--self-closing`              | Self-close empty elements and components in Vue templates (`layout.selfClosing.normal`/`component`, `vue/html-self-closing`): `<div />`, `<MyComp />`. Off in the built-in profiles. `--no-self-closing` turns it off. Void elements (`<br />`) always follow `selfClosing.void`. |
-| `--content-newline`           | Put the content of multiline elements on lines of its own (`vue/multiline-html-element-content-newline`). Off in the built-in profiles. `--no-content-newline` turns it off.                                                                                                      |
-| `--print-width <PRINT_WIDTH>` | Line width of stylesheets and `<style>` blocks (`stylesheet.malva.printWidth`). Match your formatter: 80 for Prettier and Biome, 100 for oxfmt. Defaults to the profile's (80).                                                                                                   |
-| `-l`, `--language <LANGUAGE>` | Language of stdin input: `html` (default), `vue`, `css`, `scss`, `sass`, `less`.                                                                                                                                                                                                  |
-| `-h`, `--help`                | Show help.                                                                                                                                                                                                                                                                        |
-| `-V`, `--version`             | Show the version.                                                                                                                                                                                                                                                                 |
+| Option                        | Description                                                                                                                                                                                                                                                                                                                  |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-w`, `--write`               | Overwrite files in place. Can't be combined with `--check`.                                                                                                                                                                                                                                                                  |
+| `-c`, `--check`               | Print the paths of files that would change, and exit with status 1 if any would.                                                                                                                                                                                                                                             |
+| `-p`, `--profile <PROFILE>`   | A built-in profile name (`html`, `vue`) or the path to a profile YAML file. Defaults to the built-in profile for each file's language.                                                                                                                                                                                       |
+| `--class-order <CLASS_ORDER>` | Order the classes of static `class` attributes: a built-in class order name (`tailwind`) or the path to a class order YAML file. Overrides the profile's `classOrder`.                                                                                                                                                       |
+| `--remove-duplicate-classes`  | Drop repeated classes in static `class` attributes, keeping the first. Works with or without `--class-order`. By default the class order's `removeDuplicates` decides (off in `tailwind`). `--keep-duplicate-classes` keeps them.                                                                                            |
+| `--self-closing`              | Self-close empty elements and components in Vue templates (`layout.selfClosing.normal`/`component`, `vue/html-self-closing`): `<div />`, `<MyComp />`. Off in the built-in profiles. `--no-self-closing` turns it off. Void elements (`<br />`) follow `--void-self-closing`.                                                |
+| `--void-self-closing`         | Self-close void elements: `<input />`, `<meta />` (`layout.selfClosing.void: always`, the built-in profiles' setting). `--no-void-self-closing` writes `<input>`, `<meta>` (`never`).                                                                                                                                        |
+| `--expand-non-void`           | In plain HTML, give non-void elements written self-closing an end tag: `<div />` → `<div></div>` (`layout.selfClosing.expandNonVoid`). HTML ignores the slash, so `<div />` leaves the element open. Elements inside `<svg>` and `<math>` are left alone. Off in the built-in profiles. `--no-expand-non-void` turns it off. |
+| `--content-newline`           | Put the content of multiline elements on lines of its own (`vue/multiline-html-element-content-newline`). Off in the built-in profiles. `--no-content-newline` turns it off.                                                                                                                                                 |
+| `--print-width <PRINT_WIDTH>` | Line width of stylesheets and `<style>` blocks (`stylesheet.malva.printWidth`). Match your formatter: 80 for Prettier and Biome, 100 for oxfmt. Defaults to the profile's (80).                                                                                                                                              |
+| `-l`, `--language <LANGUAGE>` | Language of stdin input: `html` (default), `vue`, `css`, `scss`, `sass`, `less`.                                                                                                                                                                                                                                             |
+| `-h`, `--help`                | Show help.                                                                                                                                                                                                                                                                                                                   |
+| `-V`, `--version`             | Show the version.                                                                                                                                                                                                                                                                                                            |
 
 ## Languages
 
@@ -1205,7 +1229,9 @@ Reorders attributes (HTML, Vue) or declarations (CSS, SCSS, Sass, Less).
 - `options.classOrder`: a built-in class order name (`'tailwind'`) or the YAML text of a class order. Orders the classes of static `class` attributes and overrides the profile's `classOrder`. Default: classes keep their order. See [Class order](/annealer/guide/features/class-order.md).
 - `options.removeDuplicateClasses`: `true` drops repeated classes in static `class` attributes, keeping the first, with or without `classOrder`; `false` keeps them. Default: the class order's `removeDuplicates` (off in `tailwind`, and off without a class order).
 - `options.printWidth`: line width of stylesheets and `<style>` blocks (`stylesheet.malva.printWidth`), at least 1. Match your formatter: 80 for Prettier and Biome, 100 for oxfmt. Default: the profile's (80).
-- `options.selfClosing`: `true` self-closes empty elements and components in Vue templates (`layout.selfClosing.normal`/`component`: `<div />`, `<MyComp />`); `false` turns that off. Default: the profile's setting (off in the built-in profiles). Void elements (`<br />`) always follow `layout.selfClosing.void`.
+- `options.selfClosing`: `true` self-closes empty elements and components in Vue templates (`layout.selfClosing.normal`/`component`: `<div />`, `<MyComp />`); `false` turns that off. Default: the profile's setting (off in the built-in profiles). Void elements (`<br />`) follow `voidSelfClosing`.
+- `options.voidSelfClosing`: `true` self-closes void elements (`<input />`, `<meta />`; `layout.selfClosing.void: always`); `false` drops the slash (`<input>`, `<meta>`; `never`). Default: the profile's setting (`always` in the built-in profiles).
+- `options.expandNonVoid`: `true` gives non-void elements written self-closing in plain HTML an end tag (`<div />` → `<div></div>`; `layout.selfClosing.expandNonVoid`). HTML ignores the slash, so `<div />` leaves the element open. Elements inside `<svg>` and `<math>` are left alone. `false` turns it off. Default: the profile's setting (off in the built-in profiles).
 - `options.contentNewline`: `true` puts the content of multiline elements on lines of its own, with the rule's defaults when the profile has no `layout.contentNewline`; `false` turns it off. Default: the profile's setting (off in the built-in profiles). See [Layout](/annealer/guide/features/layout.md).
 
 Throws an `Error` when the input or the profile is invalid, including when the input has a `<template>` or `<style>` in Pug or Stylus (`lang="pug"`, `"jade"`, `"stylus"`, `"styl"`), which are not supported.
@@ -1219,6 +1245,7 @@ format(source, { language: 'html', profile: yamlText });
 format(source, { language: 'vue', classOrder: 'tailwind' });
 format(source, { classOrder: 'tailwind', removeDuplicateClasses: true });
 format(source, { language: 'vue', selfClosing: true, contentNewline: true });
+format(source, { expandNonVoid: true, voidSelfClosing: false });
 ```
 
 ## `init()`
@@ -1273,6 +1300,8 @@ type FormatOptions = {
   removeDuplicateClasses?: boolean;
   printWidth?: number;
   selfClosing?: boolean;
+  voidSelfClosing?: boolean;
+  expandNonVoid?: boolean;
   contentNewline?: boolean;
 };
 
@@ -1359,18 +1388,19 @@ Rewrites applied before classification.
 
 See [Layout](/annealer/guide/features/layout.md) for details.
 
-| Key                              | Type                              | Default                            | Description                                                                                                                                                      |
-| -------------------------------- | --------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `closingBracketNewline`          | boolean                           | `false`                            | Put the closing bracket of a multiline start tag on its own line.                                                                                                |
-| `oneAttributePerLine`            | boolean                           | `false`                            | One attribute per line in a multiline start tag.                                                                                                                 |
-| `selfClosing.enabled`            | boolean                           | `true`                             | Whether `normal` and `component` apply (`void` always does). The built-in `vue` profile sets `false`; `--self-closing` and the `selfClosing` option override it. |
-| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`                         | Void elements: `<br />` or `<br>`.                                                                                                                               |
-| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`                         | Empty non-void elements (`<div />`). Vue templates only.                                                                                                         |
-| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`                         | Empty components (`<MyComp />`). Vue templates only.                                                                                                             |
-| `contentNewline`                 | object                            | off                                | Put the content of a multiline element on lines of its own. `{}` turns it on with the defaults.                                                                  |
-| `contentNewline.enabled`         | boolean                           | `true`                             | Whether the rule applies. The built-in profiles set `false`; `--content-newline` and the `contentNewline` option override it.                                    |
-| `contentNewline.ignore`          | string\[]                         | `pre`, `textarea`, inline elements | Elements left alone, with everything inside them. Element names match case-insensitively; component names match exactly.                                         |
-| `contentNewline.allowEmptyLines` | boolean                           | `false`                            | Keep blank lines before and after the content.                                                                                                                   |
+| Key                              | Type                              | Default                            | Description                                                                                                                                                                        |
+| -------------------------------- | --------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `closingBracketNewline`          | boolean                           | `false`                            | Put the closing bracket of a multiline start tag on its own line.                                                                                                                  |
+| `oneAttributePerLine`            | boolean                           | `false`                            | One attribute per line in a multiline start tag.                                                                                                                                   |
+| `selfClosing.enabled`            | boolean                           | `true`                             | Whether `normal` and `component` apply (`void` and `expandNonVoid` always do). The built-in `vue` profile sets `false`; `--self-closing` and the `selfClosing` option override it. |
+| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`                         | Void elements: `<br />` or `<br>`. `--void-self-closing` and the `voidSelfClosing` option override it.                                                                             |
+| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`                         | Empty non-void elements (`<div />`). Vue templates only.                                                                                                                           |
+| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`                         | Empty components (`<MyComp />`). Vue templates only.                                                                                                                               |
+| `selfClosing.expandNonVoid`      | boolean                           | `false`                            | `<div />` → `<div></div>`. Plain HTML only; `<svg>` and `<math>` content is left alone. `--expand-non-void` and the `expandNonVoid` option override it.                            |
+| `contentNewline`                 | object                            | off                                | Put the content of a multiline element on lines of its own. `{}` turns it on with the defaults.                                                                                    |
+| `contentNewline.enabled`         | boolean                           | `true`                             | Whether the rule applies. The built-in profiles set `false`; `--content-newline` and the `contentNewline` option override it.                                                      |
+| `contentNewline.ignore`          | string\[]                         | `pre`, `textarea`, inline elements | Elements left alone, with everything inside them. Element names match case-insensitively; component names match exactly.                                                           |
+| `contentNewline.allowEmptyLines` | boolean                           | `false`                            | Keep blank lines before and after the content.                                                                                                                                     |
 
 ## `groups`
 

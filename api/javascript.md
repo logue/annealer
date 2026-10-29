@@ -29,7 +29,9 @@ Reorders attributes (HTML, Vue) or declarations (CSS, SCSS, Sass, Less).
 - `options.classOrder`: a built-in class order name (`'tailwind'`) or the YAML text of a class order. Orders the classes of static `class` attributes and overrides the profile's `classOrder`. Default: classes keep their order. See [Class order](/annealer/guide/features/class-order.md).
 - `options.removeDuplicateClasses`: `true` drops repeated classes in static `class` attributes, keeping the first, with or without `classOrder`; `false` keeps them. Default: the class order's `removeDuplicates` (off in `tailwind`, and off without a class order).
 - `options.printWidth`: line width of stylesheets and `<style>` blocks (`stylesheet.malva.printWidth`), at least 1. Match your formatter: 80 for Prettier and Biome, 100 for oxfmt. Default: the profile's (80).
-- `options.selfClosing`: `true` self-closes empty elements and components in Vue templates (`layout.selfClosing.normal`/`component`: `<div />`, `<MyComp />`); `false` turns that off. Default: the profile's setting (off in the built-in profiles). Void elements (`<br />`) always follow `layout.selfClosing.void`.
+- `options.selfClosing`: `true` self-closes empty elements and components in Vue templates (`layout.selfClosing.normal`/`component`: `<div />`, `<MyComp />`); `false` turns that off. Default: the profile's setting (off in the built-in profiles). Void elements (`<br />`) follow `voidSelfClosing`.
+- `options.voidSelfClosing`: `true` self-closes void elements (`<input />`, `<meta />`; `layout.selfClosing.void: always`); `false` drops the slash (`<input>`, `<meta>`; `never`). Default: the profile's setting (`always` in the built-in profiles).
+- `options.expandNonVoid`: `true` gives non-void elements written self-closing in plain HTML an end tag (`<div />` → `<div></div>`; `layout.selfClosing.expandNonVoid`). HTML ignores the slash, so `<div />` leaves the element open. Elements inside `<svg>` and `<math>` are left alone. `false` turns it off. Default: the profile's setting (off in the built-in profiles).
 - `options.contentNewline`: `true` puts the content of multiline elements on lines of its own, with the rule's defaults when the profile has no `layout.contentNewline`; `false` turns it off. Default: the profile's setting (off in the built-in profiles). See [Layout](/annealer/guide/features/layout.md).
 
 Throws an `Error` when the input or the profile is invalid, including when the input has a `<template>` or `<style>` in Pug or Stylus (`lang="pug"`, `"jade"`, `"stylus"`, `"styl"`), which are not supported.
@@ -43,6 +45,7 @@ format(source, { language: 'html', profile: yamlText });
 format(source, { language: 'vue', classOrder: 'tailwind' });
 format(source, { classOrder: 'tailwind', removeDuplicateClasses: true });
 format(source, { language: 'vue', selfClosing: true, contentNewline: true });
+format(source, { expandNonVoid: true, voidSelfClosing: false });
 ```
 
 ## `init()`
@@ -97,6 +100,8 @@ type FormatOptions = {
   removeDuplicateClasses?: boolean;
   printWidth?: number;
   selfClosing?: boolean;
+  voidSelfClosing?: boolean;
+  expandNonVoid?: boolean;
   contentNewline?: boolean;
 };
 

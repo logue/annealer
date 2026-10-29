@@ -6,12 +6,12 @@
 <script>{;var defaultLang = "en", langs = ["en","ja"];if (!/bot|spider|crawl|lighthouse/i.test(window.navigator.userAgent)) {;var firstVisitKey = 'rspress-visited', visited = localStorage.getItem(firstVisitKey);if (!visited) {;localStorage.setItem(firstVisitKey, '1');var targetLang = window.navigator.language.split('-')[0], { pathname, search } = window.location, base = "/annealer", cleanPathname = pathname.startsWith(base) ? pathname.slice(base.length) || '/' : pathname, pathSegments = cleanPathname.split('/').filter(Boolean), currentLang = langs.includes(pathSegments[0]) ? pathSegments[0] : defaultLang;if (langs.includes(targetLang) && targetLang !== currentLang) {;var newPathSegments = pathSegments.slice();if (targetLang === defaultLang) {;newPathSegments.splice(0, 1);} else if (currentLang === defaultLang) {;newPathSegments.splice(0, 0, targetLang);} else {;newPathSegments[0] = targetLang;};;var newPathname = '/' + newPathSegments.join('/'), trailingSlash = newPathname !== '/' && cleanPathname.endsWith('/') ? '/' : '';window.location['replace'](base + newPathname + trailingSlash + search);};};};}</script>
 <script>{;const saved = localStorage.getItem('rspress-theme-appearance');const preferDark = window.matchMedia('(prefers-color-scheme: dark)').matches;const defaultTheme = 'auto';const theme = saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : defaultTheme;const isDark = theme === 'auto' ? preferDark : theme === 'dark';document.documentElement.classList.toggle('dark', isDark);document.documentElement.classList.toggle('rp-dark', isDark);document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';}</script>
 <link href="/annealer/static/css/styles.108df18aec.css" rel="stylesheet">
-<link rel="preload" href="/annealer/static/js/async/route-dbc04c5e5ba8.32f5de7927.js" as="script">
-<script defer src="/annealer/static/js/styles.086edf5527.js"></script>
-<script defer src="/annealer/static/js/lib-react.f1a7a127be.js"></script>
-<script defer src="/annealer/static/js/lib-router.efa68c81da.js"></script>
-<script defer src="/annealer/static/js/b.e3c91685ba.js"></script>
-<script defer src="/annealer/static/js/index.be056e313e.js"></script>
+<link rel="preload" href="/annealer/static/js/async/route-dbc04c5e5ba8.a2c5fac43e.js" as="script">
+<script defer src="/annealer/static/js/styles.1b80525499.js"></script>
+<script defer src="/annealer/static/js/lib-react.59eba8835c.js"></script>
+<script defer src="/annealer/static/js/lib-router.3ba35de9d1.js"></script>
+<script defer src="/annealer/static/js/b.6f1772560f.js"></script>
+<script defer src="/annealer/static/js/index.ec0c14c899.js"></script>
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="generator" content="Rspress v2.0.23">
 <link rel="alternate" hreflang="en" href="/annealer/guide/start/limitations.html">
@@ -43,12 +43,13 @@
 <li><strong>No DOM.</strong> annealer reads start tags with a lexer. It doesn&#x27;t validate HTML or fix broken markup. Deprecated markup (<code>&lt;center&gt;</code>, <code>bgcolor</code>) is parsed but never reported or changed.</li>
 <li><strong>No reflow.</strong> annealer adds or removes line breaks only where a layout rule needs them. It never re-indents lines or wraps text to a line width; that is the formatter&#x27;s job (<a href="/annealer/guide/start/integration.html" class="rp-link">Using with other tools</a>).</li>
 <li><strong>Spreads are boundaries.</strong> Attributes don&#x27;t move across <code>v-bind=&quot;object&quot;</code>, except compile-time directives (<code>spreadSafe</code> groups). A tag with a spread can therefore stay partly unordered, and <code>vue/attributes-order</code> reports it (<a href="/annealer/guide/concepts/attribute-order.html" class="rp-link">Attribute order</a>, <a href="/annealer/guide/start/integration.html#eslint-plugin-vue" class="rp-link">eslint-plugin-vue</a>).</li>
+<li><strong>Foreign content is left as written.</strong> Inline SVG (<code>&lt;svg&gt;</code>), MathML (<code>&lt;math&gt;</code>) and namespaced XML elements such as RDF (<code>&lt;rdf:RDF&gt;</code>), with everything inside them, are not touched: no attribute order, class order, self-closing, <code>contentNewline</code> or <code>&lt;style&gt;</code> formatting. In plain HTML, <code>&lt;svg&gt;</code> and <code>&lt;math&gt;</code> match case-insensitively; in Vue templates, <code>&lt;Svg&gt;</code> is a component.</li>
 <li><strong>Same-name clusters keep source order</strong>, except for <code>class</code>, where the static form goes before the bound one. <code>style</code> and other duplicates stay as written because their order can change behavior.</li>
 </ul>
 <h2 class="rp-toc-include" id="layout"><a href="#layout" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Layout</h2>
 <ul>
-<li><strong>Void elements are always self-closed</strong> (<code>&lt;br /&gt;</code>, <code>&lt;hr /&gt;</code>, <code>&lt;wbr /&gt;</code>). This differs from the default of <code>vue/html-self-closing</code> (<code>html.void: never</code>); set <code>html.void: always</code> there, or <code>void: never</code> in your profile.</li>
-<li><strong>Self-closing empty elements and components (<code>&lt;div /&gt;</code>, <code>&lt;MyComp /&gt;</code>) and <code>contentNewline</code> are off by default.</strong> Turn them on with <code>--self-closing</code> / <code>--content-newline</code> (<a href="/annealer/guide/features/layout.html" class="rp-link">Layout</a>). <code>&lt;div /&gt;</code> is applied in Vue templates only, because it is an unclosed start tag in plain HTML.</li>
+<li><strong>Void elements are self-closed by default</strong> (<code>&lt;br /&gt;</code>, <code>&lt;hr /&gt;</code>, <code>&lt;wbr /&gt;</code>). This differs from the default of <code>vue/html-self-closing</code> (<code>html.void: never</code>); set <code>html.void: always</code> there, or pass <code>--no-void-self-closing</code> (<code>void: never</code> in your profile).</li>
+<li><strong>Self-closing empty elements and components (<code>&lt;div /&gt;</code>, <code>&lt;MyComp /&gt;</code>) and <code>contentNewline</code> are off by default.</strong> Turn them on with <code>--self-closing</code> / <code>--content-newline</code> (<a href="/annealer/guide/features/layout.html" class="rp-link">Layout</a>). <code>&lt;div /&gt;</code> is applied in Vue templates only, because it is an unclosed start tag in plain HTML; there, <code>--expand-non-void</code> rewrites it to <code>&lt;div&gt;&lt;/div&gt;</code> instead.</li>
 <li><code>contentNewline</code> adds line breaks but doesn&#x27;t re-indent the content. Elements that are closed implicitly (<code>&lt;li&gt;</code> without <code>&lt;/li&gt;</code>) are left alone.</li>
 </ul>
 <h2 class="rp-toc-include" id="class-order"><a href="#class-order" class="rp-header-anchor rp-link" aria-hidden="true">#</a>Class order</h2>
