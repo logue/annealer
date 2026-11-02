@@ -23,3 +23,7 @@
 - [CLI](/annealer/api/cli.md): Options, input languages and exit codes of the anyl command-line tool.
 - [JavaScript API](/annealer/api/javascript.md): The annealer npm package, format(), init(), languageFromPath(), builtinProfile(), builtinClassOrder() and the exported types.
 - [Profile reference](/annealer/api/profile.md): Reference for the annealer profile YAML format, with every key, its type and its default.
+
+## Playground
+
+- [Demo](/annealer/playground.md): Annerler Live demo.

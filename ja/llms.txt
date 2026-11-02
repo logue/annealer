@@ -23,3 +23,7 @@
 - [CLI](/annealer/ja/api/cli.md): コマンドラインツール anyl のオプション、入力言語、終了コード。
 - [JavaScript API](/annealer/ja/api/javascript.md): npm パッケージ annealer の format()、init()、languageFromPath()、builtinProfile()、builtinClassOrder() とエクスポートされる型。
 - [プロファイルリファレンス](/annealer/ja/api/profile.md): annealer のプロファイル YAML 形式のリファレンス。すべてのキーの型と既定値。
+
+## プレイグラウンド
+
+- [デモ](/annealer/ja/playground.md): Annerlerライブデモ

@@ -16,8 +16,8 @@ annealer is a formatter that reorders HTML and Vue template attributes by their 
 <a id="home" title="Home" href="/">Home</a>
 ```
 
-:::warning Work in progress
-annealer is under active development. The npm package is not published yet, and the profile format can still change before it is declared stable.
+:::warning Alpha
+This is annealer 0.1.0-alpha.1. Formatting rules and defaults can still change between releases (the built-in Tailwind class order follows Tailwind and is the exception), and the profile format can change before it is declared stable.
 :::
 
 ## Why attribute order matters
@@ -78,8 +78,9 @@ CSS property order is the exception: malva already has a configurable `declarati
 - Declaration order for CSS/SCSS/Sass/Less, in `<style>` blocks and in standalone files, via malva.
 - Opt-in declaration order inside static `style` attributes.
 - [Disable directives](/annealer/guide/features/disable-directives.md) in markup and stylesheet comments.
-- Planned: [value ordering](/annealer/guide/design/value-ordering.md) for static `class` attributes, and [library profiles](/annealer/guide/design/library-profiles.md).
-- Svelte is not part of the first release. The profile-based design should allow adding it later without a redesign.
+- Opt-in [class order](/annealer/guide/features/class-order.md) for static `class` attributes, with a built-in Tailwind order.
+- Planned: [library profiles](/annealer/guide/design/library-profiles.md) (Bootstrap and others).
+- Svelte is not part of 0.1. The profile-based design should allow adding it later without a redesign.
 
 ## Non-goals
 
@@ -111,15 +112,18 @@ annealer has three entry points that share the same Rust core:
 - **`annealer` (npm)**: a JavaScript API backed by WebAssembly.
 - **`annealer` (Rust crate)**: the pure `format()` function.
 
-## CLI
+The current release is **0.1.0-alpha.1**.
 
-Build the CLI from the repository (the npm package and crate are not published yet):
+## Installation
 
 ```bash
-cargo install --path crates/annealer
+cargo install annealer --version 0.1.0-alpha.1   # anyl CLI
+pnpm add -D annealer@0.1.0-alpha.1               # JavaScript API
 ```
 
-Then format files:
+Pre-release versions are not picked up by version ranges such as `^0.1.0`, so name the version. To build the CLI from a checkout of the repository, run `cargo install --path crates/annealer`.
+
+## CLI
 
 ```bash
 anyl src/App.vue                 # print the result
@@ -422,11 +426,12 @@ url: /annealer/guide/start/limitations.md
 
 # Limitations
 
-annealer is still under development. This page lists what it does not do yet, and what it doesn't do by design. Each item links to the page with the details.
+annealer is an alpha release (0.1.0-alpha.1). This page lists what it does not do yet, and what it doesn't do by design. Each item links to the page with the details.
 
 ## Status
 
-- **Not published yet.** The npm package and the Rust crate aren't on the registries. Build the CLI with `cargo install --path crates/annealer`.
+- **Alpha.** Until 1.0, any release can change the output for the same input, except the built-in Tailwind class order, which follows Tailwind. Pin the exact version and review the diff when you upgrade.
+- **The npm package has no CLI.** It provides the JavaScript API only; install `anyl` with Cargo ([Getting started](/annealer/guide/start/getting-started.md#installation)).
 - **The profile format can still change** before it is declared stable (`schemaVersion: 1`).
 
 ## Supported input
@@ -1461,12 +1466,25 @@ A class with a variant that no pattern matches is unknown. Rules may only name p
 
 
 ---
+url: /annealer/playground.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/llms.txt, the full documentation bundle is available at /annealer/llms-full.txt.
+
+# Demo
+
+You can test the functionality of annealer on this page. Please input your existing HTML files, Vue files, stylesheets, etc., and see what the result is.
+
+
+
+
+---
 url: /annealer/index.md
 ---
 
 > For AI agents: the complete documentation index is available at /annealer/llms.txt, the full documentation bundle is available at /annealer/llms-full.txt.
 
-# annealer
+# Annealer
 
 Attribute order by meaning
 

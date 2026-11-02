@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en" class="cds--white">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>annealer playground</title>
+  <script defer src="./static/js/h.69a0ee30a2.js"></script><script defer src="./static/js/index.f512212abc.js"></script><link href="./static/css/index.40c05ca16f.css" rel="stylesheet"></head>
+  <body>
+    <cds-grid>
+      <cds-column sm="4" md="8" lg="5">
+        <cds-select id="language" label-text="Language" value="vue">
+          <cds-select-item value="vue" label="Vue">Vue</cds-select-item>
+          <cds-select-item value="html" label="HTML">HTML</cds-select-item>
+          <cds-select-item value="css" label="CSS">CSS</cds-select-item>
+          <cds-select-item value="scss" label="SCSS">SCSS</cds-select-item>
+          <cds-select-item value="sass" label="Sass (indented)">
+            Sass (indented)
+          </cds-select-item>
+          <cds-select-item value="less" label="Less">Less</cds-select-item>
+        </cds-select>
+      </cds-column>
+      <cds-column sm="4" md="4" lg="6">
+        <cds-select id="profile" label-text="Profile" value="default">
+          <cds-select-item value="default" label="Default for the language">
+            Default for the language
+          </cds-select-item>
+          <cds-select-item value="html" label="html">html</cds-select-item>
+          <cds-select-item value="vue" label="vue">vue</cds-select-item>
+          <cds-select-item value="custom" label="Custom YAML…">
+            Custom YAML…
+          </cds-select-item>
+        </cds-select>
+      </cds-column>
+      <cds-column sm="4" md="4" lg="5">
+        <cds-select id="class-order" label-text="Class order" value="keep">
+          <cds-select-item value="keep" label="Keep">Keep</cds-select-item>
+          <cds-select-item value="tailwind" label="tailwind">
+            tailwind
+          </cds-select-item>
+        </cds-select>
+      </cds-column>
+
+      <cds-column sm="4" md="8" lg="16">
+        <cds-checkbox-group legend-text="Options" orientation="horizontal">
+          <cds-checkbox
+            id="remove-duplicate-classes"
+            label-text="Remove duplicate classes"
+          ></cds-checkbox>
+          <cds-checkbox
+            id="self-closing"
+            label-text="Self-closing"
+          ></cds-checkbox>
+          <cds-checkbox
+            id="no-void-self-closing"
+            label-text="Void without slash"
+          ></cds-checkbox>
+          <cds-checkbox
+            id="expand-non-void"
+            label-text="Expand non-void"
+          ></cds-checkbox>
+          <cds-checkbox
+            id="content-newline"
+            label-text="Content newline"
+          ></cds-checkbox>
+        </cds-checkbox-group>
+      </cds-column>
+
+      <cds-column sm="4" md="8" lg="16">
+        <cds-accordion>
+          <cds-accordion-item id="profile-editor" title="Custom profile (YAML)">
+            <cds-textarea
+              id="profile-yaml"
+              label="Custom profile YAML"
+              hide-label
+              rows="12"
+              spellcheck="false"
+            ></cds-textarea>
+          </cds-accordion-item>
+        </cds-accordion>
+      </cds-column>
+
+      <cds-column sm="4" md="4" lg="8">
+        <cds-textarea
+          id="input"
+          label="Input"
+          rows="20"
+          spellcheck="false"
+        ></cds-textarea>
+      </cds-column>
+      <cds-column sm="4" md="4" lg="8">
+        <cds-textarea
+          id="output"
+          label="Output"
+          rows="20"
+          readonly
+          spellcheck="false"
+        ></cds-textarea>
+      </cds-column>
+
+      <cds-column sm="4" md="8" lg="16">
+        <cds-inline-notification
+          id="error"
+          kind="error"
+          title="Format error"
+          hide-close-button
+          low-contrast
+          hidden
+        ></cds-inline-notification>
+      </cds-column>
+    </cds-grid>
+  </body>
+</html>

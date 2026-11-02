@@ -12,8 +12,8 @@ annealer は、HTML と Vue テンプレートの属性を意味に基づいて�
 <a id="home" title="Home" href="/">Home</a>
 ```
 
-:::warning 開発中
-annealer は開発中です。npm パッケージは未公開で、プロファイル形式も安定版として宣言するまでは変更される可能性があります。
+:::warning アルファ版
+これは annealer 0.1.0-alpha.1 です。整形ルールと既定値はリリース間で変わる可能性があり（Tailwind に従う組み込みの Tailwind クラス順は例外です）、プロファイル形式も安定版として宣言するまでは変更される可能性があります。
 :::
 
 ## 属性順が重要な理由
@@ -74,8 +74,9 @@ CSS のプロパティ順だけは例外で、malva がすでに設定可能な 
 - `<style>` ブロックと単体ファイルにおける CSS/SCSS/Sass/Less の宣言順（malva 経由）
 - 静的な `style` 属性内の宣言順（オプトイン）
 - マークアップとスタイルシートのコメントによる[無効化ディレクティブ](/annealer/ja/guide/features/disable-directives.md)
-- 予定: 静的な `class` 属性の[値の並べ替え](/annealer/ja/guide/design/value-ordering.md)と[ライブラリプロファイル](/annealer/ja/guide/design/library-profiles.md)
-- Svelte は最初のリリースには含めません。プロファイルベースの設計なので、後から作り直しなしで追加できる見込みです。
+- 静的な `class` 属性の[クラス順](/annealer/ja/guide/features/class-order.md)（オプトイン、Tailwind の順序を組み込み）
+- 予定: [ライブラリプロファイル](/annealer/ja/guide/design/library-profiles.md)（Bootstrap など）
+- Svelte は 0.1 には含めません。プロファイルベースの設計なので、後から作り直しなしで追加できる見込みです。
 
 ## 対象外
 

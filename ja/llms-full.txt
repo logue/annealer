@@ -16,8 +16,8 @@ annealer は、HTML と Vue テンプレートの属性を意味に基づいて�
 <a id="home" title="Home" href="/">Home</a>
 ```
 
-:::warning 開発中
-annealer は開発中です。npm パッケージは未公開で、プロファイル形式も安定版として宣言するまでは変更される可能性があります。
+:::warning アルファ版
+これは annealer 0.1.0-alpha.1 です。整形ルールと既定値はリリース間で変わる可能性があり（Tailwind に従う組み込みの Tailwind クラス順は例外です）、プロファイル形式も安定版として宣言するまでは変更される可能性があります。
 :::
 
 ## 属性順が重要な理由
@@ -78,8 +78,9 @@ CSS のプロパティ順だけは例外で、malva がすでに設定可能な 
 - `<style>` ブロックと単体ファイルにおける CSS/SCSS/Sass/Less の宣言順（malva 経由）
 - 静的な `style` 属性内の宣言順（オプトイン）
 - マークアップとスタイルシートのコメントによる[無効化ディレクティブ](/annealer/ja/guide/features/disable-directives.md)
-- 予定: 静的な `class` 属性の[値の並べ替え](/annealer/ja/guide/design/value-ordering.md)と[ライブラリプロファイル](/annealer/ja/guide/design/library-profiles.md)
-- Svelte は最初のリリースには含めません。プロファイルベースの設計なので、後から作り直しなしで追加できる見込みです。
+- 静的な `class` 属性の[クラス順](/annealer/ja/guide/features/class-order.md)（オプトイン、Tailwind の順序を組み込み）
+- 予定: [ライブラリプロファイル](/annealer/ja/guide/design/library-profiles.md)（Bootstrap など）
+- Svelte は 0.1 には含めません。プロファイルベースの設計なので、後から作り直しなしで追加できる見込みです。
 
 ## 対象外
 
@@ -111,13 +112,18 @@ annealer には、同じ Rust コアを使う 3 つの入口があります。
 - **`annealer`（npm）**: WebAssembly を使う JavaScript API
 - **`annealer`（Rust クレート）**: 純粋関数 `format()`
 
-## CLI
+現在のリリースは **0.1.0-alpha.1** です。
 
-リポジトリから CLI をビルドします（npm パッケージとクレートは未公開です）。
+## インストール \{#installation}
 
 ```bash
-cargo install --path crates/annealer
+cargo install annealer --version 0.1.0-alpha.1   # anyl CLI
+pnpm add -D annealer@0.1.0-alpha.1               # JavaScript API
 ```
+
+プレリリース版は `^0.1.0` のようなバージョン範囲では選ばれないため、バージョンを明示してください。リポジトリのチェックアウトから CLI をビルドする場合は `cargo install --path crates/annealer` を実行します。
+
+## CLI
 
 ファイルを整形します。
 
@@ -422,11 +428,12 @@ url: /annealer/ja/guide/start/limitations.md
 
 # 制約事項
 
-annealer は開発中です。このページでは、まだ対応していないことと、設計上行わないことをまとめます。詳しくは各項目のリンク先を参照してください。
+annealer はアルファ版（0.1.0-alpha.1）です。このページでは、まだ対応していないことと、設計上行わないことをまとめます。詳しくは各項目のリンク先を参照してください。
 
 ## 状況 \{#status}
 
-- **未公開です。** npm パッケージと Rust クレートはまだレジストリにありません。CLI は `cargo install --path crates/annealer` でビルドします。
+- **アルファ版です。** 1.0 までは、どのリリースでも同じ入力に対する出力が変わる可能性があります（Tailwind に従う組み込みの Tailwind クラス順は例外です）。バージョンを固定し、更新時は差分を確認してください。
+- **npm パッケージに CLI は含まれません。** JavaScript API のみです。`anyl` は Cargo でインストールします（[使い方](/annealer/ja/guide/start/getting-started.md#installation)）。
 - **プロファイルの形式は、安定版と宣言するまで変わる可能性があります**（`schemaVersion: 1`）。
 
 ## 対応する入力 \{#supported-input}
@@ -1461,12 +1468,25 @@ classOrder: tailwind
 
 
 ---
+url: /annealer/ja/playground.md
+---
+
+> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
+
+# デモ
+
+このページでannealerの動作確認をすることができます。手持ちのHTMLファイルやVueファイル、スタイルシートなどを入力し結果がどうなるかを確認してください。
+
+
+
+
+---
 url: /annealer/ja/index.md
 ---
 
 > For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
 
-# annealer
+# Annealer
 
 属性を意味の順に
 

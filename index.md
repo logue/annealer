@@ -1,6 +1,6 @@
 > For AI agents: the complete documentation index is available at /annealer/llms.txt, the full documentation bundle is available at /annealer/llms-full.txt.
 
-# annealer
+# Annealer
 
 Attribute order by meaning
 
