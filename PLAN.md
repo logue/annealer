@@ -117,7 +117,8 @@ Given a stylesheet (CSS/SCSS/Sass/Less), delegate property ordering to `malva`.
 - Multiline-tag layout rules equivalent to `vue/html-closing-bracket-newline`
   and `vue/multiline-html-element-content-newline` (closing bracket alone on
   its own line, content on its own line, when a tag's attributes force it to
-  wrap).
+  wrap), following the corresponding `eslint-plugin-vue` rules rather than
+  providing general-purpose indentation.
 - CSS/SCSS/Sass/Less property ordering, via delegation to `malva`
   (`format_text`), inside `<style>` blocks and standalone stylesheets.
 - Value ordering (planned, after the MVP): reordering the tokens inside a
@@ -133,7 +134,9 @@ Given a stylesheet (CSS/SCSS/Sass/Less), delegate property ordering to `malva`.
 ## Non-goals
 
 - Whitespace-insignificant reflow of text nodes (left to the surrounding
-  formatter, e.g. `rs fmt`/Prettier, for line width and indentation).
+  formatter, e.g. `rs fmt`/Prettier, for line width and indentation). General
+  indentation is not annealer's responsibility; Vue's specific layout rules
+  are the exception because they follow `eslint-plugin-vue`.
 - Vue 2 compatibility (`.sync`, `.native`, and other deprecated syntax are not
   targeted).
 - General-purpose HTML/CSS validation.
@@ -143,6 +146,21 @@ Given a stylesheet (CSS/SCSS/Sass/Less), delegate property ordering to `malva`.
   formatting the surrounding document correctly requires (e.g. `<xmp>` content
   is raw text, so tags inside it are left untouched). Detecting it is the job of
   a linter or validator.
+- XML-based formats such as XAML, SVG, MathML, and RDF are currently preserved
+  as written. A future direction is to format them individually as XML rather
+  than apply HTML rules. This could cover standalone documents and, for XML
+  embedded in HTML, run after HTML formatting by extracting and formatting the
+  XML regions separately. The implementation must account for
+  whitespace-sensitive content and mixed vocabularies such as HTML inside SVG
+  `foreignObject`. Indentation should be read from the calling project's
+  `.editorconfig` and applied through an explicit option, without reflowing
+  unrelated surrounding content.
+- Twig and Blade are not currently supported, and support is a future
+  possibility with no committed schedule. Their template syntax needs to be
+  recognized so control-flow blocks and markup are not mistaken for plain
+  HTML. If support is added, indentation should follow the calling project's
+  `.editorconfig` and be applied through an explicit option, rather than being
+  imposed by annealer's own defaults.
 
 ## Architecture
 
