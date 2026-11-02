@@ -23,8 +23,8 @@ let ready = false;
 const decode = (base64: string): Uint8Array<ArrayBuffer> => {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.codePointAt(i) ?? 0;
+  for (let index = 0; index < binary.length; index++) {
+    bytes[index] = binary.codePointAt(index) ?? 0;
   }
   return bytes;
 };

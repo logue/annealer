@@ -1,12 +1,11 @@
+import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginTypeCheck } from '@rsbuild/plugin-type-check';
 import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import { define } from 'rstack';
 
 import { readFileSync } from 'node:fs';
 
-import markdownPlugin from '@eslint/markdown';
 import prettierPlugin from 'eslint-config-prettier';
-import { configs as yamlConfigs } from 'eslint-plugin-yml';
 
 /**
  * The UMD name is used for the global variable name when the library
@@ -27,7 +26,7 @@ import { configs as yamlConfigs } from 'eslint-plugin-yml';
 const umdName = 'annealer'; // CHANGE THIS to your library's global variable name.
 
 /** Parse package.json content */
-const pkg = JSON.parse(readFileSync('./package.json', 'utf-8')) as {
+const packageJson = JSON.parse(readFileSync('./package.json', 'utf-8')) as {
   name: string;
   description: string;
   author: {
@@ -41,18 +40,18 @@ const pkg = JSON.parse(readFileSync('./package.json', 'utf-8')) as {
 
 const buildDate = new Date().toISOString();
 const bannerText = `/**
-* ${pkg.name}
+* ${packageJson.name}
 *
-* @description ${pkg.description}
-* @author ${pkg.author.name} <${pkg.author.email}>
-* @license ${pkg.license}
-* @version ${pkg.version}
-* @see {@link ${pkg.homepage}}
+* @description ${packageJson.description}
+* @author ${packageJson.author.name} <${packageJson.author.email}>
+* @license ${packageJson.license}
+* @version ${packageJson.version}
+* @see {@link ${packageJson.homepage}}
 */
 `;
 
 const createBuildDefines = () => ({
-  'import.meta.env.APP_VERSION': JSON.stringify(pkg.version),
+  'import.meta.env.APP_VERSION': JSON.stringify(packageJson.version),
   'import.meta.env.BUILD_DATE': JSON.stringify(buildDate)
 });
 
@@ -70,6 +69,7 @@ const IGNORE_PATTERNS = [
   '**/.nuxt/**',
   '**/.output/**',
   '**/.pnpm/**',
+  '**/.rsdoctor/**',
   '**/.rstack/**',
   // Test reports.
   '**/coverage/**',
@@ -78,7 +78,6 @@ const IGNORE_PATTERNS = [
   '**/reports/**',
   '**/test-results/**',
   // Build artifacts.
-  '**/demo/**',
   '**/dist/**',
   '**/docs/**',
   // Rust build output.
@@ -90,8 +89,6 @@ const IGNORE_PATTERNS = [
   '**/tests/fixtures/**',
   '**/docs/**',
   '**/storybook-static/**',
-  // Grit (Biome Rules) source artifacts.
-  '**/grit/**',
   // Node modules.
   '**/node_modules/**'
 ];
@@ -100,8 +97,6 @@ const APP_FILES = [
   '**/*.{ts,mts,tsx,js,mjs,jsx,json,jsonc,mdx,vue,astro,svelte}'
 ];
 const TEST_FILES = ['**/*.{test,spec}.{ts,mts,tsx,js,mjs,jsx}'];
-const DOC_FILES = ['**/*.{md,mdx}'];
-const YAML_FILES = ['**/*.{yml,yaml}'];
 /**
  * Rslib Config
  * @see {@link https://rslib.rs/config/ | Rslib Config}
@@ -167,11 +162,11 @@ define.lib({
  * @see {@link https://rsbuild.rs/config | Rsbuild Config}
  */
 define.app({
-  plugins: [pluginTypeCheck()],
+  plugins: [pluginTypeCheck(), pluginSass()],
   output: {
     assetPrefix: './',
     distPath: {
-      root: 'demo'
+      root: './src-docs/public/demo/'
     },
     filenameHash: true
   },
@@ -200,10 +195,23 @@ define.doc({
   root: 'src-docs',
   outDir: 'docs',
   // If the package name and repository name are different, correct them as needed.
-  base: `/${pkg.name.slice(pkg.name.lastIndexOf('/') + 1)}/`,
+  base: `/${packageJson.name.slice(packageJson.name.lastIndexOf('/') + 1)}/`,
+  // Shared MDX components are not pages.
+  route: {
+    exclude: ['components/**']
+  },
+  themeConfig: {
+    socialLinks: [
+      {
+        icon: 'github',
+        mode: 'link',
+        content: packageJson.homepage
+      }
+    ]
+  },
   // Site information settings
-  title: pkg.name,
-  description: pkg.description,
+  title: packageJson.name,
+  description: packageJson.description,
   lang: 'en',
   locales: [
     {
@@ -256,7 +264,7 @@ define.lint(
     {
       ignores: IGNORE_PATTERNS,
       languageOptions: {
-        lobals: {
+        globals: {
           ...globals.browser,
           ...globals.nodeBuiltin
         },
@@ -285,6 +293,7 @@ define.lint(
     jsxA11yPlugin.configs.recommended,
 
     {
+      name: 'Application',
       files: APP_FILES,
       plugins: ['@typescript-eslint', 'import', 'promise', 'unicorn'],
       rules: {
@@ -379,6 +388,7 @@ define.lint(
 
     {
       // Test files intentionally import from parent directories.
+      name: 'Tests',
       files: TEST_FILES,
       ...rstestPlugin.configs.recommended,
       rules: {
@@ -387,17 +397,18 @@ define.lint(
         'import/no-relative-parent-imports': 'off'
       }
     },
-
-    ...markdownPlugin.configs.recommended.map(config => ({
-      ...config,
-      files: DOC_FILES
-    })),
-
-    ...yamlConfigs['flat/prettier'].map(config => ({
-      ...config,
-      files: YAML_FILES,
-      plugins: ['yml']
-    })),
+    {
+      // Since env.d.ts is a definition file, it does not check for some errors.
+      name: 'env.d.ts file',
+      files: ['**/env.d.ts'],
+      rules: {
+        '@typescript-eslint/ban-types': 'off',
+        '@typescript-eslint/no-empty-object-type': 'off',
+        '@typescript-eslint/no-explicit-any': 'off',
+        'unicorn/name-replacements': 'off'
+      }
+    },
+    // Finally, disable any conflicts with Prettier's settings.
     prettierPlugin.rules
   ]
 );

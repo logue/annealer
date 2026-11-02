@@ -1,8 +1,10 @@
 {
   "recommendations": [
+    "EditorConfig.EditorConfig",
     "rstack.rstack",
     "esbenp.prettier-vscode",
-    "redhat.vscode-yaml"
+    "redhat.vscode-yaml",
+    "unifiedjs.vscode-mdx"
   ],
   "unwantedRecommendations": ["rstack.rslint", "rstack.rstest"]
 }

@@ -24,6 +24,7 @@ allowBuilds:
   '@ibm/plex-sans-thai': false
   '@ibm/plex-sans-thai-looped': false
   '@ibm/plex-serif': false
+  '@parcel/watcher': true
 
 overrides:
   katex: '>=0.19.0'

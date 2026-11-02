@@ -1,0 +1,54 @@
+// Carbon Web Components carry their own component styles in shadow DOM, so
+// the page only needs the theme tokens, fonts, reset and type utilities.
+@use '@carbon/styles/scss/config' with (
+  $css--emit-type-custom-props: true,
+  $use-akamai-cdn: true
+);
+@use '@carbon/styles/scss/fonts' with (
+  $fonts: (
+    IBM-Plex-Serif: false
+  )
+);
+@use '@carbon/styles/scss/reset';
+@use '@carbon/styles/scss/type';
+@use '@carbon/styles/scss/themes';
+// Light/dark pair toggled on <html> by index.ts.
+@use '@carbon/styles/scss/zone' with (
+  $zones: (
+    white: themes.$white,
+    g100: themes.$g100
+  )
+);
+
+@include type.type-classes();
+
+body {
+  @include type.font-family('sans');
+
+  margin: 0;
+  padding-block: 2rem;
+}
+
+header {
+  margin-block-end: 2rem;
+
+  h1 {
+    margin-block-end: 0.5rem;
+  }
+}
+
+cds-column {
+  margin-block-end: 1.5rem;
+}
+
+cds-textarea {
+  @include type.font-family('mono');
+}
+
+cds-inline-notification {
+  max-inline-size: none;
+
+  &[hidden] {
+    display: none;
+  }
+}

@@ -315,10 +315,10 @@ const extras = [
   '[mask-type:luminance]'
 ];
 const corpus = [];
-for (let i = 0; i < 3000; i++) {
+for (let index = 0; index < 3000; index++) {
   const size = 2 + Math.floor(random() * 8);
   const classes = [];
-  for (let j = 0; j < size; j++) {
+  for (let index = 0; index < size; index++) {
     let name = random() < 0.1 ? pick(extras) : pick(classList);
     const variantCount = random() < 0.3 ? 1 + Math.floor(random() * 2) : 0;
     for (let k = 0; k < variantCount; k++)

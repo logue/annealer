@@ -1,9 +1,9 @@
 ---
-description: annealer は HTML・Vue の属性とスタイルシートの宣言を、差し替え可能な YAML プロファイルに従って意味に基づき並べ替えます。
+description: Annealer は HTML・Vue の属性とスタイルシートの宣言を、差し替え可能な YAML プロファイルに従って意味に基づき並べ替えます。
 pageType: home
 
 hero:
-  name: annealer
+  name: Annealer
   text: 属性を意味の順に
   tagline: HTML・Vue の属性とスタイルシートの宣言を、差し替え可能な YAML プロファイルに従って意味に基づき並べ替えます。
   actions:

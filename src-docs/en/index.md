@@ -1,9 +1,9 @@
 ---
-description: annealer reorders HTML and Vue attributes, and stylesheet declarations, by semantic meaning using swappable YAML profiles.
+description: Annealer reorders HTML and Vue attributes, and stylesheet declarations, by semantic meaning using swappable YAML profiles.
 pageType: home
 
 hero:
-  name: annealer
+  name: Annealer
   text: Attribute order by meaning
   tagline: Reorders HTML/Vue attributes and stylesheet declarations by semantic meaning, using swappable YAML profiles.
   actions:

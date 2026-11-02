@@ -10,7 +10,8 @@
     "activeMatch": "/api/"
   },
   {
-    "text": "GitHub",
-    "link": "https://github.com/logue/annealer"
+    "text": "Playground",
+    "link": "/playground",
+    "activeMatch": "/playground"
   }
 ]

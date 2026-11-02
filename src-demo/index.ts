@@ -1,4 +1,21 @@
+import '@carbon/web-components/es/components/accordion/index.js';
+import type CDSAccordionItem from '@carbon/web-components/es/components/accordion/accordion-item.js';
+import '@carbon/web-components/es/components/checkbox/index.js';
+import type CDSCheckbox from '@carbon/web-components/es/components/checkbox/checkbox.js';
+import '@carbon/web-components/es/components/grid/index.js';
+import '@carbon/web-components/es/components/notification/inline-notification.js';
+import type CDSInlineNotification from '@carbon/web-components/es/components/notification/inline-notification.js';
+import '@carbon/web-components/es/components/select/index.js';
+import type CDSSelect from '@carbon/web-components/es/components/select/select.js';
+import '@carbon/web-components/es/components/tag/tag.js';
+import '@carbon/web-components/es/components/textarea/index.js';
+import type CDSTextarea from '@carbon/web-components/es/components/textarea/textarea.js';
+
 import { type Language, Meta, builtinProfile, format, init } from '@/';
+
+// The linter's resolver ignores stylesheets; Rsbuild resolves this import.
+// rslint-disable-next-line import/no-unresolved
+import './style.scss';
 
 const SAMPLES: Record<Language, string> = {
   vue: `<template>
@@ -40,30 +57,41 @@ const element = (id: string): HTMLElement => {
   return found;
 };
 
-const language = element('language') as HTMLSelectElement;
-const profile = element('profile') as HTMLSelectElement;
-const classOrder = element('class-order') as HTMLSelectElement;
+const language = element('language') as CDSSelect;
+const profile = element('profile') as CDSSelect;
+const classOrder = element('class-order') as CDSSelect;
 const removeDuplicateClasses = element(
   'remove-duplicate-classes'
-) as HTMLInputElement;
-const selfClosing = element('self-closing') as HTMLInputElement;
-const noVoidSelfClosing = element('no-void-self-closing') as HTMLInputElement;
-const expandNonVoid = element('expand-non-void') as HTMLInputElement;
-const contentNewline = element('content-newline') as HTMLInputElement;
-const profileEditor = element('profile-editor') as HTMLDetailsElement;
-const profileYaml = element('profile-yaml') as HTMLTextAreaElement;
-const input = element('input') as HTMLTextAreaElement;
-const output = element('output') as HTMLTextAreaElement;
-const error = element('error') as HTMLParagraphElement;
+) as CDSCheckbox;
+const selfClosing = element('self-closing') as CDSCheckbox;
+const noVoidSelfClosing = element('no-void-self-closing') as CDSCheckbox;
+const expandNonVoid = element('expand-non-void') as CDSCheckbox;
+const contentNewline = element('content-newline') as CDSCheckbox;
+const profileEditor = element('profile-editor') as CDSAccordionItem;
+const profileYaml = element('profile-yaml') as CDSTextarea;
+const input = element('input') as CDSTextarea;
+const output = element('output') as CDSTextarea;
+const error = element('error') as CDSInlineNotification;
+
+// Carbon's select treats an empty value as "unset", so the defaults use
+// sentinel values that map back to `undefined` here.
+const selectedProfile = (): string | undefined => {
+  switch (profile.value) {
+    case 'default':
+      return undefined;
+    case 'custom':
+      return profileYaml.value;
+    default:
+      return profile.value;
+  }
+};
 
 const render = (): void => {
-  const spec =
-    profile.value === 'custom' ? profileYaml.value : profile.value || undefined;
   try {
     output.value = format(input.value, {
       language: language.value as Language,
-      profile: spec,
-      classOrder: classOrder.value || undefined,
+      profile: selectedProfile(),
+      classOrder: classOrder.value === 'keep' ? undefined : classOrder.value,
       // Unchecked keeps the profile's (or class order's) setting.
       removeDuplicateClasses: removeDuplicateClasses.checked || undefined,
       selfClosing: selfClosing.checked || undefined,
@@ -71,18 +99,32 @@ const render = (): void => {
       expandNonVoid: expandNonVoid.checked || undefined,
       contentNewline: contentNewline.checked || undefined
     });
-    error.textContent = '';
+    error.subtitle = '';
+    error.hidden = true;
   } catch (error_) {
     output.value = '';
-    error.textContent = String(error_);
+    error.subtitle = String(error_);
+    error.hidden = false;
   }
 };
 
-language.addEventListener('change', () => {
+function sendHeight() {
+  const height = document.documentElement.scrollHeight;
+  window.parent.postMessage({ type: 'resize-iframe', height: height }, '*');
+}
+
+const applyTheme = (dark: boolean): void => {
+  document.documentElement.classList.toggle('cds--white', !dark);
+  document.documentElement.classList.toggle('cds--g100', dark);
+};
+
+// Regist Events
+
+language.addEventListener('cds-select-selected', () => {
   input.value = SAMPLES[language.value as Language];
   render();
 });
-profile.addEventListener('change', () => {
+profile.addEventListener('cds-select-selected', () => {
   if (profile.value === 'custom') {
     if (profileYaml.value === '') {
       profileYaml.value = builtinProfile(
@@ -93,15 +135,29 @@ profile.addEventListener('change', () => {
   }
   render();
 });
-classOrder.addEventListener('change', render);
-removeDuplicateClasses.addEventListener('change', render);
-selfClosing.addEventListener('change', render);
-noVoidSelfClosing.addEventListener('change', render);
-expandNonVoid.addEventListener('change', render);
-contentNewline.addEventListener('change', render);
+classOrder.addEventListener('cds-select-selected', render);
+removeDuplicateClasses.addEventListener('cds-checkbox-changed', render);
+selfClosing.addEventListener('cds-checkbox-changed', render);
+noVoidSelfClosing.addEventListener('cds-checkbox-changed', render);
+expandNonVoid.addEventListener('cds-checkbox-changed', render);
+contentNewline.addEventListener('cds-checkbox-changed', render);
 profileYaml.addEventListener('input', render);
 input.addEventListener('input', render);
 
+const darkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+darkScheme.addEventListener('change', event => {
+  applyTheme(event.matches);
+});
+
+window.addEventListener('load', sendHeight);
+window.addEventListener('resize', sendHeight);
+
+const observer = new MutationObserver(sendHeight);
+observer.observe(document.body, { childList: true, subtree: true });
+
+// Initialize
+
+applyTheme(darkScheme.matches);
 element('version').textContent = `v${Meta.version}`;
 input.value = SAMPLES.vue;
 await init();
