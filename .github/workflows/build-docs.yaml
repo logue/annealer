@@ -2,6 +2,7 @@ name: Build and deploy to gh-pages
 permissions:
   contents: read
   pull-requests: write
+
 on:
   workflow_dispatch: {}
   push:
@@ -19,7 +20,7 @@ jobs:
       id-token: write
 
     steps:
-      - name: Checkout  ✔
+      - name: Checkout ✔
         uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
@@ -27,19 +28,27 @@ jobs:
         with:
           run_install: false
 
+      - name: Install Rust toolchain 🦀
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install wasm-pack 🧪
+        uses: taiki-e/install-action@wasm-pack
+
       - name: Install Node.js ⚡️
         uses: actions/setup-node@v7
         with:
           cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
           node-version: 26
 
       - name: Build 🔧
         run: |
-          pnpm install
-          pnpm build:docs
+          pnpm install --frozen-lockfile
+          pnpm run build:demo
+          pnpm run build:rspress
 
       - name: Deploy to gh-pages 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages # The branch the action should deploy to.
-          folder: docs # The folder the action should deploy.
+          branch: gh-pages
+          folder: docs

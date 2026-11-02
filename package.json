@@ -52,7 +52,7 @@
     "clean:hard": "rimraf demo dist docs src/wasm node_modules/.tmp node_modules/.cache",
     "build": "pnpm run build:wasm && rs lib",
     "build:demo": "pnpm run build:wasm && rs build",
-    "build:docs": "pnpm run build:demo & pnpm run build:rspress",
+    "build:docs": "pnpm run build:demo && pnpm run build:rspress",
     "build:rspress": "rs doc build",
     "build:wasm": "node scripts/build-wasm.mjs",
     "generate:tailwind": "node scripts/generate-tailwind-order.mjs",
