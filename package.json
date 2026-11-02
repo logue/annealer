@@ -2,7 +2,6 @@
   "$schema": "https://www.schemastore.org/package.json",
   "name": "annealer",
   "version": "0.1.0-alpha.1",
-  "private": true,
   "description": "Reorders HTML/Vue attributes by semantic meaning using swappable YAML profiles.",
   "keywords": [
     "formatter"
@@ -42,7 +41,7 @@
   ],
   "scripts": {
     "dev": "pnpm run build:wasm && rs dev",
-    "dev:docs": "rs doc",
+    "dev:docs": "pnpm run build:demo & rs doc",
     "lint": "run-s 'lint:*' --",
     "lint:rslint": "rs lint . --fix",
     "lint:prettier": "rs fmt .",

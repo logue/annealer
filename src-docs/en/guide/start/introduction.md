@@ -14,8 +14,8 @@ annealer is a formatter that reorders HTML and Vue template attributes by their 
 <a id="home" title="Home" href="/">Home</a>
 ```
 
-:::warning Work in progress
-annealer is under active development. The npm package is not published yet, and the profile format can still change before it is declared stable.
+:::warning Alpha
+This is annealer 0.1.0-alpha.1. Formatting rules and defaults can still change between releases (the built-in Tailwind class order follows Tailwind and is the exception), and the profile format can change before it is declared stable.
 :::
 
 ## Why attribute order matters
@@ -76,8 +76,9 @@ CSS property order is the exception: malva already has a configurable `declarati
 - Declaration order for CSS/SCSS/Sass/Less, in `<style>` blocks and in standalone files, via malva.
 - Opt-in declaration order inside static `style` attributes.
 - [Disable directives](../features/disable-directives.md) in markup and stylesheet comments.
-- Planned: [value ordering](../design/value-ordering.md) for static `class` attributes, and [library profiles](../design/library-profiles.md).
-- Svelte is not part of the first release. The profile-based design should allow adding it later without a redesign.
+- Opt-in [class order](../features/class-order.md) for static `class` attributes, with a built-in Tailwind order.
+- Planned: [library profiles](../design/library-profiles.md) (Bootstrap and others).
+- Svelte is not part of 0.1. The profile-based design should allow adding it later without a redesign.
 
 ## Non-goals
 

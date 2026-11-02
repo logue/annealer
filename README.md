@@ -2,10 +2,13 @@
 
 HTML (-ish) attribute and Stylesheet attribute formatter.
 
-See [Documentation](https://logue.dev/annealer/). If you're using this with AI, please load [llms.txt](https://logue.dev/annealer/llms.txt).
+See [Documentation](https://logue.dev/annealer/). For future implementation plans, please refer to [PLAN.md](./PLAN.md). If you are AI, please load [llms.txt](https://logue.dev/annealer/llms.txt).
 
 > [!NOTE]
-> Currently, it only supports HTML and Vue, but future plans include adding support for JSX, Svelte, Astro, and others.
+> Currently, it only supports HTML and Vue, but future plans include adding support for JSX, Svelte, Astro, XML (SVG, MathML, RDF, Atom, XAML etc), Twig, blade and others.
+
+> [!WARNING]
+> This is an alpha release (`0.1.0-alpha.1`). Formatting rules may change with future updates (except for Tailwind).
 
 ![annealer](https://github.com/user-attachments/assets/12c29ebf-f112-4b3a-bda7-ad10c50f4b3d)
 
@@ -16,6 +19,15 @@ See [Documentation](https://logue.dev/annealer/). If you're using this with AI, 
 [![Open in Gitpod](https://shields.io/badge/Open%20in-Gitpod-green?logo=Gitpod)](https://gitpod.io/#https://github.com/logue/annealer)
 [![X Follow](https://img.shields.io/twitter/follow/logue256?style=plastic)](https://twitter.com/logue256)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/logue?label=Sponsor&logo=github&color=ea4aaa)](https://github.com/sponsors/logue)
+
+## Installation
+
+```bash
+cargo install annealer --version 0.1.0-alpha.1   # anyl CLI
+pnpm add -D annealer@0.1.0-alpha.1               # JavaScript API
+```
+
+Pre-release versions are not matched by ranges such as `^0.1.0`, so name the version.
 
 ## Usage
 
@@ -28,7 +40,7 @@ anyl --check index.html          # exit 1 if a file would change
 anyl --profile my-profile.yaml page.html
 ```
 
-Supported inputs: `.html`, `.vue`, `.css`, `.scss`, `.sass`, `.less`.
+Supported inputs: `.html`, `.htm`, `.vue`, `.css`, `.scss`, `.sass`, `.less`.
 
 ### JavaScript
 

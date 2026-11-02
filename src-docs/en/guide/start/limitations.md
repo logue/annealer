@@ -4,11 +4,12 @@ description: Current limitations of annealer, covering supported inputs, markup 
 
 # Limitations
 
-annealer is still under development. This page lists what it does not do yet, and what it doesn't do by design. Each item links to the page with the details.
+annealer is an alpha release (0.1.0-alpha.1). This page lists what it does not do yet, and what it doesn't do by design. Each item links to the page with the details.
 
 ## Status
 
-- **Not published yet.** The npm package and the Rust crate aren't on the registries. Build the CLI with `cargo install --path crates/annealer`.
+- **Alpha.** Until 1.0, any release can change the output for the same input, except the built-in Tailwind class order, which follows Tailwind. Pin the exact version and review the diff when you upgrade.
+- **The npm package has no CLI.** It provides the JavaScript API only; install `anyl` with Cargo ([Getting started](./getting-started.md#installation)).
 - **The profile format can still change** before it is declared stable (`schemaVersion: 1`).
 
 ## Supported input

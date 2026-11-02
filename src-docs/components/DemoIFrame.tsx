@@ -1,13 +1,12 @@
 import { withBase } from '@rspress/core/runtime';
-import { useEffect, useState, useId } from 'react';
+import { useEffect, useState } from 'react';
 
 export interface ParentToIframeMessage {
   type: string;
   height: string;
 }
 
-export function DemoIframe({ src }: { src: string }) {
-  const id = useId();
+export function DemoIframe({ src, title }: { src: string; title: string }) {
   const [height, setHeight] = useState('300px');
   // `base` in rstack.config.ts is derived from the package.json name, so
   // `/demo/index.html` becomes `/annealer/demo/index.html`.
@@ -28,7 +27,7 @@ export function DemoIframe({ src }: { src: string }) {
 
   return (
     <iframe
-      title={`Demo iframe ${id}`}
+      title={title}
       src={iframeSource}
       style={{
         width: '100%',
