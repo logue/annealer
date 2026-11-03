@@ -225,6 +225,12 @@ define.doc({
       label: '日本語',
       title: 'annealer',
       description: 'HTML/Vue の属性を意味に基づいて並べ替えるフォーマッター'
+    },
+    {
+      lang: 'zh',
+      label: '简体中文',
+      title: 'annealer',
+      description: '按语义对 HTML/Vue 属性进行排序的格式化工具'
     }
   ],
   // generate llms.txt

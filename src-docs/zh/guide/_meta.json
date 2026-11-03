@@ -1,0 +1,22 @@
+[
+  {
+    "type": "dir-section-header",
+    "name": "start",
+    "label": "快速上手"
+  },
+  {
+    "type": "dir-section-header",
+    "name": "concepts",
+    "label": "核心概念"
+  },
+  {
+    "type": "dir-section-header",
+    "name": "features",
+    "label": "功能"
+  },
+  {
+    "type": "dir-section-header",
+    "name": "design",
+    "label": "设计与路线图"
+  }
+]
