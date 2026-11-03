@@ -1,0 +1,29 @@
+# annealer
+
+> Reorders HTML/Vue attributes by semantic meaning using swappable YAML profiles.
+
+## 指南
+
+- [简介](/annealer/zh/guide/start/introduction.md): annealer 是什么、为什么属性顺序很重要、它与 vue/attributes-order 的关系，以及其适用范围与非目标。
+- [快速开始](/annealer/zh/guide/start/getting-started.md): 通过 anyl CLI 或 JavaScript 运行 annealer，并选择内置或自定义配置文件。
+- [与其他工具配合使用](/annealer/zh/guide/start/integration.md): 将 annealer 与 Rslint 和 rs fmt（Prettier）、eslint-plugin-vue、oxlint 和 oxfmt 或 Biome 一起使用，并提供避免工具之间互相撤销输出的配置示例。
+- [限制](/annealer/zh/guide/start/limitations.md): annealer 目前的限制，涵盖支持的输入、标记与布局、类顺序、样式表、配置文件和 CLI。
+- [属性顺序](/annealer/zh/guide/concepts/attribute-order.md): annealer 如何对起始标签进行词法分析、将属性分类到分组、聚合同名属性、尊重 v-bind 展开，以及规范化属性名。
+- [样式表](/annealer/zh/guide/concepts/stylesheets.md): annealer 如何通过 malva 对 CSS、SCSS、Sass 和 Less 中的声明排序、带厂商前缀的声明放在哪里，以及可选的 style 属性支持。
+- [布局](/annealer/zh/guide/features/layout.md): 多行起始标签、自闭合元素和元素内容的布局规则，与对应的 eslint-plugin-vue 规则等效。
+- [类顺序](/annealer/zh/guide/features/class-order.md): 使用可替换的类顺序配置文件对静态 class 属性中的类排序，内置与 eslint-plugin-tailwindcss 一致的 Tailwind CSS 顺序。
+- [禁用指令](/annealer/zh/guide/features/disable-directives.md): 在标记和样式表中针对某个区域或下一行关闭 annealer 的注释。
+- [值排序](/annealer/zh/guide/design/value-ordering.md): 使用库专用的类顺序配置文件对静态 class 属性中的标记进行排序的原则，以及仍待解决的问题。
+- [库配置文件](/annealer/zh/guide/design/library-profiles.md): 计划中的库专用配置文件，以及在项目依赖中发现它们的既定策略。
+- [设计决策](/annealer/zh/guide/design/decisions.md): annealer 的架构，以及实现过程中做出的设计决策及其理由。
+
+## API
+
+- [API 概览](/annealer/zh/api/index.md): annealer 的各个入口：anyl CLI、JavaScript API 和 YAML 配置文件格式。
+- [CLI](/annealer/zh/api/cli.md): anyl 命令行工具的选项、输入语言和退出码。
+- [JavaScript API](/annealer/zh/api/javascript.md): annealer npm 包，format()、init()、languageFromPath()、builtinProfile()、builtinClassOrder() 及导出的类型。
+- [配置文件参考](/annealer/zh/api/profile.md): annealer 配置文件 YAML 格式参考，列出每个键及其类型和默认值。
+
+## 在线演示
+
+- [演示](/annealer/zh/playground.md): Annealer 在线演示
