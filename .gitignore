@@ -19,6 +19,7 @@ node_modules/
 .pnpm/crates/
 .rstack/
 !.rstack/hooks/
+.vitest/
 
 # Test Report
 coverage/
@@ -28,11 +29,11 @@ reports/
 test-results/
 
 # Production / Build output
-target/
 dist/
 docs/
 src-docs/public/demo/
 storybook-static/
+target/
 
 # Environment
 .env
@@ -48,7 +49,6 @@ storybook-static/
 # IDE
 .vscode/
 !.vscode/extensions.json
-!.vscode/mcp.json
 !.vscode/settings.json
 
 # Local

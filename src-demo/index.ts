@@ -60,9 +60,7 @@ const element = (id: string): HTMLElement => {
 const language = element('language') as CDSSelect;
 const profile = element('profile') as CDSSelect;
 const classOrder = element('class-order') as CDSSelect;
-const removeDuplicateClasses = element(
-  'remove-duplicate-classes'
-) as CDSCheckbox;
+const removeDuplicateClasses = element('remove-duplicate-classes') as CDSCheckbox;
 const selfClosing = element('self-closing') as CDSCheckbox;
 const noVoidSelfClosing = element('no-void-self-closing') as CDSCheckbox;
 const expandNonVoid = element('expand-non-void') as CDSCheckbox;
@@ -127,9 +125,7 @@ language.addEventListener('cds-select-selected', () => {
 profile.addEventListener('cds-select-selected', () => {
   if (profile.value === 'custom') {
     if (profileYaml.value === '') {
-      profileYaml.value = builtinProfile(
-        language.value === 'vue' ? 'vue' : 'html'
-      );
+      profileYaml.value = builtinProfile(language.value === 'vue' ? 'vue' : 'html');
     }
     profileEditor.open = true;
   }

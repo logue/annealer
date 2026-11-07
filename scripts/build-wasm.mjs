@@ -40,9 +40,7 @@ const gluePath = `${output}/annealer.js`;
 const fallback = "new URL('annealer_bg.wasm', import.meta.url)";
 const glue = readFileSync(gluePath, 'utf8');
 if (!glue.includes(fallback)) {
-  throw new Error(
-    `${gluePath}: wasm-bindgen output changed; update scripts/build-wasm.mjs`
-  );
+  throw new Error(`${gluePath}: wasm-bindgen output changed; update scripts/build-wasm.mjs`);
 }
 writeFileSync(
   gluePath,

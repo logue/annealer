@@ -30,7 +30,7 @@ groups:
   - name: other
     fallback: true
   - name: events
-    match: ['on*']
+    match: [on*]
 
 stylesheet:
   declarationOrder: smacss

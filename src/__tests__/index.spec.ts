@@ -1,12 +1,6 @@
 import { describe, expect, test } from 'rstack/test';
 
-import {
-  builtinClassOrder,
-  builtinProfile,
-  format,
-  init,
-  languageFromPath
-} from '@/index';
+import { builtinClassOrder, builtinProfile, format, init, languageFromPath } from '@/index';
 
 describe('format', () => {
   test('orders HTML attributes by default', () => {
@@ -17,18 +11,14 @@ describe('format', () => {
 
   test('uses the Vue profile for Vue input', () => {
     expect(
-      format(
-        '<template>\n<div @click="c" v-if="x" id="i"></div>\n</template>\n',
-        {
-          language: 'vue'
-        }
-      )
+      format('<template>\n<div @click="c" v-if="x" id="i"></div>\n</template>\n', {
+        language: 'vue'
+      })
     ).toBe('<template>\n<div v-if="x" id="i" @click="c"></div>\n</template>\n');
   });
 
   test('turns on the optional layout rules', () => {
-    const input =
-      '<template>\n<div>a\nb</div><MyComp></MyComp><br>\n</template>\n';
+    const input = '<template>\n<div>a\nb</div><MyComp></MyComp><br>\n</template>\n';
     // Void elements are always self-closed.
     expect(format(input, { language: 'vue' })).toBe(
       '<template>\n<div>a\nb</div><MyComp></MyComp><br />\n</template>\n'
@@ -54,9 +44,7 @@ describe('format', () => {
   });
 
   test('adds end tags to self-closing non-void elements when asked', () => {
-    expect(format('<div /><svg><path /></svg>')).toBe(
-      '<div /><svg><path /></svg>'
-    );
+    expect(format('<div /><svg><path /></svg>')).toBe('<div /><svg><path /></svg>');
     expect(format('<div /><svg><path /></svg>', { expandNonVoid: true })).toBe(
       '<div></div><svg><path /></svg>'
     );
@@ -64,9 +52,7 @@ describe('format', () => {
 
   test('removes duplicate classes when asked', () => {
     expect(format('<p class="b a b">')).toBe('<p class="b a b">');
-    expect(format('<p class="b a b">', { removeDuplicateClasses: true })).toBe(
-      '<p class="b a">'
-    );
+    expect(format('<p class="b a b">', { removeDuplicateClasses: true })).toBe('<p class="b a">');
     expect(
       format('<p class="p-4 m-2 p-4">', {
         classOrder: 'tailwind',
@@ -86,9 +72,9 @@ describe('format', () => {
   });
 
   test('orders stylesheet declarations', () => {
-    expect(
-      format('a { color: red; display: block; }\n', { language: 'css' })
-    ).toBe('a {\n  display: block;\n  color: red;\n}\n');
+    expect(format('a { color: red; display: block; }\n', { language: 'css' })).toBe(
+      'a {\n  display: block;\n  color: red;\n}\n'
+    );
   });
 
   test('accepts a profile as YAML text', () => {
@@ -107,9 +93,7 @@ describe('format', () => {
 
   test('throws on invalid input and profiles', () => {
     expect(() => format('<a title="t')).toThrow(/unterminated/u);
-    expect(() => format('<a>', { profile: 'schemaVersion: 2' })).toThrow(
-      /profile/u
-    );
+    expect(() => format('<a>', { profile: 'schemaVersion: 2' })).toThrow(/profile/u);
   });
 
   test('throws on Pug and Stylus blocks', () => {
@@ -128,12 +112,8 @@ describe('format', () => {
   test('orders classes with a class order', () => {
     const input = '<p class="p-3 m-4 lg:p-4 flex card">';
     expect(format(input)).toBe(input);
-    expect(format(input, { classOrder: 'tailwind' })).toBe(
-      '<p class="card m-4 flex p-3 lg:p-4">'
-    );
-    expect(() => format(input, { classOrder: 'name: x' })).toThrow(
-      /class order|schemaVersion/u
-    );
+    expect(format(input, { classOrder: 'tailwind' })).toBe('<p class="card m-4 flex p-3 lg:p-4">');
+    expect(() => format(input, { classOrder: 'name: x' })).toThrow(/class order|schemaVersion/u);
   });
 
   test('init can be awaited before formatting', async () => {

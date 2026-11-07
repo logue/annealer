@@ -1,6 +1,1 @@
-[
-  { "type": "file", "name": "index", "label": "概览" },
-  "cli",
-  "javascript",
-  "profile"
-]
+[{ "type": "file", "name": "index", "label": "概览" }, "cli", "javascript", "profile"]

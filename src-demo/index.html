@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="cds--white">
+<html class="cds--white" lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,35 +9,29 @@
   <body>
     <cds-grid>
       <cds-column sm="4" md="8" lg="5">
-        <cds-select id="language" label-text="Language" value="vue">
+        <cds-select id="language" value="vue" label-text="Language">
           <cds-select-item value="vue" label="Vue">Vue</cds-select-item>
           <cds-select-item value="html" label="HTML">HTML</cds-select-item>
           <cds-select-item value="css" label="CSS">CSS</cds-select-item>
           <cds-select-item value="scss" label="SCSS">SCSS</cds-select-item>
-          <cds-select-item value="sass" label="Sass (indented)">
-            Sass (indented)
-          </cds-select-item>
+          <cds-select-item value="sass" label="Sass (indented)"> Sass (indented) </cds-select-item>
           <cds-select-item value="less" label="Less">Less</cds-select-item>
         </cds-select>
       </cds-column>
       <cds-column sm="4" md="4" lg="6">
-        <cds-select id="profile" label-text="Profile" value="default">
+        <cds-select id="profile" value="default" label-text="Profile">
           <cds-select-item value="default" label="Default for the language">
             Default for the language
           </cds-select-item>
           <cds-select-item value="html" label="html">html</cds-select-item>
           <cds-select-item value="vue" label="vue">vue</cds-select-item>
-          <cds-select-item value="custom" label="Custom YAML…">
-            Custom YAML…
-          </cds-select-item>
+          <cds-select-item value="custom" label="Custom YAML…"> Custom YAML… </cds-select-item>
         </cds-select>
       </cds-column>
       <cds-column sm="4" md="4" lg="5">
-        <cds-select id="class-order" label-text="Class order" value="keep">
+        <cds-select id="class-order" value="keep" label-text="Class order">
           <cds-select-item value="keep" label="Keep">Keep</cds-select-item>
-          <cds-select-item value="tailwind" label="tailwind">
-            tailwind
-          </cds-select-item>
+          <cds-select-item value="tailwind" label="tailwind"> tailwind </cds-select-item>
         </cds-select>
       </cds-column>
 
@@ -47,22 +41,10 @@
             id="remove-duplicate-classes"
             label-text="Remove duplicate classes"
           ></cds-checkbox>
-          <cds-checkbox
-            id="self-closing"
-            label-text="Self-closing"
-          ></cds-checkbox>
-          <cds-checkbox
-            id="no-void-self-closing"
-            label-text="Void without slash"
-          ></cds-checkbox>
-          <cds-checkbox
-            id="expand-non-void"
-            label-text="Expand non-void"
-          ></cds-checkbox>
-          <cds-checkbox
-            id="content-newline"
-            label-text="Content newline"
-          ></cds-checkbox>
+          <cds-checkbox id="self-closing" label-text="Self-closing"></cds-checkbox>
+          <cds-checkbox id="no-void-self-closing" label-text="Void without slash"></cds-checkbox>
+          <cds-checkbox id="expand-non-void" label-text="Expand non-void"></cds-checkbox>
+          <cds-checkbox id="content-newline" label-text="Content newline"></cds-checkbox>
         </cds-checkbox-group>
       </cds-column>
 
@@ -72,6 +54,7 @@
             <cds-textarea
               id="profile-yaml"
               label="Custom profile YAML"
+              helper-text="Enter the annealer profile (annealer.yaml). See Guide / Library profiles for detail."
               hide-label
               rows="12"
               spellcheck="false"
@@ -86,23 +69,27 @@
           label="Input"
           rows="20"
           spellcheck="false"
-        ></cds-textarea>
+          helper-text="Enter the HTML or other code you want to format in Annealer."
+        >
+        </cds-textarea>
       </cds-column>
       <cds-column sm="4" md="4" lg="8">
         <cds-textarea
           id="output"
           label="Output"
+          helper-text="The results of the plastic surgery will be displayed here."
           rows="20"
           readonly
           spellcheck="false"
-        ></cds-textarea>
+        >
+        </cds-textarea>
       </cds-column>
 
       <cds-column sm="4" md="8" lg="16">
         <cds-inline-notification
           id="error"
-          kind="error"
           title="Format error"
+          kind="error"
           hide-close-button
           low-contrast
           hidden

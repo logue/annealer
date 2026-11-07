@@ -295,21 +295,11 @@
           "enum": ["short", "long"]
         },
         "quotes": {
-          "enum": [
-            "always-double",
-            "always-single",
-            "prefer-double",
-            "prefer-single"
-          ],
+          "enum": ["always-double", "always-single", "prefer-double", "prefer-single"],
           "default": "prefer-single"
         },
         "attrSelector.quotes": {
-          "enum": [
-            "always-double",
-            "always-single",
-            "prefer-double",
-            "prefer-single"
-          ]
+          "enum": ["always-double", "always-single", "prefer-double", "prefer-single"]
         },
         "operatorLineBreak": {
           "enum": ["before", "after"],

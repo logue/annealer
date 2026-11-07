@@ -1,6 +1,6 @@
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { pluginTypeCheck } from '@rsbuild/plugin-type-check';
-import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
+import { RsdoctorRspackPlugin } from '@rsdoctor/core';
 import { define } from 'rstack';
 
 import { readFileSync } from 'node:fs';
@@ -55,23 +55,23 @@ const createBuildDefines = () => ({
   'import.meta.env.BUILD_DATE': JSON.stringify(buildDate)
 });
 
-const createRsdoctorPlugins = () =>
-  process.env.RSDOCTOR === 'true' ? [new RsdoctorRspackPlugin()] : [];
-
 const IGNORE_PATTERNS = [
   // AI agents skill docs.
+  '**/.agent/**',
   '**/.agents/**',
+  '**/.claude/**',
+  '**/.cursor/**',
+  '**/.windsurf/**',
   // Build intermediate artifacts.
   '**/.cache/**',
   '**/.data/**',
   '**/.mf/**',
   '**/.nitro/**',
   '**/.nuxt/**',
-  '**/.output/**',
   '**/.pnpm/**',
   '**/.rsdoctor/**',
   '**/.rstack/**',
-  // Test reports.
+  // Test coverage reports.
   '**/coverage/**',
   '**/e2e/**',
   '**/playwright-report/**',
@@ -89,14 +89,14 @@ const IGNORE_PATTERNS = [
   '**/tests/fixtures/**',
   '**/docs/**',
   '**/storybook-static/**',
+  '**/target/**',
   // Node modules.
   '**/node_modules/**'
 ];
 
-const APP_FILES = [
-  '**/*.{ts,mts,tsx,js,mjs,jsx,json,jsonc,mdx,vue,astro,svelte}'
-];
+const APP_FILES = ['**/*.{ts,mts,tsx,js,mjs,jsx,json,jsonc,vue,astro,svelte}'];
 const TEST_FILES = ['**/*.{test,spec}.{ts,mts,tsx,js,mjs,jsx}'];
+
 /**
  * Rslib Config
  * @see {@link https://rslib.rs/config/ | Rslib Config}
@@ -152,7 +152,18 @@ define.lib({
   },
   tools: {
     rspack: {
-      plugins: createRsdoctorPlugins()
+      plugins: [
+        // Only register the plugin when RSDOCTOR is true, as the plugin will increase the build time.
+        process.env.RSDOCTOR &&
+          new RsdoctorRspackPlugin({
+            // plugin options
+            // @see {@link https://rsdoctor.rs/guide/start/features | Rsdoctor Docs}
+            output: {
+              // Do not output report in dist dir.
+              reportDir: '.rstack/'
+            }
+          })
+      ].filter(Boolean)
     }
   }
 });
@@ -196,7 +207,6 @@ define.doc({
   outDir: 'docs',
   // If the package name and repository name are different, correct them as needed.
   base: `/${packageJson.name.slice(packageJson.name.lastIndexOf('/') + 1)}/`,
-  // Shared MDX components are not pages.
   route: {
     exclude: ['components/**']
   },
@@ -212,24 +222,25 @@ define.doc({
   // Site information settings
   title: packageJson.name,
   description: packageJson.description,
+  head: [['meta', { name: 'author', content: packageJson.author.name }]],
   lang: 'en',
   locales: [
     {
       lang: 'en',
       label: 'English',
-      title: 'annealer',
+      title: 'Annealer',
       description: 'Reorders HTML/Vue attributes by semantic meaning.'
     },
     {
       lang: 'ja',
       label: '日本語',
-      title: 'annealer',
+      title: 'Annealer',
       description: 'HTML/Vue の属性を意味に基づいて並べ替えるフォーマッター'
     },
     {
       lang: 'zh',
       label: '简体中文',
-      title: 'annealer',
+      title: 'Annealer',
       description: '按语义对 HTML/Vue 属性进行排序的格式化工具'
     }
   ],
@@ -312,10 +323,7 @@ define.lint(
 
         // Keep project lint behavior aligned with the previous baseline.
         '@typescript-eslint/ban-ts-comment': 'off',
-        '@typescript-eslint/consistent-generic-constructors': [
-          'error',
-          'type-annotation'
-        ],
+        '@typescript-eslint/consistent-generic-constructors': ['error', 'type-annotation'],
         '@typescript-eslint/explicit-function-return-type': 'off',
 
         // Ignore intentionally unused identifiers with underscore prefix.
@@ -348,15 +356,7 @@ define.lint(
             alphabetize: {
               order: 'asc'
             },
-            groups: [
-              'builtin',
-              'external',
-              'parent',
-              'sibling',
-              'index',
-              'object',
-              'type'
-            ],
+            groups: ['builtin', 'external', 'parent', 'sibling', 'index', 'object', 'type'],
             'newlines-between': 'always',
             pathGroups: [
               {
@@ -424,7 +424,7 @@ define.lint(
  * @see {@link https://prettier.io/docs/options | Prettier Options}
  */
 define.fmt({
-  printWidth: 80,
+  printWidth: 100,
   tabWidth: 2,
   useTabs: false,
   semi: true,
@@ -434,6 +434,7 @@ define.fmt({
   bracketSameLine: false,
   arrowParens: 'avoid',
   endOfLine: 'lf',
+  plugins: ['prettier-plugin-yaml'],
   // Bellow is rstack options
   // see https://rstack.rs/guide/formatting
   ignorePatterns: IGNORE_PATTERNS,
@@ -445,6 +446,6 @@ define.fmt({
  * @see {@link https://rstack.rs/guide/cli/hooks | Git Hooks}
  */
 define.staged({
-  '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}': ['rs lint --fix', 'rs fmt'],
-  '*.{json,md,mdx,css,scss,less,html,yml,yaml}': 'rs fmt'
+  '*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx}': ['rs lint --fix', 'rs fmt'],
+  '*.{json,jsonc,md,mdx,yml,yaml,css,scss,less,html,vue}': 'rs fmt'
 });

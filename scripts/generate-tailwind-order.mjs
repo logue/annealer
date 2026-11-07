@@ -32,9 +32,7 @@ const tailwindVersion = JSON.parse(
 const ds = await __unstable__loadDesignSystem('@import "tailwindcss";', {
   base: root,
   async loadStylesheet(id, base) {
-    const path = require.resolve(
-      id === 'tailwindcss' ? 'tailwindcss/index.css' : id
-    );
+    const path = require.resolve(id === 'tailwindcss' ? 'tailwindcss/index.css' : id);
     return { path, base, content: readFileSync(path, 'utf8') };
   }
 });
@@ -196,24 +194,18 @@ for (const variant of ds.getVariants()) {
     continue;
   }
   for (const value of variant.values) {
-    const name = variant.hasDash
-      ? `${variant.name}-${value}`
-      : variant.name + value;
+    const name = variant.hasDash ? `${variant.name}-${value}` : variant.name + value;
     variantProbes.push([name, name]);
   }
   if (variant.isArbitrary) {
     const separator = variant.hasDash ? '-' : '';
-    variantProbes.push([
-      `${variant.name}${separator}[x]`,
-      `${variant.name}${separator}*`
-    ]);
+    variantProbes.push([`${variant.name}${separator}[x]`, `${variant.name}${separator}*`]);
   }
 }
 variantProbes.push(['[&_p]', '[*]']);
 
 /** Whether Tailwind generates CSS for a utility behind this variant. */
-const isValidVariant = probe =>
-  ds.getClassOrder([`${probe}:p-4`])[0][1] !== null;
+const isValidVariant = probe => ds.getClassOrder([`${probe}:p-4`])[0][1] !== null;
 
 const parsedVariants = [];
 for (const [probe, pattern] of variantProbes) {
@@ -230,9 +222,7 @@ for (const [pattern, parsed] of parsedVariants) {
   if (!patterns.includes(pattern)) patterns.push(pattern);
   ranks.set(rank, patterns);
 }
-const variants = [...ranks]
-  .toSorted(([a], [z]) => a - z)
-  .map(([, patterns]) => patterns);
+const variants = [...ranks].toSorted(([a], [z]) => a - z).map(([, patterns]) => patterns);
 
 // --- YAML -----------------------------------------------------------------
 
@@ -261,16 +251,12 @@ const lines = [
   '  separator: ":"',
   '  order:',
   ...variants.map(patterns =>
-    patterns.length === 1
-      ? `    - ${quote(patterns[0])}`
-      : `    - ${list(patterns)}`
+    patterns.length === 1 ? `    - ${quote(patterns[0])}` : `    - ${list(patterns)}`
   ),
   'propertyOrder:',
   ...propertyOrder.map(property => `  - ${quote(property)}`),
   'values:',
-  ...Object.entries(VALUE_SETS).map(
-    ([name, values]) => `  ${name}: ${list(values)}`
-  ),
+  ...Object.entries(VALUE_SETS).map(([name, values]) => `  ${name}: ${list(values)}`),
   'rules:'
 ];
 const sortedRules = [...rules.values()].toSorted((a, z) =>
@@ -294,9 +280,7 @@ const random = () => {
 };
 const pick = items => items[Math.floor(random() * items.length)];
 
-const knownVariants = variantProbes
-  .map(([probe]) => probe)
-  .filter(probe => isValidVariant(probe));
+const knownVariants = variantProbes.map(([probe]) => probe).filter(probe => isValidVariant(probe));
 const extras = [
   'card',
   'btn-primary',
@@ -321,8 +305,7 @@ for (let index = 0; index < 3000; index++) {
   for (let index = 0; index < size; index++) {
     let name = random() < 0.1 ? pick(extras) : pick(classList);
     const variantCount = random() < 0.3 ? 1 + Math.floor(random() * 2) : 0;
-    for (let k = 0; k < variantCount; k++)
-      name = `${pick(knownVariants)}:${name}`;
+    for (let k = 0; k < variantCount; k++) name = `${pick(knownVariants)}:${name}`;
     // Variant combinations Tailwind rejects (`not-*:*:`) would test nothing
     // but the rejection itself.
     const valid = ds.getClassOrder([name])[0][1] !== null;
@@ -343,10 +326,7 @@ for (let index = 0; index < 3000; index++) {
     .map(([name]) => name);
   corpus.push(`${classes.join(' ')}\t${sorted.join(' ')}`);
 }
-writeFileSync(
-  `${crate}/tests/class-order/tailwind.tsv`,
-  `${corpus.join('\n')}\n`
-);
+writeFileSync(`${crate}/tests/class-order/tailwind.tsv`, `${corpus.join('\n')}\n`);
 
 console.log(
   `tailwind.yaml: ${rules.size} rules, ${variants.length} variant ranks, ${propertyOrder.length} properties; corpus: ${corpus.length} lists`

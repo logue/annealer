@@ -6,9 +6,9 @@ permissions:
 on:
   workflow_dispatch: {}
   push:
-    branches: ['main']
+    branches: [main]
   pull_request:
-    branches: ['main']
+    branches: [main]
 
 jobs:
   cache-and-install:
@@ -37,7 +37,7 @@ jobs:
       - name: Install Node.js ⚡️
         uses: actions/setup-node@v7
         with:
-          cache: 'pnpm'
+          cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
           node-version: 26
 
