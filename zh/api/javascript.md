@@ -3,13 +3,7 @@
 # JavaScript API
 
 ```ts
-import {
-  builtinClassOrder,
-  builtinProfile,
-  format,
-  init,
-  languageFromPath
-} from 'annealer';
+import { builtinClassOrder, builtinProfile, format, init, languageFromPath } from 'annealer';
 ```
 
 该包是 Rust 核心的 WebAssembly 构建版本，外加一层 TypeScript 封装。它可以在 Node.js、浏览器中使用，也提供 UMD 构建。

@@ -3,13 +3,7 @@
 # JavaScript API
 
 ```ts
-import {
-  builtinClassOrder,
-  builtinProfile,
-  format,
-  init,
-  languageFromPath
-} from 'annealer';
+import { builtinClassOrder, builtinProfile, format, init, languageFromPath } from 'annealer';
 ```
 
 このパッケージは Rust コアの WebAssembly ビルドと TypeScript ラッパーです。Node.js、ブラウザー、UMD ビルドで動きます。

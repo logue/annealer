@@ -1210,13 +1210,7 @@ url: /annealer/ja/api/javascript.md
 # JavaScript API
 
 ```ts
-import {
-  builtinClassOrder,
-  builtinProfile,
-  format,
-  init,
-  languageFromPath
-} from 'annealer';
+import { builtinClassOrder, builtinProfile, format, init, languageFromPath } from 'annealer';
 ```
 
 このパッケージは Rust コアの WebAssembly ビルドと TypeScript ラッパーです。Node.js、ブラウザー、UMD ビルドで動きます。
@@ -1356,7 +1350,7 @@ groups:
   - name: other
     fallback: true
   - name: events
-    match: ['on*']
+    match: [on*]
 
 stylesheet:
   declarationOrder: smacss

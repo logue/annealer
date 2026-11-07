@@ -3,13 +3,7 @@
 # JavaScript API
 
 ```ts
-import {
-  builtinClassOrder,
-  builtinProfile,
-  format,
-  init,
-  languageFromPath
-} from 'annealer';
+import { builtinClassOrder, builtinProfile, format, init, languageFromPath } from 'annealer';
 ```
 
 The package is a WebAssembly build of the Rust core with a TypeScript wrapper. It works in Node.js, in browsers and as a UMD build.
