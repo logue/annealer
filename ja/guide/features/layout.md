@@ -4,15 +4,7 @@
 
 属性を並べ替えると、タグの元の行構成が崩れることがあります。プロファイルの `layout` セクションで、並べ替え後のタグのレイアウトを定めます。各規則は eslint-plugin-vue のルールに対応しているため、それらのルールを残しているプロジェクトでも結果が食い違いません。
 
-どちらの組み込みプロファイルでも `closingBracketNewline`、`oneAttributePerLine`、`selfClosing.void`（`<br />`、`<hr />`、`<wbr />` など）は有効です。空要素以外の自己終了（`selfClosing.normal`/`component`）と `contentNewline` は並べ替えに必要な範囲を超えてマークアップを書き換えるため、組み込みプロファイルでは設定値だけを定義し、無効（`enabled: false`）にしています。必要なときに有効にしてください。
-
-| 規則               | CLI                 | JavaScript             | プロファイル                            |
-| ---------------- | ------------------- | ---------------------- | --------------------------------- |
-| `selfClosing`    | `--self-closing`    | `selfClosing: true`    | `selfClosing.enabled: true`       |
-| `contentNewline` | `--content-newline` | `contentNewline: true` | `contentNewline.enabled: true`    |
-| `expandNonVoid`  | `--expand-non-void` | `expandNonVoid: true`  | `selfClosing.expandNonVoid: true` |
-
-CLI のフラグと JavaScript のオプションは、プロファイルの `enabled` より優先されます。`--no-self-closing` / `--no-content-newline`（または `false`）で、規則を有効にしているプロファイルでも無効にできます。
+どちらの組み込みプロファイルでも、以下の規則はすべて有効です。
 
 ## `closingBracketNewline`
 
@@ -40,7 +32,7 @@ CLI のフラグと JavaScript のオプションは、プロファイルの `en
 
 ## `selfClosing`
 
-`vue/html-self-closing` 相当です。要素の種類ごとに `always`、`never`、`preserve` のいずれかを指定します。`void` は常に適用し、`enabled`（組み込み `vue` プロファイルでは無効、上記参照）は `normal` と `component` だけを切り替えます。
+`vue/html-self-closing` 相当です。要素の種類ごとに `always`、`never`、`preserve` のいずれかを指定します。
 
 | 種類          | 例            | 組み込み `html` | 組み込み `vue` |
 | ----------- | ------------ | ----------- | ---------- |
@@ -49,28 +41,8 @@ CLI のフラグと JavaScript のオプションは、プロファイルの `en
 | `component` | `<MyComp />` | –           | `always`   |
 
 - `normal` と `component` は Vue テンプレートでのみ適用します。素の HTML では `<div />` は閉じられていない開始タグになるためです。
-- `--void-self-closing` / `--no-void-self-closing`（JavaScript では `voidSelfClosing: true` / `false`）で、プロファイルを編集せずに `void` を `always` / `never` にできます。
 - 空白だけのコンテンツは空とみなします。ただし `pre` と `textarea` は除きます。
 - SFC のトップレベルブロック（`<template>`、`<script>`、`<style>`）には手を加えません。
-
-### `expandNonVoid`
-
-素の HTML は空要素以外の要素のスラッシュを無視するため、`<div />` は `<div>` と同じ意味になります。要素は閉じられず、後に続く内容を取り込みます。`expandNonVoid: true`（`--expand-non-void`、JavaScript では `expandNonVoid: true`）で、こうした要素に終了タグを付けます。ブラウザーの解釈が変わるため、組み込みプロファイルでは無効です。
-
-<!-- prettier-ignore -->
-
-```html
-<!-- 入力 -->
-<div class="spacer" /><my-icon/>
-<svg><path d="M0 0" /></svg>
-
-<!-- 出力（--expand-non-void） -->
-<div class="spacer"></div><my-icon></my-icon>
-<svg><path d="M0 0" /></svg>
-```
-
-- 外部コンテンツ（`<svg>`、`<math>`、`<rdf:RDF>` などの名前空間付き XML）には手を加えません。そこでは自己終了が有効なためです（[制限事項](/annealer/ja/guide/start/limitations.md)）。
-- Vue テンプレートには影響しません。Vue では `normal: never` / `component: never` を使ってください。
 
 :::warning vue/html-self-closing との違い
 `void: always` は `vue/html-self-closing` の既定（`html.void: never`）と異なります。その ESLint ルールを残す場合は、そちらで `html.void: always` にするか、annealer のプロファイルで `void: never` にしてください。
@@ -78,7 +50,7 @@ CLI のフラグと JavaScript のオプションは、プロファイルの `en
 
 ## `contentNewline`
 
-`vue/multiline-html-element-content-newline` 相当です。組み込みプロファイルでは無効です（上記参照）。独自のプロファイルでは、キーを省略するか `enabled: false` にすると無効、`{}` を指定すると既定値で有効になります。キーのないプロファイルに `--content-newline` を指定した場合も既定値が使われます。
+`vue/multiline-html-element-content-newline` 相当です。キーを省略すると無効、`{}` を指定すると既定値で有効になります。
 
 - 終了タグが開始タグより後の行で始まる要素を**複数行**の要素とみなします（ESLint ルールの定義と同じ）。その要素のコンテンツは、ちょうど 1 つの改行で始まり、1 つの改行で終わるようにします。
 - `allowEmptyLines: true` にすると、空行をまとめずに残します。
@@ -96,7 +68,7 @@ CLI のフラグと JavaScript のオプションは、プロファイルの `en
     id="x"><MyComp></MyComp></div>
 </template>
 
-<!-- 出力（vue プロファイル、--self-closing --content-newline） -->
+<!-- 出力（vue プロファイル） -->
 <template>
   <div
     id="x"
@@ -107,6 +79,6 @@ CLI のフラグと JavaScript のオプションは、プロファイルの `en
 </template>
 ```
 
-この規則は HTML プロファイルにも定義しています。ブロックレベルのコンテンツの先頭と末尾の空白は表示されず、表示されうる要素は `ignore` リストで除外しているためです。
+この規則は HTML プロファイルでも有効です。ブロックレベルのコンテンツの先頭と末尾の空白は表示されず、表示されうる要素は `ignore` リストで除外しているためです。
 
 コンテンツを新しい行に移すと、入れ子のタグの閉じ括弧がそろえるインデントが変わることがあります。そのため annealer は、結果が安定するまで文書を繰り返し整形します（最大 4 回、通常は 2 回）。

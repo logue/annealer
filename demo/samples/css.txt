@@ -1,0 +1,1 @@
+.card { color: #333; margin: 0; -webkit-transition: opacity 0.2s; transition: opacity 0.2s; display: block; position: relative; }

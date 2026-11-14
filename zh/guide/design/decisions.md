@@ -8,7 +8,7 @@
 annealer (core)  纯函数：format(input: &str, config: &Config)
                    -> Result<String, FormatError>
                  不做文件 I/O。可构建为 wasm32-unknown-unknown。
-                 使用 malva 处理 CSS/SCSS/Sass/Less 的声明顺序。
+                 使用 malva 处理 CSS/SCSS/Sass/Less 的属性顺序。
 
 anyl (CLI)       负责文件 I/O 和参数解析；调用核心。
 
@@ -19,7 +19,8 @@ annealer (npm)   核心的 WebAssembly 构建，外加 TypeScript 封装。
 - **配置文件是 YAML，而不是代码。** HTML、Vue 以及未来的配置文件都是数据。每个配置文件都有 `schemaVersion`，因为该格式与 Rust 函数签名一样，都是公共 API。
 - **严格校验。** 解析配置文件时会拒绝未知键，因此拼写错误会立即暴露。另提供 JSON Schema（draft-07）以支持编辑器。draft-07 无法表达的两条规则（恰好一个 fallback 分组、分组名唯一）仅由加载器检查。
 - **malva 采用宽松的版本约束**（`0.16`），与其他项目中使用的库依赖策略一致。
-- **npm 包内嵌 WebAssembly 二进制**（base64），而不是单独提供 `.wasm` 文件。代价是压缩前体积增加约 33%；换来的是 `format()` 是同步的，并且无需配置打包工具或加载器。
+- **只改变顺序。** annealer 询问 malva 如何对属性名称排序，然后按原样移动声明；不会使用 malva 输出的内容。空白、引号和其他格式交由 Prettier 或 Oxfmt 等格式化工具处理。
+- **npm 包内嵌 WebAssembly 二进制**（base64），而不是单独提供 `.wasm` 文件。代价是压缩前体积增加约 33%；换来的是 `format()` 为同步函数，并且无需配置打包工具或加载器。
 
 ## 实现过程中的决策 \{#decisions-made-during-implementation}
 
@@ -29,9 +30,8 @@ annealer (npm)   核心的 WebAssembly 构建，外加 TypeScript 封装。
 4. **多行标签中每行一个属性。** 否则重新排序可能会让两个属性挤在同一行。这与 `vue/max-attributes-per-line` 的多行默认值一致，可以通过 `layout.oneAttributePerLine` 关闭。
 5. **Vue 第 8 层被拆分**为先其他指令、后其他属性，与 `vue/attributes-order`（`OTHER_DIRECTIVES` → `OTHER_ATTR`）一致。
 6. **`void: always` 与 `vue/html-self-closing` 的默认值**（`html.void: never`）不同。保留该 ESLint 规则的项目需要让其中一方对齐。
-7. **HTML 配置文件中同样定义了 `contentNewline`。** 块级内容开头和结尾的空白不会被渲染，而 `ignore` 列表涵盖了可能会被渲染的元素。
+7. **HTML 配置文件中同样开启 `contentNewline`。** 块级内容开头和结尾的空白不会被渲染，而 `ignore` 列表涵盖了可能会显示空白的元素。
 8. **带厂商前缀的声明排在最前**（`vendorPrefix: start`），这样标准属性最后声明并生效。参见[样式表](/annealer/zh/guide/concepts/stylesheets.md#vendor-prefixes-vendorprefix-start)。
-9. **内容为空的元素和组件的自闭合以及 `contentNewline` 为可选功能。** 它们对标记的改写超出了排序所需，并且与不使用这些 eslint-plugin-vue 规则的配置（例如 Prettier）冲突。内置配置文件保留了这些设置，但设为 `enabled: false`；`--self-closing` / `--content-newline` 或对应的 JavaScript 选项可将其开启。空元素（`<br />`）始终自闭合，Prettier 也是这样输出的。
 
 ## 已解决的问题 \{#resolved-questions}
 

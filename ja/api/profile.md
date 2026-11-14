@@ -67,19 +67,16 @@ JSON Schema（draft-07）は `crates/annealer/schema/profile.schema.json` にあ
 
 詳しくは[レイアウト](/annealer/ja/guide/features/layout.md)を参照してください。
 
-| キー                               | 型                                 | 既定                       | 説明                                                                                                                                 |
-| -------------------------------- | --------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `closingBracketNewline`          | 真偽値                               | `false`                  | 複数行の開始タグの閉じ括弧を独立した行に置く                                                                                                             |
-| `oneAttributePerLine`            | 真偽値                               | `false`                  | 複数行の開始タグで 1 行に 1 属性                                                                                                                |
-| `selfClosing.enabled`            | 真偽値                               | `true`                   | `normal` と `component` を適用するか（`void` と `expandNonVoid` は常に適用）。組み込み `vue` プロファイルは `false`。`--self-closing` と `selfClosing` オプションが優先 |
-| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`               | 空要素: `<br />` または `<br>`。`--void-self-closing` と `voidSelfClosing` オプションが優先                                                        |
-| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`               | 空の非空要素（`<div />`）。Vue テンプレートのみ                                                                                                     |
-| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`               | 空のコンポーネント（`<MyComp />`）。Vue テンプレートのみ                                                                                               |
-| `selfClosing.expandNonVoid`      | 真偽値                               | `false`                  | `<div />` → `<div></div>`。素の HTML のみ。`<svg>` と `<math>` の中には手を加えない。`--expand-non-void` と `expandNonVoid` オプションが優先                  |
-| `contentNewline`                 | オブジェクト                            | 無効                       | 複数行の要素のコンテンツを独立した行に置く。`{}` で既定値のまま有効                                                                                               |
-| `contentNewline.enabled`         | 真偽値                               | `true`                   | 規則を適用するか。組み込みプロファイルは `false`。`--content-newline` と `contentNewline` オプションが優先                                                       |
-| `contentNewline.ignore`          | 文字列の配列                            | `pre`、`textarea`、インライン要素 | 中身も含めて手を加えない要素。要素名は大文字小文字を区別せず、コンポーネント名は完全一致                                                                                       |
-| `contentNewline.allowEmptyLines` | 真偽値                               | `false`                  | コンテンツの前後の空行を残す                                                                                                                     |
+| キー                               | 型                                 | 既定                       | 説明                                           |
+| -------------------------------- | --------------------------------- | ------------------------ | -------------------------------------------- |
+| `closingBracketNewline`          | 真偽値                               | `false`                  | 複数行の開始タグの閉じ括弧を独立した行に置く                       |
+| `oneAttributePerLine`            | 真偽値                               | `false`                  | 複数行の開始タグで 1 行に 1 属性                          |
+| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`               | 空要素: `<br />` または `<br>`                     |
+| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`               | 空の非空要素（`<div />`）。Vue テンプレートのみ               |
+| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`               | 空のコンポーネント（`<MyComp />`）。Vue テンプレートのみ         |
+| `contentNewline`                 | オブジェクト                            | 無効                       | 複数行の要素のコンテンツを独立した行に置く。`{}` で既定値のまま有効         |
+| `contentNewline.ignore`          | 文字列の配列                            | `pre`、`textarea`、インライン要素 | 中身も含めて手を加えない要素。要素名は大文字小文字を区別せず、コンポーネント名は完全一致 |
+| `contentNewline.allowEmptyLines` | 真偽値                               | `false`                  | コンテンツの前後の空行を残す                               |
 
 ## `groups`
 
@@ -99,15 +96,14 @@ JSON Schema（draft-07）は `crates/annealer/schema/profile.schema.json` にあ
 
 詳しくは[スタイルシート](/annealer/ja/guide/concepts/stylesheets.md)を参照してください。
 
-| キー                        | 型                                                     | 既定                | 説明                                                            |
-| ------------------------- | ----------------------------------------------------- | ----------------- | ------------------------------------------------------------- |
-| `declarationOrder`        | `smacss` \| `concentric` \| `alphabetical`            | –                 | プロパティの順序。指定しなければ宣言を並べ替えません。                                   |
-| `declarationOrderGroupBy` | `non-declaration` \| `non-declaration-and-empty-line` | `non-declaration` | 宣言を、個別にソートする区間にどう分けるか                                         |
-| `vendorPrefix`            | `alongside` \| `start`                                | `alongside`       | `start` にすると、ベンダープレフィックス付きの宣言を各区間の先頭にアルファベット順で置く              |
-| `styleAttribute`          | 真偽値                                                   | `false`           | 静的な `style` 属性内の宣言も並べ替える                                      |
-| `malva`                   | オブジェクト                                                | –                 | その他の [malva のオプション](https://malva.netlify.app/config/)をそのまま渡す |
+| キー                        | 型                                                     | 既定                               | 説明                                                                            |
+| ------------------------- | ----------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------- |
+| `declarationOrder`        | `smacss` \| `concentric` \| `alphabetical`            | –                                | プロパティの順序。指定しなければ宣言を並べ替えません。                                                   |
+| `declarationOrderGroupBy` | `non-declaration` \| `non-declaration-and-empty-line` | `non-declaration-and-empty-line` | 宣言を、個別にソートする区間にどう分けるか。既定では空行で区間を区切る。`non-declaration` は空行をまたいでソートし、空行はその位置に残る |
+| `vendorPrefix`            | `alongside` \| `start`                                | `alongside`                      | `start` にすると、ベンダープレフィックス付きの宣言を各区間の先頭にアルファベット順で置く                              |
+| `styleAttribute`          | 真偽値                                                   | `false`                          | 静的な `style` 属性内の宣言も並べ替える                                                      |
 
-`stylesheet.malva` には、`printWidth`、`useTabs`、`indentWidth`、`lineBreak`、`hexCase`、`hexColorLength`、`quotes`、`trailingComma`、`formatComments`、`*.preferSingleLine` 系など malva 自身のオプションを書けます。`declarationOrder` と `declarationOrderGroupBy` は `malva` ではなく `stylesheet` 直下に書きます。未知の malva のキーはエラーになります。`quotes` の既定は annealer では `prefer-single` です（malva 自身の既定は `always-double`）。[引用符](/annealer/ja/guide/concepts/stylesheets.md#quotes)を参照してください。`--print-width`（JavaScript では `printWidth`）を使うと、プロファイルを編集せずに `printWidth` を上書きできます。
+変わるのは宣言の順序だけで、空白や引用符などの整形はフォーマッターに任せます。そのため malva の整形オプションは受け付けません。
 
 ## `classOrder`
 
@@ -127,7 +123,7 @@ classOrder: tailwind
 | `name`                | 文字列              | –       | 必須。クラス順の名前                                                                |
 | `description`         | 文字列              | –       | 人間向けの概要                                                                   |
 | `unknown`             | `start` \| `end` | `start` | どのルールにも一致しないクラスの置き場所（元の順を保つ）                                              |
-| `removeDuplicates`    | 真偽値              | `false` | 重複したクラスを、最初のものを残して削除する。`--remove-duplicate-classes` で上書きできる               |
+| `removeDuplicates`    | 真偽値              | `false` | 重複したクラスを、最初のものを残して削除する                                                    |
 | `important`           | 文字列              | –       | 照合の前にユーティリティの先頭か末尾から取り除く印（`!`）                                            |
 | `arbitraryProperties` | 真偽値              | `false` | `[property:value]` 形式のクラスを、`property` を設定するクラスとして扱う                       |
 | `variants`            | オブジェクト           | –       | `separator`（例: `:`）と `order`（バリアントのパターンを順位の低い順に）。リストの項目は同じ順位になる           |

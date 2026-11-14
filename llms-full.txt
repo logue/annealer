@@ -16,8 +16,8 @@ annealer is a formatter that reorders HTML and Vue template attributes by their 
 <a id="home" title="Home" href="/">Home</a>
 ```
 
-:::warning Alpha
-This is annealer 0.1.0-alpha.1. Formatting rules and defaults can still change between releases (the built-in Tailwind class order follows Tailwind and is the exception), and the profile format can change before it is declared stable.
+:::warning Work in progress
+annealer is under active development. The npm package is not published yet, and the profile format can still change before it is declared stable.
 :::
 
 ## Why attribute order matters
@@ -52,7 +52,7 @@ On top of that baseline, annealer adds:
 - **Same-name clustering**: the static and bound forms of one attribute stay together (`class` next to `:class`).
 - **ARIA sub-ordering**: role → name → description → property → state, following the WAI-ARIA properties/states split.
 - **Plain HTML support**, for projects without Vue templates.
-- **Stylesheet declaration order**, delegated to [malva](https://github.com/g-plane/malva).
+- **Stylesheet declaration order**, in the property orders of [malva](https://github.com/g-plane/malva).
 
 annealer is not a rival to `vue/attributes-order`. It inherits its design and extends it. For teams that replace ESLint with rslint or oxlint, it keeps this one piece of functionality alive.
 
@@ -68,19 +68,18 @@ Biome, rslint, oxlint, oxfmt and markup_fmt were evaluated. None of them reorder
 | oxfmt                               | Can't reach template markup by design.                                                                                                                                                                   |
 | markup_fmt                          | Formats Vue/Svelte/Astro templates, but has no option to reorder attributes.                                                                                                                             |
 
-CSS property order is the exception: malva already has a configurable `declarationOrder`, so annealer delegates to it. **What annealer adds is the semantic attribute grouping. Nothing else is built from zero.**
+CSS property order is the exception: malva already has a configurable `declarationOrder`, so annealer uses its orders. **What annealer adds is the semantic attribute grouping. Nothing else is built from zero.**
 
 ## Scope
 
 - Attribute reordering in HTML and in Vue 3 SFC `<template>` blocks.
 - Attribute normalization: `v-bind:` → `:`, `v-on:` → `@`, camelCase → kebab-case on component props.
-- Layout rules for multiline tags, equivalent to `vue/html-closing-bracket-newline`, `vue/max-attributes-per-line` (multiline), `vue/html-self-closing` (void elements always, the rest opt-in) and, opt-in, `vue/multiline-html-element-content-newline`.
-- Declaration order for CSS/SCSS/Sass/Less, in `<style>` blocks and in standalone files, via malva.
+- Layout rules for multiline tags, equivalent to `vue/html-closing-bracket-newline`, `vue/max-attributes-per-line` (multiline), `vue/html-self-closing` and `vue/multiline-html-element-content-newline`.
+- Declaration order for CSS/SCSS/Sass/Less, in `<style>` blocks and in standalone files, in malva's property orders. Only the order changes; formatting is left to a formatter.
 - Opt-in declaration order inside static `style` attributes.
 - [Disable directives](/annealer/guide/features/disable-directives.md) in markup and stylesheet comments.
-- Opt-in [class order](/annealer/guide/features/class-order.md) for static `class` attributes, with a built-in Tailwind order.
-- Planned: [library profiles](/annealer/guide/design/library-profiles.md) (Bootstrap and others).
-- Svelte is not part of 0.1. The profile-based design should allow adding it later without a redesign.
+- Planned: [value ordering](/annealer/guide/design/value-ordering.md) for static `class` attributes, and [library profiles](/annealer/guide/design/library-profiles.md).
+- Svelte is not part of the first release. The profile-based design should allow adding it later without a redesign.
 
 ## Non-goals
 
@@ -92,8 +91,6 @@ CSS property order is the exception: malva already has a configurable `declarati
 ## Next steps
 
 - [Getting started](/annealer/guide/start/getting-started.md): run annealer from the CLI or from JavaScript.
-- [Using with other tools](/annealer/guide/start/integration.md): configuration for Rslint/`rs fmt`, oxlint/oxfmt and Biome.
-- [Limitations](/annealer/guide/start/limitations.md): what annealer does not do yet.
 - [Attribute order](/annealer/guide/concepts/attribute-order.md): how attributes are classified and sorted.
 
 
@@ -112,18 +109,15 @@ annealer has three entry points that share the same Rust core:
 - **`annealer` (npm)**: a JavaScript API backed by WebAssembly.
 - **`annealer` (Rust crate)**: the pure `format()` function.
 
-The current release is **0.1.0-alpha.1**.
+## CLI
 
-## Installation
+Build the CLI from the repository (the npm package and crate are not published yet):
 
 ```bash
-cargo install annealer --version 0.1.0-alpha.1   # anyl CLI
-pnpm add -D annealer@0.1.0-alpha.1               # JavaScript API
+cargo install --path crates/annealer
 ```
 
-Pre-release versions are not picked up by version ranges such as `^0.1.0`, so name the version. To build the CLI from a checkout of the repository, run `cargo install --path crates/annealer`.
-
-## CLI
+Then format files:
 
 ```bash
 anyl src/App.vue                 # print the result
@@ -198,283 +192,6 @@ Two profiles are built in:
 | `vue`   | `.vue`                                     | `vue/attributes-order` tiers plus annealer's sub-ordering. |
 
 To customize, start from a built-in profile (`builtinProfile('vue')` in JavaScript, or `crates/annealer/profiles/*.yaml`) and pass your YAML with `--profile` or the `profile` option. See [Profile reference](/annealer/api/profile.md).
-
-
-
----
-url: /annealer/guide/start/integration.md
----
-
-> For AI agents: the complete documentation index is available at /annealer/llms.txt, the full documentation bundle is available at /annealer/llms-full.txt.
-
-# Using with other tools
-
-annealer only orders things: attributes, classes and declarations. It leaves line width and indentation to your formatter. This page shows how to combine it with the usual toolchains so that neither tool undoes the other.
-
-The examples were checked with:
-
-- [Prettier](https://prettier.io/) 3.9 (through `rs fmt`)
-- [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) 0.74
-- [oxlint](https://oxc.rs/docs/guide/usage/linter.html) 1.89
-- [eslint-plugin-vue](https://eslint.vuejs.org/) 10.11, with [eslint-config-prettier](https://npm.im/eslint-config-prettier) 10.1
-- [Biome](https://biomejs.dev/) 2.6
-
-## Run order
-
-Run annealer first, then the formatter:
-
-```bash
-anyl --write src/App.vue   # 1. order
-rs fmt src/App.vue         # 2. format (Prettier, oxfmt, Biome, …)
-```
-
-- None of these formatters reorders attributes or declarations, so the formatter keeps annealer's order.
-- annealer formats stylesheets with malva, and malva lays out some values differently from Prettier, oxfmt and Biome (see [Limitations](/annealer/guide/start/limitations.md#stylesheets)). When the formatter runs last, its layout wins and the result is stable: running both again changes nothing.
-- `anyl --check` on its own can fail on files the formatter has just written, because of those layout differences. To check order in CI, run the pipeline and look for changes instead:
-
-```bash
-git ls-files -z '*.vue' '*.html' '*.css' '*.scss' '*.less' | xargs -0 anyl --write
-rs fmt                  # or: oxfmt / biome format --write .
-git diff --exit-code    # fails when the order or the formatting was off
-```
-
-`anyl` doesn't walk directories or expand globs itself, so pass file paths, as `git ls-files` does above.
-
-## Settings to align
-
-annealer's built-in profiles use these values. Aligning the formatter with them keeps `<style>` blocks and stylesheets from flipping between two styles, and keeps the formatter's diff small:
-
-| What                       | annealer (built-in profiles)          | Prettier / `rs fmt`              | oxfmt                | Biome                                            |
-| -------------------------- | ------------------------------------- | -------------------------------- | -------------------- | ------------------------------------------------ |
-| CSS string quotes          | single (`quotes: prefer-single`)      | `singleQuote: true`              | `singleQuote: true`  | `css.formatter.quoteStyle: "single"`             |
-| Indentation in stylesheets | 2 spaces (malva default)              | default                          | default              | `formatter.indentStyle: "space"`                 |
-| Line width in stylesheets  | 80; `--print-width` to change         | default (80)                     | `--print-width 100`  | default (80)                                     |
-| Void elements              | `<br />` (always)                     | default                          | default              | `html.formatter.selfCloseVoidElements: "always"` |
-| Attribute sorting          | annealer                              | none                             | none                 | `useSortedAttributes` off (required)             |
-| Declaration sorting        | annealer (`declarationOrder: smacss`) | none                             | none                 | `useSortedProperties` off (required)             |
-| Tailwind class sorting     | `--class-order tailwind` (opt-in)     | no `prettier-plugin-tailwindcss` | no `sortTailwindcss` | `useTailwindSortedClasses` off                   |
-
-To use double quotes instead, change the profile rather than the formatter: copy the built-in profile (`crates/annealer/profiles/*.yaml`) and set `stylesheet.malva.quotes: prefer-double`.
-
-### No alphabetical sorting
-
-annealer exists to put attributes and declarations in an order that carries meaning: identity first, then what an element is and does, ARIA, data, and events. Alphabetical order throws that away, so any tool that sorts attributes or declarations alphabetically works against annealer, and the two keep rewriting each other's output. Turn these off:
-
-| Tool              | Setting                                                                                   |
-| ----------------- | ----------------------------------------------------------------------------------------- |
-| eslint-plugin-vue | `vue/attributes-order`: keep `alphabetical: false` (the default)                          |
-| Biome             | `assist.actions.source.useSortedAttributes` and `useSortedProperties`: `off`              |
-| Stylelint         | don't use `stylelint-order` `properties-alphabetical-order` on files that annealer orders |
-
-### Tailwind classes: pick one sorter
-
-annealer's `tailwind` class order follows Tailwind's own order, as `prettier-plugin-tailwindcss` and oxfmt's `sortTailwindcss` do. The order is the same, but:
-
-- Those formatters remove duplicate classes by default. annealer keeps them unless you pass `--remove-duplicate-classes`.
-- They can also sort classes inside `clsx()`/`cn()` calls and attributes you list (`:class`). annealer only orders static `class` attributes.
-
-Use one of them, not both. If you prefer the formatter's sorter, drop `--class-order` and, for oxfmt, set `preserveDuplicates: true` if you want annealer's behavior for duplicates.
-
-## Rslint and `rs fmt` (Rstack)
-
-Rslint lints JavaScript and TypeScript and has no Vue template rules, so nothing in it overlaps with annealer. `rs fmt` is built on Prettier, so annealer runs before it:
-
-```ts title="rstack.config.ts"
-import { define } from 'rstack';
-
-define.lint(({ js, ts }) => [
-  { ignores: ['dist/**'] },
-  js.configs.recommended,
-  ts.configs.recommendedTypeChecked
-]);
-
-define.fmt({
-  // annealer writes single-quoted CSS strings.
-  singleQuote: true
-  // Don't add `prettier-plugin-tailwindcss` when you use `anyl --class-order tailwind`.
-});
-
-define.staged({
-  // annealer first, then the formatter.
-  '*.{vue,html,css,scss,less}': ['anyl --write', 'rs fmt'],
-  '*.sass': 'anyl --write',
-  '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}': ['rs lint --fix', 'rs fmt']
-});
-```
-
-```json title="package.json"
-{
-  "scripts": {
-    "format": "git ls-files -z '*.vue' '*.html' '*.css' '*.scss' '*.less' | xargs -0 anyl --write && rs fmt"
-  }
-}
-```
-
-Keep the staged globs to the extensions annealer supports. Any other file is an error (`unsupported file type`).
-
-## eslint-plugin-vue
-
-`vue/attributes-order` (in `flat/recommended`) checks the same tiers that annealer's `vue` profile uses, so annealer's output passes it. Keep `alphabetical` at its default, `false` (see [No alphabetical sorting](#no-alphabetical-sorting)). With Prettier, add `eslint-config-prettier` last: it turns off the layout rules (`vue/html-self-closing`, `vue/max-attributes-per-line`, …), and Prettier decides the layout.
-
-```js title="eslint.config.js"
-import vue from 'eslint-plugin-vue';
-import prettier from 'eslint-config-prettier';
-
-export default [
-  ...vue.configs['flat/recommended'],
-  prettier,
-  {
-    rules: {
-      // annealer orders the "other attributes" tier by meaning.
-      'vue/attributes-order': ['warn', { alphabetical: false }]
-    }
-  }
-];
-```
-
-- **Spreads:** annealer never moves an attribute across `v-bind="object"`, because in Vue 3 the later one wins. `vue/attributes-order` still checks the order across the spread, and its `--fix` moves attributes across it (`title="t" v-bind="obj"` becomes `v-bind="obj" title="t"`, so `title` now overrides `obj.title`). On such tags, order the attributes by hand or add an `eslint-disable` comment.
-- **Not rewritten by annealer:** `vue/v-on-event-hyphenation` (`@myEvent` → `@my-event`) and `vue/v-slot-style` (`v-slot:item` → `#item`). `eslint --fix` rewrites them, and annealer leaves its result alone.
-
-Run annealer, then Prettier, then `eslint --fix`. `anyl --check` passes on the result.
-
-## oxlint and oxfmt (Oxc)
-
-oxlint's `vue` plugin only checks `<script>` code; it has no template rules such as `vue/attributes-order`. Nothing has to be turned off:
-
-```json title=".oxlintrc.json"
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc", "vue"],
-  "categories": { "correctness": "error" },
-  "ignorePatterns": ["dist/**"]
-}
-```
-
-oxfmt formats `.vue` and `.html` with its bundled Prettier and CSS/SCSS/Less natively. Its defaults differ from annealer in quotes (double) and line width (100 instead of 80). Set the quotes in oxfmt:
-
-```json title=".oxfmtrc.json"
-{
-  "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "singleQuote": true
-}
-```
-
-For the line width, change annealer rather than oxfmt: pass `--print-width 100` (JavaScript: `printWidth: 100`), so that stylesheets and `<style>` blocks wrap where oxfmt wraps them. If you set `printWidth` in `.oxfmtrc.json`, pass the same value to `--print-width`. Leave `sortTailwindcss` off when annealer orders classes, or turn it on and drop `--class-order`:
-
-```json title=".oxfmtrc.json (oxfmt sorts Tailwind classes)"
-{
-  "singleQuote": true,
-  "sortTailwindcss": {
-    "stylesheet": "./src/app.css",
-    "preserveDuplicates": true
-  }
-}
-```
-
-Then run annealer before oxfmt:
-
-```bash
-git ls-files -z '*.vue' '*.html' '*.css' '*.scss' '*.less' | xargs -0 anyl --write --print-width 100
-oxfmt
-```
-
-## Biome
-
-Biome's defaults conflict with annealer in four places: tabs, double-quoted CSS strings, `<br>` without a slash, and its own sorting actions. With HTML full support turned on (needed for `.vue` files), use:
-
-```json title="biome.json"
-{
-  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "formatter": { "indentStyle": "space", "indentWidth": 2 },
-  "css": { "formatter": { "quoteStyle": "single" } },
-  "html": {
-    "experimentalFullSupportEnabled": true,
-    "formatter": { "selfCloseVoidElements": "always" }
-  },
-  "assist": {
-    "actions": {
-      "source": {
-        "useSortedAttributes": "off",
-        "useSortedProperties": "off"
-      }
-    }
-  },
-  "linter": {
-    "rules": { "nursery": { "useTailwindSortedClasses": "off" } }
-  }
-}
-```
-
-- **Turn off `useSortedAttributes` and `useSortedProperties`.** `useSortedAttributes` sorts HTML and Vue attributes alphabetically, and `useSortedProperties` sorts CSS declarations by its own order. Both conflict with annealer's ordering by meaning and undo it on every `biome check --write` (see [No alphabetical sorting](#no-alphabetical-sorting)). They are off by default; set them to `off` explicitly as above, so that a shared config can't turn them on.
-- `useTailwindSortedClasses` is a nursery rule. Turn it off when annealer orders classes.
-- If you keep tabs, set `stylesheet.malva.useTabs: true` in your profile instead of changing `indentStyle`.
-
-Then run annealer before Biome:
-
-```bash
-git ls-files -z '*.vue' '*.html' '*.css' '*.scss' '*.less' | xargs -0 anyl --write
-biome check --write .
-```
-
-
-
----
-url: /annealer/guide/start/limitations.md
----
-
-> For AI agents: the complete documentation index is available at /annealer/llms.txt, the full documentation bundle is available at /annealer/llms-full.txt.
-
-# Limitations
-
-annealer is an alpha release (0.1.0-alpha.1). This page lists what it does not do yet, and what it doesn't do by design. Each item links to the page with the details.
-
-## Status
-
-- **Alpha.** Until 1.0, any release can change the output for the same input, except the built-in Tailwind class order, which follows Tailwind. Pin the exact version and review the diff when you upgrade.
-- **The npm package has no CLI.** It provides the JavaScript API only; install `anyl` with Cargo ([Getting started](/annealer/guide/start/getting-started.md#installation)).
-- **The profile format can still change** before it is declared stable (`schemaVersion: 1`).
-
-## Supported input
-
-- HTML, Vue 3 SFC templates, and CSS, SCSS, Sass (indented syntax) and Less. Anything else is reported as an unsupported file type.
-- **Not supported:** JSX/TSX, Svelte, Astro, Angular templates, Markdown/MDX, and Vue 2 syntax (`.sync`, `.native`). Svelte is planned for later.
-- **Pug and Stylus are not supported.** `.pug`, `.jade`, `.styl` and `.stylus` files are reported as unsupported file types without being read. A `<template>` or `<style>` with `lang="pug"`, `lang="jade"`, `lang="stylus"` or `lang="styl"` fails the whole file (`unsupported language`) instead of being skipped, so annealer never scans Pug as markup or leaves the other blocks half-formatted. Exclude such files from the paths you pass to annealer.
-- In `.vue` files, `<script>` and custom blocks (`<i18n>`) are left alone.
-
-## Markup
-
-- **No DOM.** annealer reads start tags with a lexer. It doesn't validate HTML or fix broken markup. Deprecated markup (`<center>`, `bgcolor`) is parsed but never reported or changed.
-- **No reflow.** annealer adds or removes line breaks only where a layout rule needs them. It never re-indents lines or wraps text to a line width; that is the formatter's job ([Using with other tools](/annealer/guide/start/integration.md)).
-- **Spreads are boundaries.** Attributes don't move across `v-bind="object"`, except compile-time directives (`spreadSafe` groups). A tag with a spread can therefore stay partly unordered, and `vue/attributes-order` reports it ([Attribute order](/annealer/guide/concepts/attribute-order.md), [eslint-plugin-vue](/annealer/guide/start/integration.md#eslint-plugin-vue)).
-- **Foreign content is left as written.** Inline SVG (`<svg>`), MathML (`<math>`) and namespaced XML elements such as RDF (`<rdf:RDF>`), with everything inside them, are not touched: no attribute order, class order, self-closing, `contentNewline` or `<style>` formatting. In plain HTML, `<svg>` and `<math>` match case-insensitively; in Vue templates, `<Svg>` is a component.
-- **Same-name clusters keep source order**, except for `class`, where the static form goes before the bound one. `style` and other duplicates stay as written because their order can change behavior.
-
-## Layout
-
-- **Void elements are self-closed by default** (`<br />`, `<hr />`, `<wbr />`). This differs from the default of `vue/html-self-closing` (`html.void: never`); set `html.void: always` there, or pass `--no-void-self-closing` (`void: never` in your profile).
-- **Self-closing empty elements and components (`<div />`, `<MyComp />`) and `contentNewline` are off by default.** Turn them on with `--self-closing` / `--content-newline` ([Layout](/annealer/guide/features/layout.md)). `<div />` is applied in Vue templates only, because it is an unclosed start tag in plain HTML; there, `--expand-non-void` rewrites it to `<div></div>` instead.
-- `contentNewline` adds line breaks but doesn't re-indent the content. Elements that are closed implicitly (`<li>` without `</li>`) are left alone.
-
-## Class order
-
-- **Only static `class` attributes.** Bound `:class`, `clsx()`/`cn()` calls and values with template syntax are never read.
-- **Only Tailwind is built in**, generated from Tailwind CSS 4.3 with the default theme. Your own theme values and `@utility` classes aren't known: a custom color is ordered like a theme color, and unknown classes go first ([Class order](/annealer/guide/features/class-order.md)).
-- **Duplicates are kept by default**, where `prettier-plugin-tailwindcss` and oxfmt remove them. Turn on `--remove-duplicate-classes` to remove them.
-- No Bootstrap class order yet.
-
-## Stylesheets
-
-- **Stylesheets are reformatted with malva**, not only reordered. malva's layout differs from Prettier, oxfmt and Biome in places. For example, it keeps comma-separated values (`transition`, `font-family`) on one line where they break them onto several lines. No malva option removes this difference, so `anyl --check` can fail on files a formatter has just written. Run annealer before the formatter ([Run order](/annealer/guide/start/integration.md#run-order)).
-- **CSS strings use single quotes** by default (`quotes: prefer-single`). With a formatter that writes double quotes, align one of them ([Settings to align](/annealer/guide/start/integration.md#settings-to-align)).
-- Vendor-prefixed declarations move only when `declarationOrder` is set. A run of declarations with a comment between them is left alone ([Stylesheets](/annealer/guide/concepts/stylesheets.md)).
-- Static `style` attributes are reordered only when `stylesheet.styleAttribute` is on, and not when they contain template syntax, comments or values that don't parse as plain declarations. Bound `:style` is never touched.
-
-## Profiles and the CLI
-
-- **No profile composition (`extends`).** To change one setting of a built-in profile, copy the whole profile (`crates/annealer/profiles/*.yaml` or `builtinProfile()`) and edit the copy.
-- **No configuration file.** Options such as `--profile`, `--class-order`, `--self-closing` and `--print-width` are passed on every run (put them in a `package.json` script).
-- **`anyl` takes file paths only.** It doesn't walk directories, expand globs or read ignore files. Pass the paths from your shell or from `git ls-files`.
-- No editor extension, language server or Prettier plugin. Run annealer from the CLI, a Git hook or the JavaScript API.
 
 
 
@@ -616,9 +333,11 @@ url: /annealer/guide/concepts/stylesheets.md
 
 # Stylesheets
 
-annealer doesn't implement CSS property ordering itself. It delegates to [malva](https://github.com/g-plane/malva), which already has a configurable `declarationOrder`. The `stylesheet` section of a profile controls this.
+annealer doesn't define CSS property orders itself. It uses the orders of [malva](https://github.com/g-plane/malva)'s `declarationOrder`. The `stylesheet` section of a profile controls this.
 
-Formatted inputs:
+**Only the order changes.** Declarations are moved exactly as written. Whitespace, indentation, quotes, color case, numbers, comments and blank lines are left alone: formatting is the job of a formatter such as Prettier or Oxfmt. malva is a formatter, but annealer uses it only to find out how property names sort, not to print the stylesheet.
+
+Inputs:
 
 - `<style>` blocks in HTML and Vue, including `<style lang="scss">`, `lang="less"` and `lang="sass"`.
 - Standalone `.css`, `.scss`, `.sass` (indented syntax) and `.less` files.
@@ -636,7 +355,9 @@ stylesheet:
 ```
 
 - `declarationOrder`: `smacss` (important, flow-affecting properties first), `concentric` (from outside the box model inward), or `alphabetical`.
-- `declarationOrderGroupBy`: how declarations are split into independently sorted runs: `non-declaration` (default) or `non-declaration-and-empty-line`.
+- `declarationOrderGroupBy`: how declarations are split into independently sorted runs: `non-declaration-and-empty-line` (default; a blank line also ends a run) or `non-declaration` (declarations are sorted across blank lines, which stay where they are).
+
+Declarations never move across another statement (a nested rule, `@include`, a Less mixin call, …) or a comment, so comments and the groups they label stay intact. A declaration covered by a [disable directive](/annealer/guide/features/disable-directives.md) or holding a nested block (Sass nested properties) also stays in place and ends the run.
 
 ```css
 /* Input */
@@ -662,25 +383,15 @@ Vendor-prefixed declarations (`-webkit-…`, `-moz-…`) are treated as separate
 
 Why `start` and not `end`: a prefixed property is often an alias of the standard one, and the later declaration wins. Putting prefixes last could let a dialect override the standard value (for example, `-webkit-border-radius` with two values). `start` keeps the standard property last, as Autoprefixer's output does.
 
-malva has no such option (it sorts by the unprefixed name). annealer re-parses malva's output and moves only the prefixed declarations. Runs match malva's sort units. A run with a comment between its declarations is left alone. The option applies only when `declarationOrder` is set. `alongside` (the default when not set) keeps malva's behavior.
+malva has no such option (it sorts by the unprefixed name), so annealer moves the prefixed declarations itself, within the same runs. The option applies only when `declarationOrder` is set. `alongside` (the default when not set) keeps malva's order.
 
 ## Static `style` attributes (opt-in) \{#static-style-attributes-opt-in}
 
 `stylesheet.styleAttribute: true` also orders the declarations inside static `style` attributes. It is off in both built-in profiles.
 
-- The value stays on one line.
-- CSS strings use the quote opposite to the attribute's quote. With the usual double-quoted attribute, that is the single quote annealer prefers anyway.
-- A missing trailing `;` stays missing.
+- Declarations are moved as written; spacing and a missing trailing `;` don't change.
 - Bound `:style` is never touched.
-- Values are left as written when they are unquoted, contain template syntax, comments, `{}`, `<` or `&`, or don't parse as plain declarations.
-
-## Other malva options
-
-Other malva options go under `stylesheet.malva` (for example `printWidth`, `quotes`, `hexCase`). Unknown keys are rejected, so a typo isn't silently ignored. See the [Profile reference](/annealer/api/profile.md#stylesheet).
-
-## Quotes
-
-CSS strings use single quotes (`@use 'sass:math'`, `font-family: 'Noto Sans'`), as Prettier and oxfmt write them with `singleQuote`. A string keeps double quotes where single quotes would need escaping (`"O'Brien"`). This is annealer's default (`quotes: prefer-single`); malva's own default is double quotes. Set `stylesheet.malva.quotes` to change it.
+- Values are left as written when they are unquoted, contain template syntax, `{}`, `<` or `&`, or don't parse as plain declarations.
 
 
 
@@ -694,15 +405,7 @@ url: /annealer/guide/features/layout.md
 
 Reordering attributes can break the original line layout of a tag. The `layout` section of a profile defines how tags are laid out afterwards. Each rule mirrors an eslint-plugin-vue rule, so projects that keep those rules get consistent results.
 
-Both built-in profiles turn `closingBracketNewline`, `oneAttributePerLine` and `selfClosing.void` (`<br />`, `<hr />`, `<wbr />`, …) on. Self-closing empty elements and components (`selfClosing.normal`/`component`) and `contentNewline` rewrite markup beyond what reordering needs, so the built-in profiles define them but leave them off (`enabled: false`). Turn them on when needed:
-
-| Rule             | CLI                 | JavaScript             | Profile                           |
-| ---------------- | ------------------- | ---------------------- | --------------------------------- |
-| `selfClosing`    | `--self-closing`    | `selfClosing: true`    | `selfClosing.enabled: true`       |
-| `contentNewline` | `--content-newline` | `contentNewline: true` | `contentNewline.enabled: true`    |
-| `expandNonVoid`  | `--expand-non-void` | `expandNonVoid: true`  | `selfClosing.expandNonVoid: true` |
-
-The CLI flags and JavaScript options override the profile's `enabled`. `--no-self-closing` / `--no-content-newline` (or `false`) turn a rule off in a profile that enables it.
+Both built-in profiles turn all of these rules on.
 
 ## `closingBracketNewline`
 
@@ -730,7 +433,7 @@ This is needed because reordering could otherwise put two attributes on one line
 
 ## `selfClosing`
 
-Equivalent to `vue/html-self-closing`. Set per element kind, each to `always`, `never` or `preserve`. `void` always applies; `enabled` (off in the built-in `vue` profile, see above) covers `normal` and `component` only:
+Equivalent to `vue/html-self-closing`. Set per element kind, each to `always`, `never` or `preserve`:
 
 | Kind        | Example      | Built-in `html` | Built-in `vue` |
 | ----------- | ------------ | --------------- | -------------- |
@@ -739,28 +442,8 @@ Equivalent to `vue/html-self-closing`. Set per element kind, each to `always`, `
 | `component` | `<MyComp />` | –               | `always`       |
 
 - `normal` and `component` apply in Vue templates only. In plain HTML, `<div />` is an unclosed start tag.
-- `--void-self-closing` / `--no-void-self-closing` (JavaScript: `voidSelfClosing: true` / `false`) set `void` to `always` / `never` without editing the profile.
 - Whitespace-only content counts as empty, except in `pre` and `textarea`.
 - SFC top-level blocks (`<template>`, `<script>`, `<style>`) are never touched.
-
-### `expandNonVoid`
-
-Plain HTML ignores the slash of a non-void element, so `<div />` is the same as `<div>`: the element stays open and swallows whatever follows. `expandNonVoid: true` (`--expand-non-void`, JavaScript `expandNonVoid: true`) gives such elements an end tag. Off in the built-in profiles, because it changes how browsers parse the markup.
-
-<!-- prettier-ignore -->
-
-```html
-<!-- Input -->
-<div class="spacer" /><my-icon/>
-<svg><path d="M0 0" /></svg>
-
-<!-- Output (--expand-non-void) -->
-<div class="spacer"></div><my-icon></my-icon>
-<svg><path d="M0 0" /></svg>
-```
-
-- Foreign content (`<svg>`, `<math>`, namespaced XML such as `<rdf:RDF>`) is left alone: self-closing is valid there ([Limitations](/annealer/guide/start/limitations.md)).
-- Vue templates are not affected; use `normal: never` / `component: never` there.
 
 :::warning Difference from vue/html-self-closing
 `void: always` differs from the default of `vue/html-self-closing` (`html.void: never`). If you keep that ESLint rule, set `html.void: always` there, or `void: never` in your annealer profile.
@@ -768,7 +451,7 @@ Plain HTML ignores the slash of a non-void element, so `<div />` is the same as 
 
 ## `contentNewline`
 
-Equivalent to `vue/multiline-html-element-content-newline`. Off in the built-in profiles (see above). In your own profile, omit the key or set `enabled: false` to turn the rule off; `{}` turns it on with the defaults. `--content-newline` on a profile without the key also uses the defaults.
+Equivalent to `vue/multiline-html-element-content-newline`. Omit the key to turn the rule off. `{}` turns it on with the defaults.
 
 - An element is **multiline** when its end tag starts on a later line than its start tag (the ESLint rule's definition). Its content then starts and ends with exactly one line break.
 - `allowEmptyLines: true` keeps blank lines instead of collapsing them.
@@ -786,7 +469,7 @@ Equivalent to `vue/multiline-html-element-content-newline`. Off in the built-in 
     id="x"><MyComp></MyComp></div>
 </template>
 
-<!-- Output (vue profile, --self-closing --content-newline) -->
+<!-- Output (vue profile) -->
 <template>
   <div
     id="x"
@@ -797,7 +480,7 @@ Equivalent to `vue/multiline-html-element-content-newline`. Off in the built-in 
 </template>
 ```
 
-The HTML profile defines the rule too. Whitespace at the start and end of block-level content is not rendered, and the `ignore` list covers the elements where it could be.
+The rule is also on in the HTML profile. Whitespace at the start and end of block-level content is not rendered, and the `ignore` list covers the elements where it could be.
 
 Moving content to a new line can change the indentation that a nested tag's closing bracket aligns to. annealer therefore formats the document again until it is stable (at most 4 passes, normally 2).
 
@@ -845,7 +528,7 @@ annealer doesn't run Tailwind. The order is data, generated from Tailwind CSS 4.
 Differences from running Tailwind:
 
 - **Your own theme and utilities aren't known.** A custom color (`bg-brand-500`) is ordered like a theme color, because a value that matches no other rule falls back to the color rule. A custom utility (`@utility`) is an unknown class.
-- **Duplicates are kept by default.** `eslint-plugin-tailwindcss` removes them by default (`removeDuplicates`). Removing classes is a lint concern, so the built-in profile keeps them. To remove them, pass `--remove-duplicate-classes` (JavaScript: `removeDuplicateClasses: true`) or use a class order with `removeDuplicates: true`. The option also works without a class order: the classes keep their order and only the repeats go.
+- **Duplicates are kept.** `eslint-plugin-tailwindcss` removes them by default (`removeDuplicates`). Removing classes is a lint concern, so the built-in profile keeps them. A class order with `removeDuplicates: true` removes them.
 - **Only static `class` attributes.** `:class` bindings and `clsx()`-style calls are expressions, and annealer never reads them.
 
 ## How classes are ordered
@@ -935,9 +618,7 @@ Some code must keep its exact form, for example a third-party snippet or a legac
 
 ## Implementation note (stylesheets)
 
-malva's own ignore comment (`malva-ignore`) can't be reused. It rejects the `: reason` form, and sorting still moves the ignored declaration. Instead, annealer marks covered statements with internal markers before calling malva and removes them afterwards.
-
-Sass (indented syntax) has no `;`, so the markers go on lines of their own there. malva honors its ignore comment in Sass only on its own line.
+A covered declaration keeps its position and ends the run of declarations sorted around it, so nothing moves across it. A covered rule is left exactly as written, nested blocks included. malva's own ignore comment (`malva-ignore`) is not used: it rejects the `: reason` form.
 
 
 
@@ -1068,7 +749,7 @@ url: /annealer/guide/design/decisions.md
 annealer (core)  pure function: format(input: &str, config: &Config)
                    -> Result<String, FormatError>
                  No file I/O. Builds for wasm32-unknown-unknown.
-                 Uses malva for CSS/SCSS/Sass/Less declaration order.
+                 Uses malva's property order for CSS/SCSS/Sass/Less.
 
 anyl (CLI)       File I/O and argument parsing; calls the core.
 
@@ -1079,6 +760,7 @@ annealer (npm)   WebAssembly build of the core with a TypeScript wrapper.
 - **Profiles are YAML, not code.** HTML, Vue and future profiles are data. Each profile has `schemaVersion`, because the format is as much a public API as the Rust function signature.
 - **Strict validation.** Unknown keys are rejected when the profile is parsed, so typos surface immediately. A JSON Schema (draft-07) is provided for editor support. Two rules that draft-07 can't express (exactly one fallback group, unique group names) are checked only by the loader.
 - **malva is pinned loosely** (`0.16`), in line with the library dependency policy used in other projects.
+- **Only the order changes.** annealer asks malva how property names sort and moves declarations as written; malva's printed output is not used. Whitespace, quotes and other formatting are left to a formatter such as Prettier or Oxfmt.
 - **The npm package embeds the WebAssembly binary** as base64 instead of shipping a separate `.wasm` file. The cost is about 33% more bytes before compression. In return, `format()` is synchronous and needs no bundler or loader setup.
 
 ## Decisions made during implementation
@@ -1089,9 +771,8 @@ annealer (npm)   WebAssembly build of the core with a TypeScript wrapper.
 4. **One attribute per line in multiline tags.** Otherwise reordering could put two attributes on one line. This matches the multiline default of `vue/max-attributes-per-line` and can be turned off with `layout.oneAttributePerLine`.
 5. **Vue tier 8 is split** into other directives, then other attributes, as in `vue/attributes-order` (`OTHER_DIRECTIVES` → `OTHER_ATTR`).
 6. **`void: always` differs from `vue/html-self-closing`'s default** (`html.void: never`). Projects that keep that ESLint rule need to align one side.
-7. **`contentNewline` is defined in the HTML profile too.** Whitespace at the start and end of block-level content isn't rendered, and the `ignore` list covers the elements where it could be.
+7. **`contentNewline` is on in the HTML profile too.** Whitespace at the start and end of block-level content isn't rendered, and the `ignore` list covers the elements where it could be.
 8. **Vendor-prefixed declarations go first** (`vendorPrefix: start`), so the standard property is declared last and wins. See [Stylesheets](/annealer/guide/concepts/stylesheets.md#vendor-prefixes-vendorprefix-start).
-9. **Self-closing empty elements and components, and `contentNewline`, are opt-in.** They rewrite markup beyond what reordering needs, and they conflict with setups that don't use those eslint-plugin-vue rules (Prettier, for example). The built-in profiles keep their settings with `enabled: false`; `--self-closing` / `--content-newline` or the matching JavaScript options turn them on. Void elements (`<br />`) are self-closed always, as Prettier also writes them.
 
 ## Resolved questions
 
@@ -1145,21 +826,15 @@ Formats each file and prints the result. Reads stdin when no file is given.
 
 ## Options
 
-| Option                        | Description                                                                                                                                                                                                                                                                                                                  |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-w`, `--write`               | Overwrite files in place. Can't be combined with `--check`.                                                                                                                                                                                                                                                                  |
-| `-c`, `--check`               | Print the paths of files that would change, and exit with status 1 if any would.                                                                                                                                                                                                                                             |
-| `-p`, `--profile <PROFILE>`   | A built-in profile name (`html`, `vue`) or the path to a profile YAML file. Defaults to the built-in profile for each file's language.                                                                                                                                                                                       |
-| `--class-order <CLASS_ORDER>` | Order the classes of static `class` attributes: a built-in class order name (`tailwind`) or the path to a class order YAML file. Overrides the profile's `classOrder`.                                                                                                                                                       |
-| `--remove-duplicate-classes`  | Drop repeated classes in static `class` attributes, keeping the first. Works with or without `--class-order`. By default the class order's `removeDuplicates` decides (off in `tailwind`). `--keep-duplicate-classes` keeps them.                                                                                            |
-| `--self-closing`              | Self-close empty elements and components in Vue templates (`layout.selfClosing.normal`/`component`, `vue/html-self-closing`): `<div />`, `<MyComp />`. Off in the built-in profiles. `--no-self-closing` turns it off. Void elements (`<br />`) follow `--void-self-closing`.                                                |
-| `--void-self-closing`         | Self-close void elements: `<input />`, `<meta />` (`layout.selfClosing.void: always`, the built-in profiles' setting). `--no-void-self-closing` writes `<input>`, `<meta>` (`never`).                                                                                                                                        |
-| `--expand-non-void`           | In plain HTML, give non-void elements written self-closing an end tag: `<div />` → `<div></div>` (`layout.selfClosing.expandNonVoid`). HTML ignores the slash, so `<div />` leaves the element open. Elements inside `<svg>` and `<math>` are left alone. Off in the built-in profiles. `--no-expand-non-void` turns it off. |
-| `--content-newline`           | Put the content of multiline elements on lines of its own (`vue/multiline-html-element-content-newline`). Off in the built-in profiles. `--no-content-newline` turns it off.                                                                                                                                                 |
-| `--print-width <PRINT_WIDTH>` | Line width of stylesheets and `<style>` blocks (`stylesheet.malva.printWidth`). Match your formatter: 80 for Prettier and Biome, 100 for oxfmt. Defaults to the profile's (80).                                                                                                                                              |
-| `-l`, `--language <LANGUAGE>` | Language of stdin input: `html` (default), `vue`, `css`, `scss`, `sass`, `less`.                                                                                                                                                                                                                                             |
-| `-h`, `--help`                | Show help.                                                                                                                                                                                                                                                                                                                   |
-| `-V`, `--version`             | Show the version.                                                                                                                                                                                                                                                                                                            |
+| Option                        | Description                                                                                                                                                            |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-w`, `--write`               | Overwrite files in place. Can't be combined with `--check`.                                                                                                            |
+| `-c`, `--check`               | Print the paths of files that would change, and exit with status 1 if any would.                                                                                       |
+| `-p`, `--profile <PROFILE>`   | A built-in profile name (`html`, `vue`) or the path to a profile YAML file. Defaults to the built-in profile for each file's language.                                 |
+| `--class-order <CLASS_ORDER>` | Order the classes of static `class` attributes: a built-in class order name (`tailwind`) or the path to a class order YAML file. Overrides the profile's `classOrder`. |
+| `-l`, `--language <LANGUAGE>` | Language of stdin input: `html` (default), `vue`, `css`, `scss`, `sass`, `less`.                                                                                       |
+| `-h`, `--help`                | Show help.                                                                                                                                                             |
+| `-V`, `--version`             | Show the version.                                                                                                                                                      |
 
 ## Languages
 
@@ -1171,15 +846,15 @@ The language of a file is taken from its extension:
 | `.vue`                            | `vue`      | `vue`                             |
 | `.css`, `.scss`, `.sass`, `.less` | stylesheet | `html` (its `stylesheet` section) |
 
-Other extensions, including `.pug`, `.jade`, `.styl` and `.stylus`, are reported as unsupported without the file being read. A file with a `<template>` or `<style>` in Pug or Stylus (`lang="pug"`, `"jade"`, `"stylus"`, `"styl"`) is an error too; see [Limitations](/annealer/guide/start/limitations.md#supported-input).
+Other extensions are reported as unsupported.
 
 ## Exit codes
 
-| Code | Meaning                                                                                                                                              |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `0`  | Success. With `--check`: no file would change.                                                                                                       |
-| `1`  | With `--check`: at least one file would change.                                                                                                      |
-| `2`  | Error: unreadable file, unsupported file type, invalid profile, invalid input (including Pug or Stylus blocks) or an unknown `annealer-*` directive. |
+| Code | Meaning                                                                                                             |
+| ---- | ------------------------------------------------------------------------------------------------------------------- |
+| `0`  | Success. With `--check`: no file would change.                                                                      |
+| `1`  | With `--check`: at least one file would change.                                                                     |
+| `2`  | Error: unreadable file, unsupported file type, invalid profile, invalid input or an unknown `annealer-*` directive. |
 
 When several files are given, annealer formats all of them, reports each error, and exits with `2` if any failed.
 
@@ -1191,9 +866,6 @@ anyl --write src/**/*.vue                 # format in place
 anyl --check index.html                   # use in CI
 anyl --profile my-profile.yaml page.html  # custom profile
 anyl --class-order tailwind src/**/*.vue  # order Tailwind classes
-anyl --class-order tailwind --remove-duplicate-classes src/**/*.vue  # and drop repeated ones
-anyl --print-width 100 src/**/*.vue  # wrap stylesheets at 100, like oxfmt
-anyl --self-closing --content-newline src/**/*.vue  # also apply the optional layout rules
 cat App.vue | anyl --language vue         # stdin
 ```
 
@@ -1226,14 +898,8 @@ Reorders attributes (HTML, Vue) or declarations (CSS, SCSS, Sass, Less).
 - `options.language`: the input language. Default: `'html'`.
 - `options.profile`: a built-in profile name (`'html'`, `'vue'`) or the YAML text of a profile. Default: the built-in profile for `language`.
 - `options.classOrder`: a built-in class order name (`'tailwind'`) or the YAML text of a class order. Orders the classes of static `class` attributes and overrides the profile's `classOrder`. Default: classes keep their order. See [Class order](/annealer/guide/features/class-order.md).
-- `options.removeDuplicateClasses`: `true` drops repeated classes in static `class` attributes, keeping the first, with or without `classOrder`; `false` keeps them. Default: the class order's `removeDuplicates` (off in `tailwind`, and off without a class order).
-- `options.printWidth`: line width of stylesheets and `<style>` blocks (`stylesheet.malva.printWidth`), at least 1. Match your formatter: 80 for Prettier and Biome, 100 for oxfmt. Default: the profile's (80).
-- `options.selfClosing`: `true` self-closes empty elements and components in Vue templates (`layout.selfClosing.normal`/`component`: `<div />`, `<MyComp />`); `false` turns that off. Default: the profile's setting (off in the built-in profiles). Void elements (`<br />`) follow `voidSelfClosing`.
-- `options.voidSelfClosing`: `true` self-closes void elements (`<input />`, `<meta />`; `layout.selfClosing.void: always`); `false` drops the slash (`<input>`, `<meta>`; `never`). Default: the profile's setting (`always` in the built-in profiles).
-- `options.expandNonVoid`: `true` gives non-void elements written self-closing in plain HTML an end tag (`<div />` → `<div></div>`; `layout.selfClosing.expandNonVoid`). HTML ignores the slash, so `<div />` leaves the element open. Elements inside `<svg>` and `<math>` are left alone. `false` turns it off. Default: the profile's setting (off in the built-in profiles).
-- `options.contentNewline`: `true` puts the content of multiline elements on lines of its own, with the rule's defaults when the profile has no `layout.contentNewline`; `false` turns it off. Default: the profile's setting (off in the built-in profiles). See [Layout](/annealer/guide/features/layout.md).
 
-Throws an `Error` when the input or the profile is invalid, including when the input has a `<template>` or `<style>` in Pug or Stylus (`lang="pug"`, `"jade"`, `"stylus"`, `"styl"`), which are not supported.
+Throws an `Error` when the input or the profile is invalid.
 
 ```ts
 format('<a title="Home" href="/" id="home">Home</a>');
@@ -1242,9 +908,6 @@ format('<a title="Home" href="/" id="home">Home</a>');
 format(source, { language: 'vue' });
 format(source, { language: 'html', profile: yamlText });
 format(source, { language: 'vue', classOrder: 'tailwind' });
-format(source, { classOrder: 'tailwind', removeDuplicateClasses: true });
-format(source, { language: 'vue', selfClosing: true, contentNewline: true });
-format(source, { expandNonVoid: true, voidSelfClosing: false });
 ```
 
 ## `init()`
@@ -1296,12 +959,6 @@ type FormatOptions = {
   language?: Language;
   profile?: string;
   classOrder?: string;
-  removeDuplicateClasses?: boolean;
-  printWidth?: number;
-  selfClosing?: boolean;
-  voidSelfClosing?: boolean;
-  expandNonVoid?: boolean;
-  contentNewline?: boolean;
 };
 
 type Meta = {
@@ -1387,19 +1044,16 @@ Rewrites applied before classification.
 
 See [Layout](/annealer/guide/features/layout.md) for details.
 
-| Key                              | Type                              | Default                            | Description                                                                                                                                                                        |
-| -------------------------------- | --------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `closingBracketNewline`          | boolean                           | `false`                            | Put the closing bracket of a multiline start tag on its own line.                                                                                                                  |
-| `oneAttributePerLine`            | boolean                           | `false`                            | One attribute per line in a multiline start tag.                                                                                                                                   |
-| `selfClosing.enabled`            | boolean                           | `true`                             | Whether `normal` and `component` apply (`void` and `expandNonVoid` always do). The built-in `vue` profile sets `false`; `--self-closing` and the `selfClosing` option override it. |
-| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`                         | Void elements: `<br />` or `<br>`. `--void-self-closing` and the `voidSelfClosing` option override it.                                                                             |
-| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`                         | Empty non-void elements (`<div />`). Vue templates only.                                                                                                                           |
-| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`                         | Empty components (`<MyComp />`). Vue templates only.                                                                                                                               |
-| `selfClosing.expandNonVoid`      | boolean                           | `false`                            | `<div />` → `<div></div>`. Plain HTML only; `<svg>` and `<math>` content is left alone. `--expand-non-void` and the `expandNonVoid` option override it.                            |
-| `contentNewline`                 | object                            | off                                | Put the content of a multiline element on lines of its own. `{}` turns it on with the defaults.                                                                                    |
-| `contentNewline.enabled`         | boolean                           | `true`                             | Whether the rule applies. The built-in profiles set `false`; `--content-newline` and the `contentNewline` option override it.                                                      |
-| `contentNewline.ignore`          | string\[]                         | `pre`, `textarea`, inline elements | Elements left alone, with everything inside them. Element names match case-insensitively; component names match exactly.                                                           |
-| `contentNewline.allowEmptyLines` | boolean                           | `false`                            | Keep blank lines before and after the content.                                                                                                                                     |
+| Key                              | Type                              | Default                            | Description                                                                                                              |
+| -------------------------------- | --------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `closingBracketNewline`          | boolean                           | `false`                            | Put the closing bracket of a multiline start tag on its own line.                                                        |
+| `oneAttributePerLine`            | boolean                           | `false`                            | One attribute per line in a multiline start tag.                                                                         |
+| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`                         | Void elements: `<br />` or `<br>`.                                                                                       |
+| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`                         | Empty non-void elements (`<div />`). Vue templates only.                                                                 |
+| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`                         | Empty components (`<MyComp />`). Vue templates only.                                                                     |
+| `contentNewline`                 | object                            | off                                | Put the content of a multiline element on lines of its own. `{}` turns it on with the defaults.                          |
+| `contentNewline.ignore`          | string\[]                         | `pre`, `textarea`, inline elements | Elements left alone, with everything inside them. Element names match case-insensitively; component names match exactly. |
+| `contentNewline.allowEmptyLines` | boolean                           | `false`                            | Keep blank lines before and after the content.                                                                           |
 
 ## `groups`
 
@@ -1419,15 +1073,14 @@ Patterns are matched against **normalized, lowercased keys**: `foo` for `foo`/`:
 
 See [Stylesheets](/annealer/guide/concepts/stylesheets.md) for details.
 
-| Key                       | Type                                                  | Default           | Description                                                                  |
-| ------------------------- | ----------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------- |
-| `declarationOrder`        | `smacss` \| `concentric` \| `alphabetical`            | –                 | Property order. Without it, declarations are not reordered.                  |
-| `declarationOrderGroupBy` | `non-declaration` \| `non-declaration-and-empty-line` | `non-declaration` | How declarations are split into runs that are sorted separately.             |
-| `vendorPrefix`            | `alongside` \| `start`                                | `alongside`       | `start` puts vendor-prefixed declarations first in each run, alphabetically. |
-| `styleAttribute`          | boolean                                               | `false`           | Also order declarations in static `style` attributes.                        |
-| `malva`                   | object                                                | –                 | Other [malva options](https://malva.netlify.app/config/), passed through.    |
+| Key                       | Type                                                  | Default                          | Description                                                                                                                                                           |
+| ------------------------- | ----------------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `declarationOrder`        | `smacss` \| `concentric` \| `alphabetical`            | –                                | Property order. Without it, declarations are not reordered.                                                                                                           |
+| `declarationOrderGroupBy` | `non-declaration` \| `non-declaration-and-empty-line` | `non-declaration-and-empty-line` | How declarations are split into runs that are sorted separately. By default a blank line ends a run; `non-declaration` sorts across blank lines, which stay in place. |
+| `vendorPrefix`            | `alongside` \| `start`                                | `alongside`                      | `start` puts vendor-prefixed declarations first in each run, alphabetically.                                                                                          |
+| `styleAttribute`          | boolean                                               | `false`                          | Also order declarations in static `style` attributes.                                                                                                                 |
 
-`stylesheet.malva` accepts malva's own options, such as `printWidth`, `useTabs`, `indentWidth`, `lineBreak`, `hexCase`, `hexColorLength`, `quotes`, `trailingComma`, `formatComments` and the `*.preferSingleLine` options. `declarationOrder` and `declarationOrderGroupBy` belong to `stylesheet` itself, not to `malva`. Unknown malva keys are rejected. `quotes` defaults to `prefer-single` in annealer (malva's own default is `always-double`); see [Quotes](/annealer/guide/concepts/stylesheets.md#quotes). `--print-width` (JavaScript: `printWidth`) overrides `printWidth` without editing the profile.
+Only the order of declarations changes; whitespace, quotes and other formatting are left to a formatter. malva's formatting options are therefore not accepted.
 
 ## `classOrder`
 
@@ -1447,7 +1100,7 @@ A class order profile is a YAML file of its own, passed with `--class-order` or 
 | `name`                | string              | –       | Required. Class order name.                                                                                                    |
 | `description`         | string              | –       | Human-readable summary.                                                                                                        |
 | `unknown`             | `start` \| `end`    | `start` | Where classes no rule matches go, in source order.                                                                             |
-| `removeDuplicates`    | boolean             | `false` | Drop repeated classes, keeping the first. `--remove-duplicate-classes` overrides it.                                           |
+| `removeDuplicates`    | boolean             | `false` | Drop repeated classes, keeping the first.                                                                                      |
 | `important`           | string              | –       | Marker stripped from the start or end of a utility before matching (`!`).                                                      |
 | `arbitraryProperties` | boolean             | `false` | Classes of the form `[property:value]` set `property`.                                                                         |
 | `variants`            | object              | –       | `separator` (e.g. `:`) and `order`: variant patterns by rank, lowest first. A list entry gives its patterns the same rank.     |
@@ -1465,9 +1118,9 @@ url: /annealer/playground.md
 
 > For AI agents: the complete documentation index is available at /annealer/llms.txt, the full documentation bundle is available at /annealer/llms-full.txt.
 
-# Demo
+# Playground
 
-You can test the functionality of annealer on this page. Please input your existing HTML files, Vue files, stylesheets, etc., and see what the result is.
+Experiment with annealer in the browser. Edit the input, choose a language and profile, and see the formatted output update as you type.
 
 
 
@@ -1478,7 +1131,7 @@ url: /annealer/index.md
 
 > For AI agents: the complete documentation index is available at /annealer/llms.txt, the full documentation bundle is available at /annealer/llms-full.txt.
 
-# Annealer
+# annealer
 
 Attribute order by meaning
 
@@ -1490,7 +1143,7 @@ Attribute order by meaning
 
 - [🧭 **Semantic attribute order**](/guide/concepts/attribute-order): Attributes are grouped by role (definition, state, supplementary meaning, ARIA, data, events) instead of alphabetically or as typed.
 - [🧩 **Superset of vue/attributes-order**](/guide/concepts/attribute-order): The Vue profile keeps eslint-plugin-vue's default order and adds same-name clustering, ARIA sub-ordering, plain HTML and stylesheets.
-- [🎨 **Stylesheets via malva**](/guide/concepts/stylesheets): Property order for CSS, SCSS, Sass and Less is delegated to malva, with vendor-prefixed declarations placed first.
+- [🎨 **Stylesheet declaration order**](/guide/concepts/stylesheets): Declarations in CSS, SCSS, Sass and Less are reordered in malva's property order, with vendor-prefixed declarations placed first. Only the order changes.
 - [📄 **Swappable YAML profiles**](/api/profile): Orders and layout rules are data, not code. Profiles are validated by a JSON Schema and reject unknown keys.
 - [🦀 **Rust core, CLI and WebAssembly**](/api/): A pure Rust function with no file I/O, the anyl CLI, and an npm package with a synchronous format() API.
 - [🛑 **Disable directives**](/guide/features/disable-directives): annealer-disable, annealer-enable and annealer-disable-next-line comments keep selected code exactly as written.

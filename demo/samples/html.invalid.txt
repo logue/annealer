@@ -1,0 +1,2 @@
+<img src="logo.png" alt="Logo
+<p>The attribute value above never closes</p>

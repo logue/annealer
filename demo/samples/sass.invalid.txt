@@ -1,0 +1,3 @@
+// The calc() parenthesis is never closed
+.card
+  width: calc(100% -

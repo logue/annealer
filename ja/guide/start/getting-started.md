@@ -8,18 +8,13 @@ annealer には、同じ Rust コアを使う 3 つの入口があります。
 - **`annealer`（npm）**: WebAssembly を使う JavaScript API
 - **`annealer`（Rust クレート）**: 純粋関数 `format()`
 
-現在のリリースは **0.1.0-alpha.1** です。
+## CLI
 
-## インストール \{#installation}
+リポジトリから CLI をビルドします（npm パッケージとクレートは未公開です）。
 
 ```bash
-cargo install annealer --version 0.1.0-alpha.1   # anyl CLI
-pnpm add -D annealer@0.1.0-alpha.1               # JavaScript API
+cargo install --path crates/annealer
 ```
-
-プレリリース版は `^0.1.0` のようなバージョン範囲では選ばれないため、バージョンを明示してください。リポジトリのチェックアウトから CLI をビルドする場合は `cargo install --path crates/annealer` を実行します。
-
-## CLI
 
 ファイルを整形します。
 

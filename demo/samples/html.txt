@@ -1,0 +1,2 @@
+<img onload="loaded()" data-z="1" data-a="2" width="80" src="logo.png" alt="Logo" class="logo" id="logo">
+<button aria-expanded="false" aria-controls="menu" aria-label="Menu" role="button" type="button">Menu</button>

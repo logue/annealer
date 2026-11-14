@@ -16,8 +16,8 @@ annealer は、HTML と Vue テンプレートの属性を意味に基づいて�
 <a id="home" title="Home" href="/">Home</a>
 ```
 
-:::warning アルファ版
-これは annealer 0.1.0-alpha.1 です。整形ルールと既定値はリリース間で変わる可能性があり（Tailwind に従う組み込みの Tailwind クラス順は例外です）、プロファイル形式も安定版として宣言するまでは変更される可能性があります。
+:::warning 開発中
+annealer は開発中です。npm パッケージは未公開で、プロファイル形式も安定版として宣言するまでは変更される可能性があります。
 :::
 
 ## 属性順が重要な理由
@@ -52,7 +52,7 @@ Vue.js スタイルガイドはすでに属性の優先順位を定めており�
 - **同名クラスタリング**: 同じ属性の静的形式とバインド形式をまとめます（`class` の隣に `:class`）。
 - **ARIA の細分化**: WAI-ARIA のプロパティ／ステートの区別に従い、role → 名前 → 説明 → プロパティ → ステートの順に並べます。
 - **素の HTML への対応**: Vue テンプレートを使わないプロジェクトにも使えます。
-- **スタイルシートの宣言順**: [malva](https://github.com/g-plane/malva) に委譲します。
+- **スタイルシートの宣言順**: [malva](https://github.com/g-plane/malva) のプロパティ順を使います。
 
 annealer は `vue/attributes-order` と競合するものではなく、その設計を引き継いで拡張したものです。ESLint を rslint や oxlint に置き換えるチームにとっては、この機能を引き続き使うための後継になります。
 
@@ -68,19 +68,18 @@ Biome、rslint、oxlint、oxfmt、markup_fmt を検討しましたが、Vue/HTML
 | oxfmt                             | 設計上、テンプレートのマークアップを扱えない。                                                               |
 | markup_fmt                        | Vue/Svelte/Astro のテンプレートを整形できるが、属性を並べ替えるオプションはない。                                     |
 
-CSS のプロパティ順だけは例外で、malva がすでに設定可能な `declarationOrder` を持っているため、annealer はそれに委譲します。**annealer が新たに提供するのは、意味に基づく属性のグループ化です。それ以外をゼロから作る必要はありません。**
+CSS のプロパティ順だけは例外で、malva がすでに設定可能な `declarationOrder` を持っているため、annealer はその順序を使います。**annealer が新たに提供するのは、意味に基づく属性のグループ化です。それ以外をゼロから作る必要はありません。**
 
 ## 対象範囲
 
 - HTML と Vue 3 SFC の `<template>` ブロックにおける属性の並べ替え
 - 属性名の正規化: `v-bind:` → `:`、`v-on:` → `@`、コンポーネントの props の camelCase → kebab-case
-- 複数行タグのレイアウト規則（`vue/html-closing-bracket-newline`、`vue/max-attributes-per-line`（複数行）、`vue/html-self-closing`（空要素は常時、それ以外はオプトイン）相当。オプトインで `vue/multiline-html-element-content-newline` 相当）
-- `<style>` ブロックと単体ファイルにおける CSS/SCSS/Sass/Less の宣言順（malva 経由）
+- 複数行タグのレイアウト規則（`vue/html-closing-bracket-newline`、`vue/max-attributes-per-line`（複数行）、`vue/html-self-closing`、`vue/multiline-html-element-content-newline` 相当）
+- `<style>` ブロックと単体ファイルにおける CSS/SCSS/Sass/Less の宣言順（malva のプロパティ順。変わるのは順序だけで、整形はフォーマッターに任せる）
 - 静的な `style` 属性内の宣言順（オプトイン）
 - マークアップとスタイルシートのコメントによる[無効化ディレクティブ](/annealer/ja/guide/features/disable-directives.md)
-- 静的な `class` 属性の[クラス順](/annealer/ja/guide/features/class-order.md)（オプトイン、Tailwind の順序を組み込み）
-- 予定: [ライブラリプロファイル](/annealer/ja/guide/design/library-profiles.md)（Bootstrap など）
-- Svelte は 0.1 には含めません。プロファイルベースの設計なので、後から作り直しなしで追加できる見込みです。
+- 予定: 静的な `class` 属性の[値の並べ替え](/annealer/ja/guide/design/value-ordering.md)と[ライブラリプロファイル](/annealer/ja/guide/design/library-profiles.md)
+- Svelte は最初のリリースには含めません。プロファイルベースの設計なので、後から作り直しなしで追加できる見込みです。
 
 ## 対象外
 
@@ -92,8 +91,6 @@ CSS のプロパティ順だけは例外で、malva がすでに設定可能な 
 ## 次のステップ
 
 - [使い方](/annealer/ja/guide/start/getting-started.md): CLI または JavaScript から annealer を実行します。
-- [他のツールとの併用](/annealer/ja/guide/start/integration.md): Rslint/`rs fmt`、oxlint/oxfmt、Biome の設定例です。
-- [制約事項](/annealer/ja/guide/start/limitations.md): annealer がまだ対応していないことです。
 - [属性順](/annealer/ja/guide/concepts/attribute-order.md): 属性の分類と並べ替えの仕組みです。
 
 
@@ -112,18 +109,13 @@ annealer には、同じ Rust コアを使う 3 つの入口があります。
 - **`annealer`（npm）**: WebAssembly を使う JavaScript API
 - **`annealer`（Rust クレート）**: 純粋関数 `format()`
 
-現在のリリースは **0.1.0-alpha.1** です。
+## CLI
 
-## インストール \{#installation}
+リポジトリから CLI をビルドします（npm パッケージとクレートは未公開です）。
 
 ```bash
-cargo install annealer --version 0.1.0-alpha.1   # anyl CLI
-pnpm add -D annealer@0.1.0-alpha.1               # JavaScript API
+cargo install --path crates/annealer
 ```
-
-プレリリース版は `^0.1.0` のようなバージョン範囲では選ばれないため、バージョンを明示してください。リポジトリのチェックアウトから CLI をビルドする場合は `cargo install --path crates/annealer` を実行します。
-
-## CLI
 
 ファイルを整形します。
 
@@ -200,283 +192,6 @@ format(source, { language: 'html', profile: yamlText });
 | `vue`  | `.vue`                                 | `vue/attributes-order` の階層に annealer の細分化を加えたもの |
 
 カスタマイズするときは、組み込みプロファイル（JavaScript では `builtinProfile('vue')`、または `crates/annealer/profiles/*.yaml`）をもとに YAML を書き、`--profile` または `profile` オプションで渡します。[プロファイルリファレンス](/annealer/ja/api/profile.md)を参照してください。
-
-
-
----
-url: /annealer/ja/guide/start/integration.md
----
-
-> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
-
-# 他のツールとの併用
-
-annealer が行うのは並べ替え（属性、クラス、宣言）だけで、行幅やインデントはフォーマッターに任せます。このページでは、よく使われるツールチェーンと組み合わせて、どちらのツールも相手の出力を打ち消さないようにする方法を示します。
-
-例は次のバージョンで確認しました。
-
-- [Prettier](https://prettier.io/) 3.9（`rs fmt` 経由）
-- [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) 0.74
-- [oxlint](https://oxc.rs/docs/guide/usage/linter.html) 1.89
-- [eslint-plugin-vue](https://eslint.vuejs.org/) 10.11（[eslint-config-prettier](https://npm.im/eslint-config-prettier) 10.1 と併用）
-- [Biome](https://biomejs.dev/) 2.6
-
-## 実行順 \{#run-order}
-
-annealer を先に、フォーマッターを後に実行します。
-
-```bash
-anyl --write src/App.vue   # 1. 並べ替え
-rs fmt src/App.vue         # 2. 整形（Prettier、oxfmt、Biome など）
-```
-
-- これらのフォーマッターはどれも属性や宣言を並べ替えないので、annealer の順序はそのまま残ります。
-- annealer はスタイルシートを malva で整形しますが、malva は一部の値を Prettier、oxfmt、Biome と異なるレイアウトで書きます（[制約事項](/annealer/ja/guide/start/limitations.md#stylesheets)を参照）。フォーマッターを最後に実行すればそのレイアウトが優先され、結果は安定します。もう一度両方を実行しても何も変わりません。
-- フォーマッターが書いた直後のファイルに対して `anyl --check` を単独で実行すると、このレイアウトの違いのために失敗することがあります。CI で順序を検査するときは、パイプラインを実行して差分の有無を見てください。
-
-```bash
-git ls-files -z '*.vue' '*.html' '*.css' '*.scss' '*.less' | xargs -0 anyl --write
-rs fmt                  # または: oxfmt / biome format --write .
-git diff --exit-code    # 順序か整形が崩れていれば失敗する
-```
-
-`anyl` はディレクトリをたどらず、glob も展開しません。上の `git ls-files` のように、ファイルのパスを渡してください。
-
-## 合わせておく設定 \{#settings-to-align}
-
-annealer の組み込みプロファイルは次の値を使います。フォーマッター側をこれに合わせると、`<style>` ブロックやスタイルシートが 2 つの書き方の間で行き来せず、フォーマッターによる差分も小さくなります。
-
-| 項目                 | annealer（組み込みプロファイル）                 | Prettier / `rs fmt`              | oxfmt                | Biome                                            |
-| ------------------ | ------------------------------------ | -------------------------------- | -------------------- | ------------------------------------------------ |
-| CSS の文字列の引用符       | シングル（`quotes: prefer-single`）        | `singleQuote: true`              | `singleQuote: true`  | `css.formatter.quoteStyle: "single"`             |
-| スタイルシートのインデント      | スペース 2 つ（malva の既定）                  | 既定のまま                            | 既定のまま                | `formatter.indentStyle: "space"`                 |
-| スタイルシートの行幅         | 80（`--print-width` で変更）              | 既定のまま（80）                        | `--print-width 100`  | 既定のまま（80）                                        |
-| 空要素                | `<br />`（常時）                         | 既定のまま                            | 既定のまま                | `html.formatter.selfCloseVoidElements: "always"` |
-| 属性の並べ替え            | annealer                             | なし                               | なし                   | `useSortedAttributes` を無効（必須）                    |
-| 宣言の並べ替え            | annealer（`declarationOrder: smacss`） | なし                               | なし                   | `useSortedProperties` を無効（必須）                    |
-| Tailwind のクラスの並べ替え | `--class-order tailwind`（オプトイン）      | `prettier-plugin-tailwindcss` なし | `sortTailwindcss` なし | `useTailwindSortedClasses` を無効                   |
-
-ダブルクォートを使いたい場合は、フォーマッターではなくプロファイルを変更します。組み込みプロファイル（`crates/annealer/profiles/*.yaml`）をコピーし、`stylesheet.malva.quotes: prefer-double` を指定してください。
-
-### アルファベット順に並べ替えない \{#no-alphabetical-sorting}
-
-annealer の目的は、属性や宣言を意味のある順に並べることです。識別子を先頭に、要素が何でありどう振る舞うかを表す属性、ARIA、データ属性、イベントの順に並べます。アルファベット順はその意味を捨ててしまうため、属性や宣言をアルファベット順に並べ替えるツールは annealer の考え方と相容れず、互いの出力を書き換え続けます。次の設定を無効にしてください。
-
-| ツール               | 設定                                                                           |
-| ----------------- | ---------------------------------------------------------------------------- |
-| eslint-plugin-vue | `vue/attributes-order`: `alphabetical: false`（既定）のままにする                      |
-| Biome             | `assist.actions.source.useSortedAttributes` と `useSortedProperties`: `off`   |
-| Stylelint         | annealer が並べるファイルに `stylelint-order` の `properties-alphabetical-order` を使わない |
-
-### Tailwind のクラス: 並べ替えはどれか 1 つで \{#tailwind-classes-pick-one-sorter}
-
-annealer の `tailwind` クラス順は、`prettier-plugin-tailwindcss` や oxfmt の `sortTailwindcss` と同じく Tailwind 公式の順序に従います。順序は同じですが、次の違いがあります。
-
-- これらのフォーマッターは、既定で重複したクラスを削除します。annealer は `--remove-duplicate-classes` を指定しない限り残します。
-- これらは `clsx()`/`cn()` の呼び出しや、指定した属性（`:class`）の中も並べ替えられます。annealer が並べ替えるのは静的な `class` 属性だけです。
-
-両方ではなく、どちらか一方を使ってください。フォーマッター側で並べ替える場合は `--class-order` を外します。oxfmt で重複を annealer と同じく残したい場合は `preserveDuplicates: true` を指定します。
-
-## Rslint と `rs fmt`（Rstack） \{#rslint-and-rs-fmt-rstack}
-
-Rslint は JavaScript と TypeScript を検査するリンターで、Vue テンプレートのルールはないため、annealer と重なる部分はありません。`rs fmt` は Prettier をもとにしているので、annealer をその前に実行します。
-
-```ts title="rstack.config.ts"
-import { define } from 'rstack';
-
-define.lint(({ js, ts }) => [
-  { ignores: ['dist/**'] },
-  js.configs.recommended,
-  ts.configs.recommendedTypeChecked
-]);
-
-define.fmt({
-  // annealer は CSS の文字列をシングルクォートで書く。
-  singleQuote: true
-  // `anyl --class-order tailwind` を使う場合は `prettier-plugin-tailwindcss` を追加しない。
-});
-
-define.staged({
-  // annealer が先、フォーマッターが後。
-  '*.{vue,html,css,scss,less}': ['anyl --write', 'rs fmt'],
-  '*.sass': 'anyl --write',
-  '*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}': ['rs lint --fix', 'rs fmt']
-});
-```
-
-```json title="package.json"
-{
-  "scripts": {
-    "format": "git ls-files -z '*.vue' '*.html' '*.css' '*.scss' '*.less' | xargs -0 anyl --write && rs fmt"
-  }
-}
-```
-
-staged の glob には、annealer が対応する拡張子だけを含めてください。それ以外のファイルはエラー（`unsupported file type`）になります。
-
-## eslint-plugin-vue \{#eslint-plugin-vue}
-
-`vue/attributes-order`（`flat/recommended` に含まれる）は、annealer の `vue` プロファイルと同じ階層を検査するので、annealer の出力はこのルールを満たします。`alphabetical` は既定の `false` のままにしてください（[アルファベット順に並べ替えない](#no-alphabetical-sorting)を参照）。Prettier と併用する場合は、最後に `eslint-config-prettier` を追加します。レイアウトのルール（`vue/html-self-closing`、`vue/max-attributes-per-line` など）が無効になり、レイアウトは Prettier が決めます。
-
-```js title="eslint.config.js"
-import vue from 'eslint-plugin-vue';
-import prettier from 'eslint-config-prettier';
-
-export default [
-  ...vue.configs['flat/recommended'],
-  prettier,
-  {
-    rules: {
-      // annealer は「その他の属性」の階層を意味で並べる。
-      'vue/attributes-order': ['warn', { alphabetical: false }]
-    }
-  }
-];
-```
-
-- **スプレッド:** Vue 3 では後に書いた方が優先されるため、annealer は `v-bind="object"` をまたいで属性を動かしません。`vue/attributes-order` はスプレッドをまたいだ順序も検査し、`--fix` では属性をまたいで動かします（`title="t" v-bind="obj"` が `v-bind="obj" title="t"` になり、`title` が `obj.title` を上書きするようになります）。このようなタグは手で並べ替えるか、`eslint-disable` コメントを付けてください。
-- **annealer が書き換えないもの:** `vue/v-on-event-hyphenation`（`@myEvent` → `@my-event`）と `vue/v-slot-style`（`v-slot:item` → `#item`）。`eslint --fix` が書き換え、annealer はその結果に手を加えません。
-
-annealer、Prettier、`eslint --fix` の順に実行します。その結果に対して `anyl --check` は通ります。
-
-## oxlint と oxfmt（Oxc） \{#oxlint-and-oxfmt-oxc}
-
-oxlint の `vue` プラグインが検査するのは `<script>` のコードだけで、`vue/attributes-order` のようなテンプレートのルールはありません。無効にする必要があるものはありません。
-
-```json title=".oxlintrc.json"
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc", "vue"],
-  "categories": { "correctness": "error" },
-  "ignorePatterns": ["dist/**"]
-}
-```
-
-oxfmt は `.vue` と `.html` を同梱の Prettier で、CSS/SCSS/Less をネイティブに整形します。既定値は引用符（ダブル）と行幅（80 ではなく 100）が annealer と異なります。引用符は oxfmt 側で設定します。
-
-```json title=".oxfmtrc.json"
-{
-  "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "singleQuote": true
-}
-```
-
-行幅は oxfmt ではなく annealer 側を合わせます。`--print-width 100`（JavaScript では `printWidth: 100`）を指定すると、スタイルシートと `<style>` ブロックが oxfmt と同じ位置で折り返されます。`.oxfmtrc.json` で `printWidth` を指定している場合は、同じ値を `--print-width` に渡してください。annealer がクラスを並べ替える場合は `sortTailwindcss` を無効のままにします。oxfmt に並べ替えさせる場合は、有効にして `--class-order` を外します。
-
-```json title=".oxfmtrc.json（oxfmt が Tailwind のクラスを並べ替える場合）"
-{
-  "singleQuote": true,
-  "sortTailwindcss": {
-    "stylesheet": "./src/app.css",
-    "preserveDuplicates": true
-  }
-}
-```
-
-そのうえで、annealer を oxfmt より先に実行します。
-
-```bash
-git ls-files -z '*.vue' '*.html' '*.css' '*.scss' '*.less' | xargs -0 anyl --write --print-width 100
-oxfmt
-```
-
-## Biome
-
-Biome の既定値は、4 つの点で annealer と衝突します。タブ、ダブルクォートの CSS 文字列、スラッシュのない `<br>`、そして Biome 自身の並べ替えアクションです。HTML の完全サポート（`.vue` ファイルに必要）を有効にしたうえで、次のように設定します。
-
-```json title="biome.json"
-{
-  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "formatter": { "indentStyle": "space", "indentWidth": 2 },
-  "css": { "formatter": { "quoteStyle": "single" } },
-  "html": {
-    "experimentalFullSupportEnabled": true,
-    "formatter": { "selfCloseVoidElements": "always" }
-  },
-  "assist": {
-    "actions": {
-      "source": {
-        "useSortedAttributes": "off",
-        "useSortedProperties": "off"
-      }
-    }
-  },
-  "linter": {
-    "rules": { "nursery": { "useTailwindSortedClasses": "off" } }
-  }
-}
-```
-
-- **`useSortedAttributes` と `useSortedProperties` は無効にしてください。** `useSortedAttributes` は HTML と Vue の属性をアルファベット順に、`useSortedProperties` は CSS の宣言を独自の順に並べ替えます。どちらも annealer の意味による並べ替えと衝突し、`biome check --write` のたびに annealer の順序を崩します（[アルファベット順に並べ替えない](#no-alphabetical-sorting)を参照）。既定では無効ですが、共有設定などで有効にならないよう、上のように明示的に `off` を指定します。
-- `useTailwindSortedClasses` は nursery のルールです。annealer がクラスを並べ替える場合は無効にします。
-- タブを使い続ける場合は、`indentStyle` を変える代わりに、プロファイルで `stylesheet.malva.useTabs: true` を指定してください。
-
-そのうえで、annealer を Biome より先に実行します。
-
-```bash
-git ls-files -z '*.vue' '*.html' '*.css' '*.scss' '*.less' | xargs -0 anyl --write
-biome check --write .
-```
-
-
-
----
-url: /annealer/ja/guide/start/limitations.md
----
-
-> For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
-
-# 制約事項
-
-annealer はアルファ版（0.1.0-alpha.1）です。このページでは、まだ対応していないことと、設計上行わないことをまとめます。詳しくは各項目のリンク先を参照してください。
-
-## 状況 \{#status}
-
-- **アルファ版です。** 1.0 までは、どのリリースでも同じ入力に対する出力が変わる可能性があります（Tailwind に従う組み込みの Tailwind クラス順は例外です）。バージョンを固定し、更新時は差分を確認してください。
-- **npm パッケージに CLI は含まれません。** JavaScript API のみです。`anyl` は Cargo でインストールします（[使い方](/annealer/ja/guide/start/getting-started.md#installation)）。
-- **プロファイルの形式は、安定版と宣言するまで変わる可能性があります**（`schemaVersion: 1`）。
-
-## 対応する入力 \{#supported-input}
-
-- HTML、Vue 3 SFC のテンプレート、CSS、SCSS、Sass（インデント構文）、Less。それ以外は未対応のファイル形式として報告します。
-- **未対応:** JSX/TSX、Svelte、Astro、Angular のテンプレート、Markdown/MDX、Vue 2 の構文（`.sync`、`.native`）。Svelte は今後対応する予定です。
-- **Pug と Stylus は未対応です。** `.pug`、`.jade`、`.styl`、`.stylus` のファイルは読み込まずに未対応のファイル形式として報告します。`lang="pug"`、`lang="jade"`、`lang="stylus"`、`lang="styl"` の `<template>` や `<style>` を含むファイルは、そのブロックを読み飛ばすのではなく、ファイル全体をエラー（`unsupported language`）にします。Pug をマークアップとして走査したり、他のブロックだけを整形したりしないためです。これらのファイルは annealer に渡すパスから除外してください。
-- `.vue` ファイルの `<script>` とカスタムブロック（`<i18n>`）には手を加えません。
-
-## マークアップ \{#markup}
-
-- **DOM を作りません。** 開始タグを字句解析で読むだけで、HTML の検証や壊れたマークアップの修正は行いません。非推奨のマークアップ（`<center>`、`bgcolor`）も解析はしますが、報告も変更もしません。
-- **再整形しません。** 改行を追加・削除するのは、レイアウト規則が必要とする場所だけです。行のインデントを直したり、テキストを行幅で折り返したりはしません。それはフォーマッターの役割です（[他のツールとの併用](/annealer/ja/guide/start/integration.md)）。
-- **スプレッドは境界です。** 属性は `v-bind="object"` をまたいで移動しません（コンパイル時ディレクティブの `spreadSafe` グループを除く）。そのため、スプレッドを含むタグは一部が並べ替えられないまま残ることがあり、`vue/attributes-order` はそれを報告します（[属性順](/annealer/ja/guide/concepts/attribute-order.md)、[eslint-plugin-vue](/annealer/ja/guide/start/integration.md#eslint-plugin-vue)）。
-- **外部コンテンツは書かれたとおりに残します。** インライン SVG（`<svg>`）、MathML（`<math>`）、RDF などの名前空間付き XML 要素（`<rdf:RDF>`）は、その中身も含めて手を加えません。属性順、クラス順、自己終了、`contentNewline`、`<style>` の整形のいずれも適用しません。素の HTML では `<svg>` と `<math>` を大文字小文字を区別せずに判定し、Vue テンプレートでは `<Svg>` はコンポーネントとして扱います。
-- **同名の属性のまとまりは元の順を保ちます。** 例外は `class` で、静的形式をバインド形式より前に置きます。`style` などの重複は、順序で動作が変わりうるため書かれたままにします。
-
-## レイアウト \{#layout}
-
-- **空要素は既定で自己終了にします**（`<br />`、`<hr />`、`<wbr />`）。これは `vue/html-self-closing` の既定（`html.void: never`）と異なります。そのルール側で `html.void: always` にするか、`--no-void-self-closing`（プロファイルでは `void: never`）を指定してください。
-- **空要素以外の自己終了（`<div />`、`<MyComp />`）と `contentNewline` は既定で無効です。** `--self-closing` / `--content-newline` で有効にします（[レイアウト](/annealer/ja/guide/features/layout.md)）。`<div />` は Vue テンプレートでのみ適用します。素の HTML では閉じられていない開始タグになるためです。素の HTML では代わりに `--expand-non-void` で `<div></div>` に書き換えられます。
-- `contentNewline` は改行を追加しますが、コンテンツのインデントは直しません。暗黙に閉じられる要素（`</li>` のない `<li>`）には手を加えません。
-
-## クラス順 \{#class-order}
-
-- **静的な `class` 属性だけが対象です。** バインドされた `:class`、`clsx()`/`cn()` の呼び出し、テンプレート構文を含む値は読みません。
-- **組み込みは Tailwind だけです。** Tailwind CSS 4.3 の既定のテーマから生成しています。独自のテーマの値や `@utility` のクラスは認識しません。独自の色はテーマの色と同じように並び、未知のクラスは先頭に置かれます（[クラス順](/annealer/ja/guide/features/class-order.md)）。
-- **既定では重複を残します。** `prettier-plugin-tailwindcss` と oxfmt は既定で削除します。削除するには `--remove-duplicate-classes` を指定してください。
-- Bootstrap のクラス順はまだありません。
-
-## スタイルシート \{#stylesheets}
-
-- **スタイルシートは並べ替えだけでなく、malva で整形されます。** malva のレイアウトは、ところどころ Prettier、oxfmt、Biome と異なります。たとえば、カンマ区切りの値（`transition`、`font-family`）を、それらが複数行に分けるところで 1 行のまま残します。この違いをなくす malva のオプションはないため、フォーマッターが書いた直後のファイルに `anyl --check` を実行すると失敗することがあります。annealer はフォーマッターより先に実行してください（[実行順](/annealer/ja/guide/start/integration.md#run-order)）。
-- **CSS の文字列は既定でシングルクォートです**（`quotes: prefer-single`）。ダブルクォートで書くフォーマッターと併用する場合は、どちらかに合わせてください（[合わせておく設定](/annealer/ja/guide/start/integration.md#settings-to-align)）。
-- ベンダープレフィックス付きの宣言は、`declarationOrder` を指定したときだけ移動します。宣言の間にコメントがある並びには手を加えません（[スタイルシート](/annealer/ja/guide/concepts/stylesheets.md)）。
-- 静的な `style` 属性を並べ替えるのは、`stylesheet.styleAttribute` を有効にしたときだけです。テンプレート構文やコメントを含む値、単純な宣言として解析できない値は対象外です。バインドされた `:style` には手を加えません。
-
-## プロファイルと CLI \{#profiles-and-the-cli}
-
-- **プロファイルの合成（`extends`）はできません。** 組み込みプロファイルの設定を 1 つ変えるだけでも、プロファイル全体（`crates/annealer/profiles/*.yaml` または `builtinProfile()`）をコピーして編集する必要があります。
-- **設定ファイルはありません。** `--profile`、`--class-order`、`--self-closing`、`--print-width` などのオプションは毎回指定します（`package.json` のスクリプトにまとめてください）。
-- **`anyl` はファイルのパスだけを受け取ります。** ディレクトリをたどる、glob を展開する、ignore ファイルを読む、といったことはしません。シェルや `git ls-files` からパスを渡してください。
-- エディター拡張、言語サーバー、Prettier プラグインはありません。annealer は CLI、Git フック、JavaScript API から実行してください。
 
 
 
@@ -618,9 +333,11 @@ url: /annealer/ja/guide/concepts/stylesheets.md
 
 # スタイルシート
 
-annealer は CSS プロパティの並べ替えを自前で実装せず、設定可能な `declarationOrder` をすでに持つ [malva](https://github.com/g-plane/malva) に委譲します。プロファイルの `stylesheet` セクションでこれを制御します。
+annealer は CSS プロパティの順序を自前で定義せず、[malva](https://github.com/g-plane/malva) の `declarationOrder` の順序を使います。プロファイルの `stylesheet` セクションでこれを制御します。
 
-整形の対象:
+**変わるのは順序だけです。** 宣言は書かれたとおりのまま移動します。空白・インデント・引用符・色の大文字小文字・数値・コメント・空行には手を加えません。整形は Prettier や Oxfmt などのフォーマッターの役割です。malva 自体はフォーマッターですが、annealer はプロパティ名の並び順を求めるためだけに使い、malva の出力は使いません。
+
+対象:
 
 - HTML と Vue の `<style>` ブロック（`<style lang="scss">`、`lang="less"`、`lang="sass"` を含む）
 - 単体の `.css`、`.scss`、`.sass`（インデント構文）、`.less` ファイル
@@ -638,7 +355,9 @@ stylesheet:
 ```
 
 - `declarationOrder`: `smacss`（重要でレイアウトの流れに影響するプロパティが先）、`concentric`（ボックスモデルの外側から内側へ）、`alphabetical` のいずれか
-- `declarationOrderGroupBy`: 宣言を、個別にソートする区間にどう分けるか。`non-declaration`（既定）または `non-declaration-and-empty-line`
+- `declarationOrderGroupBy`: 宣言を、個別にソートする区間にどう分けるか。`non-declaration-and-empty-line`（既定。空行でも区間を区切る）または `non-declaration`（空行をまたいでソートし、空行はその位置に残る）
+
+宣言は、他の文（ネストしたルール、`@include`、Less のミックスイン呼び出しなど）やコメントをまたいで移動しません。そのため、コメントとそれが見出しになっている宣言のまとまりは崩れません。[無効化ディレクティブ](/annealer/ja/guide/features/disable-directives.md)の対象になっている宣言や、ネストしたブロックを持つ宣言（Sass のネストしたプロパティ）もその位置に留まり、区間を区切ります。
 
 ```css
 /* 入力 */
@@ -664,25 +383,15 @@ body {
 
 `end` ではなく `start` にした理由: プレフィックス付きのプロパティは標準プロパティの別名であることが多く、後に書いた宣言が勝ちます。プレフィックス付きを最後に置くと、方言が標準の値を上書きしてしまうおそれがあります（例: 値を 2 つ取る `-webkit-border-radius`）。`start` なら Autoprefixer の出力と同じく、標準プロパティが最後になります。
 
-malva にはこのオプションがありません（プレフィックスを除いた名前でソートします）。annealer は malva の出力を再解析し、プレフィックス付きの宣言だけを移動します。区間は malva のソート単位と一致します。宣言の間にコメントがある区間には手を加えません。このオプションは `declarationOrder` を設定したときだけ有効です。`alongside`（未指定時の既定）は malva の動作のままです。
+malva にはこのオプションがありません（プレフィックスを除いた名前でソートします）。そのため annealer が同じ区間の中でプレフィックス付きの宣言を移動します。このオプションは `declarationOrder` を設定したときだけ有効です。`alongside`（未指定時の既定）は malva の順序のままです。
 
 ## 静的な `style` 属性（オプトイン） \{#static-style-attributes-opt-in}
 
 `stylesheet.styleAttribute: true` にすると、静的な `style` 属性内の宣言も並べ替えます。どちらの組み込みプロファイルでも無効です。
 
-- 値は 1 行のままです。
-- CSS の文字列には、属性の引用符と反対の引用符を使います。一般的なダブルクォートの属性なら、annealer が元々優先するシングルクォートになります。
-- 末尾の `;` がなければ、ないままにします。
+- 宣言は書かれたとおりのまま移動します。空白や末尾の `;` の有無は変わりません。
 - バインドされた `:style` には一切手を加えません。
-- 引用符がない値、テンプレート構文・コメント・`{}`・`<`・`&` を含む値、通常の宣言として解析できない値は、書かれたとおりに残します。
-
-## その他の malva オプション
-
-その他の malva オプション（`printWidth`、`quotes`、`hexCase` など）は `stylesheet.malva` に書きます。未知のキーはエラーになるため、タイプミスが黙って無視されることはありません。[プロファイルリファレンス](/annealer/ja/api/profile.md#stylesheet)を参照してください。
-
-## 引用符 \{#quotes}
-
-CSS の文字列はシングルクォートで書きます（`@use 'sass:math'`、`font-family: 'Noto Sans'`）。Prettier や oxfmt が `singleQuote` で書くのと同じです。シングルクォートにするとエスケープが必要になる文字列（`"O'Brien"`）はダブルクォートのままです。これは annealer の既定（`quotes: prefer-single`）で、malva 自身の既定はダブルクォートです。変えるには `stylesheet.malva.quotes` を指定します。
+- 引用符がない値、テンプレート構文・`{}`・`<`・`&` を含む値、通常の宣言として解析できない値は、書かれたとおりに残します。
 
 
 
@@ -696,15 +405,7 @@ url: /annealer/ja/guide/features/layout.md
 
 属性を並べ替えると、タグの元の行構成が崩れることがあります。プロファイルの `layout` セクションで、並べ替え後のタグのレイアウトを定めます。各規則は eslint-plugin-vue のルールに対応しているため、それらのルールを残しているプロジェクトでも結果が食い違いません。
 
-どちらの組み込みプロファイルでも `closingBracketNewline`、`oneAttributePerLine`、`selfClosing.void`（`<br />`、`<hr />`、`<wbr />` など）は有効です。空要素以外の自己終了（`selfClosing.normal`/`component`）と `contentNewline` は並べ替えに必要な範囲を超えてマークアップを書き換えるため、組み込みプロファイルでは設定値だけを定義し、無効（`enabled: false`）にしています。必要なときに有効にしてください。
-
-| 規則               | CLI                 | JavaScript             | プロファイル                            |
-| ---------------- | ------------------- | ---------------------- | --------------------------------- |
-| `selfClosing`    | `--self-closing`    | `selfClosing: true`    | `selfClosing.enabled: true`       |
-| `contentNewline` | `--content-newline` | `contentNewline: true` | `contentNewline.enabled: true`    |
-| `expandNonVoid`  | `--expand-non-void` | `expandNonVoid: true`  | `selfClosing.expandNonVoid: true` |
-
-CLI のフラグと JavaScript のオプションは、プロファイルの `enabled` より優先されます。`--no-self-closing` / `--no-content-newline`（または `false`）で、規則を有効にしているプロファイルでも無効にできます。
+どちらの組み込みプロファイルでも、以下の規則はすべて有効です。
 
 ## `closingBracketNewline`
 
@@ -732,7 +433,7 @@ CLI のフラグと JavaScript のオプションは、プロファイルの `en
 
 ## `selfClosing`
 
-`vue/html-self-closing` 相当です。要素の種類ごとに `always`、`never`、`preserve` のいずれかを指定します。`void` は常に適用し、`enabled`（組み込み `vue` プロファイルでは無効、上記参照）は `normal` と `component` だけを切り替えます。
+`vue/html-self-closing` 相当です。要素の種類ごとに `always`、`never`、`preserve` のいずれかを指定します。
 
 | 種類          | 例            | 組み込み `html` | 組み込み `vue` |
 | ----------- | ------------ | ----------- | ---------- |
@@ -741,28 +442,8 @@ CLI のフラグと JavaScript のオプションは、プロファイルの `en
 | `component` | `<MyComp />` | –           | `always`   |
 
 - `normal` と `component` は Vue テンプレートでのみ適用します。素の HTML では `<div />` は閉じられていない開始タグになるためです。
-- `--void-self-closing` / `--no-void-self-closing`（JavaScript では `voidSelfClosing: true` / `false`）で、プロファイルを編集せずに `void` を `always` / `never` にできます。
 - 空白だけのコンテンツは空とみなします。ただし `pre` と `textarea` は除きます。
 - SFC のトップレベルブロック（`<template>`、`<script>`、`<style>`）には手を加えません。
-
-### `expandNonVoid`
-
-素の HTML は空要素以外の要素のスラッシュを無視するため、`<div />` は `<div>` と同じ意味になります。要素は閉じられず、後に続く内容を取り込みます。`expandNonVoid: true`（`--expand-non-void`、JavaScript では `expandNonVoid: true`）で、こうした要素に終了タグを付けます。ブラウザーの解釈が変わるため、組み込みプロファイルでは無効です。
-
-<!-- prettier-ignore -->
-
-```html
-<!-- 入力 -->
-<div class="spacer" /><my-icon/>
-<svg><path d="M0 0" /></svg>
-
-<!-- 出力（--expand-non-void） -->
-<div class="spacer"></div><my-icon></my-icon>
-<svg><path d="M0 0" /></svg>
-```
-
-- 外部コンテンツ（`<svg>`、`<math>`、`<rdf:RDF>` などの名前空間付き XML）には手を加えません。そこでは自己終了が有効なためです（[制限事項](/annealer/ja/guide/start/limitations.md)）。
-- Vue テンプレートには影響しません。Vue では `normal: never` / `component: never` を使ってください。
 
 :::warning vue/html-self-closing との違い
 `void: always` は `vue/html-self-closing` の既定（`html.void: never`）と異なります。その ESLint ルールを残す場合は、そちらで `html.void: always` にするか、annealer のプロファイルで `void: never` にしてください。
@@ -770,7 +451,7 @@ CLI のフラグと JavaScript のオプションは、プロファイルの `en
 
 ## `contentNewline`
 
-`vue/multiline-html-element-content-newline` 相当です。組み込みプロファイルでは無効です（上記参照）。独自のプロファイルでは、キーを省略するか `enabled: false` にすると無効、`{}` を指定すると既定値で有効になります。キーのないプロファイルに `--content-newline` を指定した場合も既定値が使われます。
+`vue/multiline-html-element-content-newline` 相当です。キーを省略すると無効、`{}` を指定すると既定値で有効になります。
 
 - 終了タグが開始タグより後の行で始まる要素を**複数行**の要素とみなします（ESLint ルールの定義と同じ）。その要素のコンテンツは、ちょうど 1 つの改行で始まり、1 つの改行で終わるようにします。
 - `allowEmptyLines: true` にすると、空行をまとめずに残します。
@@ -788,7 +469,7 @@ CLI のフラグと JavaScript のオプションは、プロファイルの `en
     id="x"><MyComp></MyComp></div>
 </template>
 
-<!-- 出力（vue プロファイル、--self-closing --content-newline） -->
+<!-- 出力（vue プロファイル） -->
 <template>
   <div
     id="x"
@@ -799,7 +480,7 @@ CLI のフラグと JavaScript のオプションは、プロファイルの `en
 </template>
 ```
 
-この規則は HTML プロファイルにも定義しています。ブロックレベルのコンテンツの先頭と末尾の空白は表示されず、表示されうる要素は `ignore` リストで除外しているためです。
+この規則は HTML プロファイルでも有効です。ブロックレベルのコンテンツの先頭と末尾の空白は表示されず、表示されうる要素は `ignore` リストで除外しているためです。
 
 コンテンツを新しい行に移すと、入れ子のタグの閉じ括弧がそろえるインデントが変わることがあります。そのため annealer は、結果が安定するまで文書を繰り返し整形します（最大 4 回、通常は 2 回）。
 
@@ -847,7 +528,7 @@ annealer は Tailwind を実行しません。並び順はデータで、`script
 Tailwind を実行する場合との違い:
 
 - **プロジェクト独自のテーマやユーティリティは認識しません。** 独自の色（`bg-brand-500`）はテーマの色と同じように並びます。他のどのルールにも一致しない値は、色のルールに当てはまるためです。独自のユーティリティ（`@utility`）は未知のクラスになります。
-- **既定では重複を残します。** `eslint-plugin-tailwindcss` は既定で重複を削除します（`removeDuplicates`）。クラスの削除はリンターの役割なので、組み込みプロファイルでは残します。削除するには `--remove-duplicate-classes`（JavaScript では `removeDuplicateClasses: true`）を指定するか、`removeDuplicates: true` のクラス順を使います。このオプションはクラス順なしでも使えます。その場合、クラスは元の順のまま、重複だけが削除されます。
+- **重複は残します。** `eslint-plugin-tailwindcss` は既定で重複を削除します（`removeDuplicates`）。クラスの削除はリンターの役割なので、組み込みプロファイルでは残します。`removeDuplicates: true` のクラス順なら削除します。
 - **静的な `class` 属性のみ。** `:class` のバインドや `clsx()` のような呼び出しは式なので、annealer は読みません。
 
 ## 並び順の決まり方
@@ -937,9 +618,7 @@ url: /annealer/ja/guide/features/disable-directives.md
 
 ## 実装メモ（スタイルシート）
 
-malva 独自の無視コメント（`malva-ignore`）は流用できません。`: 理由` の形式を受け付けず、ソートでは無視したはずの宣言も移動してしまうためです。代わりに annealer は、malva を呼ぶ前に対象の文を内部マーカーで印付けし、後でマーカーを取り除きます。
-
-Sass（インデント構文）には `;` がないため、マーカーは独立した行に置きます。malva は Sass では、独立した行にある無視コメントしか認識しないためです。
+対象の宣言はその位置に留まり、前後でソートされる宣言の区間を区切るため、それをまたいで移動するものはありません。対象のルールは、ネストしたブロックも含めて書かれたとおりに残します。malva 独自の無視コメント（`malva-ignore`）は `: 理由` の形式を受け付けないため使いません。
 
 
 
@@ -1070,7 +749,7 @@ url: /annealer/ja/guide/design/decisions.md
 annealer（コア）  純粋関数: format(input: &str, config: &Config)
                     -> Result<String, FormatError>
                   ファイル I/O なし。wasm32-unknown-unknown 向けにビルド可能。
-                  CSS/SCSS/Sass/Less の宣言順には malva を使用。
+                  CSS/SCSS/Sass/Less の宣言順には malva のプロパティ順を使用。
 
 anyl（CLI）       ファイル I/O と引数解析を担当し、コアを呼び出す。
 
@@ -1081,6 +760,7 @@ annealer（npm）   コアの WebAssembly ビルドと TypeScript ラッパー�
 - **プロファイルはコードではなく YAML。** HTML、Vue、今後のプロファイルはすべてデータです。プロファイル形式は Rust の関数シグネチャと同じく公開 API なので、各プロファイルに `schemaVersion` を持たせます。
 - **厳格な検証。** 未知のキーはプロファイルの解析時にエラーになり、タイプミスにすぐ気付けます。エディター支援のために JSON Schema（draft-07）を用意しています。draft-07 で表現できない 2 つの規則（フォールバックグループがちょうど 1 つ、グループ名が一意）はローダーでのみ検査します。
 - **malva のバージョン指定は緩く**（`0.16`）。他のプロジェクトで採っているライブラリ依存の方針に合わせています。
+- **変わるのは順序だけ。** annealer は malva にプロパティ名の並び順を問い合わせ、宣言を書かれたとおりのまま移動します。malva が出力したテキストは使いません。空白や引用符などの整形は Prettier や Oxfmt などのフォーマッターに任せます。
 - **npm パッケージは WebAssembly バイナリを埋め込みます。** 別の `.wasm` ファイルを同梱せず、base64 で埋め込みます。圧縮前のサイズが約 33% 増える代わりに、`format()` が同期関数になり、バンドラーやローダーの設定も不要になります。
 
 ## 実装中の判断
@@ -1091,9 +771,8 @@ annealer（npm）   コアの WebAssembly ビルドと TypeScript ラッパー�
 4. **複数行のタグでは 1 行に 1 属性。** そうしないと、並べ替えで 1 行に 2 つの属性が並ぶことがあります。`vue/max-attributes-per-line` の複数行時の既定と同じで、`layout.oneAttributePerLine` で無効にできます。
 5. **Vue の階層 8 を分割。** `vue/attributes-order` と同じく、その他のディレクティブ → その他の属性 の順にします（`OTHER_DIRECTIVES` → `OTHER_ATTR`）。
 6. **`void: always` は `vue/html-self-closing` の既定（`html.void: never`）と異なります。** その ESLint ルールを残すプロジェクトでは、どちらかに合わせる必要があります。
-7. **`contentNewline` は HTML プロファイルにも定義。** ブロックレベルのコンテンツの先頭と末尾の空白は表示されず、表示されうる要素は `ignore` リストで除外しています。
+7. **`contentNewline` は HTML プロファイルでも有効。** ブロックレベルのコンテンツの先頭と末尾の空白は表示されず、表示されうる要素は `ignore` リストで除外しています。
 8. **ベンダープレフィックス付きの宣言は先頭に置く**（`vendorPrefix: start`）。標準プロパティが最後に宣言され、優先されるようにするためです。[スタイルシート](/annealer/ja/guide/concepts/stylesheets.md#vendor-prefixes-vendorprefix-start)を参照してください。
-9. **空要素以外の自己終了と `contentNewline` はオプトイン。** 並べ替えに必要な範囲を超えてマークアップを書き換え、それらの eslint-plugin-vue ルールを使わない構成（Prettier など）と衝突するためです。組み込みプロファイルは設定値を `enabled: false` で保持し、`--self-closing` / `--content-newline` または対応する JavaScript オプションで有効にします。空要素（`<br />`）は Prettier と同じく常に自己終了にします。
 
 ## 解決済みの論点
 
@@ -1147,21 +826,15 @@ anyl [OPTIONS] [FILES]...
 
 ## オプション
 
-| オプション                         | 説明                                                                                                                                                                                                                               |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-w`, `--write`               | ファイルをその場で上書きします。`--check` とは併用できません。                                                                                                                                                                                             |
-| `-c`, `--check`               | 変更が必要なファイルのパスを出力し、1 つでもあれば終了コード 1 で終了します。                                                                                                                                                                                        |
-| `-p`, `--profile <PROFILE>`   | 組み込みプロファイル名（`html`、`vue`）またはプロファイル YAML ファイルのパス。既定は各ファイルの言語に対応する組み込みプロファイルです。                                                                                                                                                    |
-| `--class-order <CLASS_ORDER>` | 静的な `class` 属性のクラスを並べ替えます。組み込みのクラス順の名前（`tailwind`）またはクラス順 YAML ファイルのパス。プロファイルの `classOrder` より優先されます。                                                                                                                            |
-| `--remove-duplicate-classes`  | 静的な `class` 属性で重複したクラスを、最初のものを残して削除します。`--class-order` の有無にかかわらず使えます。既定ではクラス順の `removeDuplicates` に従います（`tailwind` では無効）。`--keep-duplicate-classes` で残します。                                                                       |
-| `--self-closing`              | Vue テンプレートの空要素と空のコンポーネントを自己終了にします（`layout.selfClosing.normal`/`component`、`vue/html-self-closing`）: `<div />`、`<MyComp />`。組み込みプロファイルでは無効です。`--no-self-closing` で無効にします。空要素（`<br />`）は `--void-self-closing` に従います。              |
-| `--void-self-closing`         | 空要素を自己終了にします: `<input />`、`<meta />`（`layout.selfClosing.void: always`、組み込みプロファイルの設定）。`--no-void-self-closing` で `<input>`、`<meta>` にします（`never`）。                                                                               |
-| `--expand-non-void`           | 素の HTML で、自己終了で書かれた空要素以外の要素に終了タグを付けます: `<div />` → `<div></div>`（`layout.selfClosing.expandNonVoid`）。HTML はスラッシュを無視するため、`<div />` は要素が閉じられません。`<svg>` と `<math>` の中の要素には手を加えません。組み込みプロファイルでは無効です。`--no-expand-non-void` で無効にします。 |
-| `--content-newline`           | 複数行の要素のコンテンツを独立した行に置きます（`vue/multiline-html-element-content-newline`）。組み込みプロファイルでは無効です。`--no-content-newline` で無効にします。                                                                                                           |
-| `--print-width <PRINT_WIDTH>` | スタイルシートと `<style>` ブロックの行幅（`stylesheet.malva.printWidth`）。フォーマッターに合わせます。Prettier と Biome は 80、oxfmt は 100。既定はプロファイルの値（80）。                                                                                                       |
-| `-l`, `--language <LANGUAGE>` | 標準入力の言語: `html`（既定）、`vue`、`css`、`scss`、`sass`、`less`                                                                                                                                                                             |
-| `-h`, `--help`                | ヘルプを表示します。                                                                                                                                                                                                                       |
-| `-V`, `--version`             | バージョンを表示します。                                                                                                                                                                                                                     |
+| オプション                         | 説明                                                                                                    |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `-w`, `--write`               | ファイルをその場で上書きします。`--check` とは併用できません。                                                                  |
+| `-c`, `--check`               | 変更が必要なファイルのパスを出力し、1 つでもあれば終了コード 1 で終了します。                                                             |
+| `-p`, `--profile <PROFILE>`   | 組み込みプロファイル名（`html`、`vue`）またはプロファイル YAML ファイルのパス。既定は各ファイルの言語に対応する組み込みプロファイルです。                         |
+| `--class-order <CLASS_ORDER>` | 静的な `class` 属性のクラスを並べ替えます。組み込みのクラス順の名前（`tailwind`）またはクラス順 YAML ファイルのパス。プロファイルの `classOrder` より優先されます。 |
+| `-l`, `--language <LANGUAGE>` | 標準入力の言語: `html`（既定）、`vue`、`css`、`scss`、`sass`、`less`                                                  |
+| `-h`, `--help`                | ヘルプを表示します。                                                                                            |
+| `-V`, `--version`             | バージョンを表示します。                                                                                          |
 
 ## 言語
 
@@ -1173,15 +846,15 @@ anyl [OPTIONS] [FILES]...
 | `.vue`                         | `vue`   | `vue`                         |
 | `.css`、`.scss`、`.sass`、`.less` | スタイルシート | `html`（その `stylesheet` セクション） |
 
-それ以外の拡張子（`.pug`、`.jade`、`.styl`、`.stylus` を含む）は、ファイルを読み込まずに未対応として報告します。Pug や Stylus の `<template>`・`<style>`（`lang="pug"`、`"jade"`、`"stylus"`、`"styl"`）を含むファイルもエラーになります。[制約事項](/annealer/ja/guide/start/limitations.md#supported-input)を参照してください。
+それ以外の拡張子は未対応として報告します。
 
 ## 終了コード
 
-| コード | 意味                                                                                         |
-| --- | ------------------------------------------------------------------------------------------ |
-| `0` | 成功。`--check` の場合は、変更が必要なファイルがない。                                                           |
-| `1` | `--check` の場合に、変更が必要なファイルが 1 つ以上ある。                                                        |
-| `2` | エラー: ファイルを読めない、未対応のファイル形式、不正なプロファイル、不正な入力（Pug や Stylus のブロックを含む）、未知の `annealer-*` ディレクティブ。 |
+| コード | 意味                                                                  |
+| --- | ------------------------------------------------------------------- |
+| `0` | 成功。`--check` の場合は、変更が必要なファイルがない。                                    |
+| `1` | `--check` の場合に、変更が必要なファイルが 1 つ以上ある。                                 |
+| `2` | エラー: ファイルを読めない、未対応のファイル形式、不正なプロファイル、不正な入力、未知の `annealer-*` ディレクティブ。 |
 
 複数のファイルを指定した場合は、すべてを処理してエラーを個別に報告し、1 つでも失敗があれば `2` で終了します。
 
@@ -1193,9 +866,6 @@ anyl --write src/**/*.vue                 # その場で上書き
 anyl --check index.html                   # CI で使う
 anyl --profile my-profile.yaml page.html  # 独自プロファイル
 anyl --class-order tailwind src/**/*.vue  # Tailwind のクラスを並べ替える
-anyl --class-order tailwind --remove-duplicate-classes src/**/*.vue  # 重複も削除する
-anyl --print-width 100 src/**/*.vue  # oxfmt と同じく 100 で折り返す
-anyl --self-closing --content-newline src/**/*.vue  # オプションのレイアウト規則も適用する
 cat App.vue | anyl --language vue         # 標準入力
 ```
 
@@ -1228,14 +898,8 @@ function format(input: string, options?: FormatOptions): string;
 - `options.language`: 入力の言語。既定は `'html'`。
 - `options.profile`: 組み込みプロファイル名（`'html'`、`'vue'`）またはプロファイルの YAML テキスト。既定は `language` に対応する組み込みプロファイル。
 - `options.classOrder`: 組み込みのクラス順の名前（`'tailwind'`）またはクラス順の YAML テキスト。静的な `class` 属性のクラスを並べ替え、プロファイルの `classOrder` より優先されます。既定ではクラスは元の順のままです。[クラス順](/annealer/ja/guide/features/class-order.md)を参照してください。
-- `options.removeDuplicateClasses`: `true` で静的な `class` 属性の重複したクラスを、最初のものを残して削除します。`classOrder` の有無にかかわらず使えます。`false` で残します。既定はクラス順の `removeDuplicates`（`tailwind` では無効、クラス順がなければ無効）。
-- `options.printWidth`: スタイルシートと `<style>` ブロックの行幅（`stylesheet.malva.printWidth`、1 以上）。フォーマッターに合わせます。Prettier と Biome は 80、oxfmt は 100。既定はプロファイルの値（80）。
-- `options.selfClosing`: `true` で Vue テンプレートの空要素と空のコンポーネントを自己終了にし（`layout.selfClosing.normal`/`component`: `<div />`、`<MyComp />`）、`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。空要素（`<br />`）は `voidSelfClosing` に従います。
-- `options.voidSelfClosing`: `true` で空要素を自己終了にし（`<input />`、`<meta />`。`layout.selfClosing.void: always`）、`false` でスラッシュを外します（`<input>`、`<meta>`。`never`）。既定はプロファイルの設定（組み込みプロファイルでは `always`）。
-- `options.expandNonVoid`: `true` で、素の HTML で自己終了で書かれた空要素以外の要素に終了タグを付けます（`<div />` → `<div></div>`。`layout.selfClosing.expandNonVoid`）。HTML はスラッシュを無視するため、`<div />` は要素が閉じられません。`<svg>` と `<math>` の中の要素には手を加えません。`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。
-- `options.contentNewline`: `true` で複数行の要素のコンテンツを独立した行に置きます。プロファイルに `layout.contentNewline` がなければ規則の既定値を使います。`false` で無効にします。既定はプロファイルの設定（組み込みプロファイルでは無効）。[レイアウト](/annealer/ja/guide/features/layout.md)を参照してください。
 
-入力やプロファイルが不正な場合は `Error` を投げます。未対応の Pug や Stylus の `<template>`・`<style>`（`lang="pug"`、`"jade"`、`"stylus"`、`"styl"`）を含む入力もエラーになります。
+入力やプロファイルが不正な場合は `Error` を投げます。
 
 ```ts
 format('<a title="Home" href="/" id="home">Home</a>');
@@ -1244,9 +908,6 @@ format('<a title="Home" href="/" id="home">Home</a>');
 format(source, { language: 'vue' });
 format(source, { language: 'html', profile: yamlText });
 format(source, { language: 'vue', classOrder: 'tailwind' });
-format(source, { classOrder: 'tailwind', removeDuplicateClasses: true });
-format(source, { language: 'vue', selfClosing: true, contentNewline: true });
-format(source, { expandNonVoid: true, voidSelfClosing: false });
 ```
 
 ## `init()`
@@ -1298,12 +959,6 @@ type FormatOptions = {
   language?: Language;
   profile?: string;
   classOrder?: string;
-  removeDuplicateClasses?: boolean;
-  printWidth?: number;
-  selfClosing?: boolean;
-  voidSelfClosing?: boolean;
-  expandNonVoid?: boolean;
-  contentNewline?: boolean;
 };
 
 type Meta = {
@@ -1389,19 +1044,16 @@ JSON Schema（draft-07）は `crates/annealer/schema/profile.schema.json` にあ
 
 詳しくは[レイアウト](/annealer/ja/guide/features/layout.md)を参照してください。
 
-| キー                               | 型                                 | 既定                       | 説明                                                                                                                                 |
-| -------------------------------- | --------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `closingBracketNewline`          | 真偽値                               | `false`                  | 複数行の開始タグの閉じ括弧を独立した行に置く                                                                                                             |
-| `oneAttributePerLine`            | 真偽値                               | `false`                  | 複数行の開始タグで 1 行に 1 属性                                                                                                                |
-| `selfClosing.enabled`            | 真偽値                               | `true`                   | `normal` と `component` を適用するか（`void` と `expandNonVoid` は常に適用）。組み込み `vue` プロファイルは `false`。`--self-closing` と `selfClosing` オプションが優先 |
-| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`               | 空要素: `<br />` または `<br>`。`--void-self-closing` と `voidSelfClosing` オプションが優先                                                        |
-| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`               | 空の非空要素（`<div />`）。Vue テンプレートのみ                                                                                                     |
-| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`               | 空のコンポーネント（`<MyComp />`）。Vue テンプレートのみ                                                                                               |
-| `selfClosing.expandNonVoid`      | 真偽値                               | `false`                  | `<div />` → `<div></div>`。素の HTML のみ。`<svg>` と `<math>` の中には手を加えない。`--expand-non-void` と `expandNonVoid` オプションが優先                  |
-| `contentNewline`                 | オブジェクト                            | 無効                       | 複数行の要素のコンテンツを独立した行に置く。`{}` で既定値のまま有効                                                                                               |
-| `contentNewline.enabled`         | 真偽値                               | `true`                   | 規則を適用するか。組み込みプロファイルは `false`。`--content-newline` と `contentNewline` オプションが優先                                                       |
-| `contentNewline.ignore`          | 文字列の配列                            | `pre`、`textarea`、インライン要素 | 中身も含めて手を加えない要素。要素名は大文字小文字を区別せず、コンポーネント名は完全一致                                                                                       |
-| `contentNewline.allowEmptyLines` | 真偽値                               | `false`                  | コンテンツの前後の空行を残す                                                                                                                     |
+| キー                               | 型                                 | 既定                       | 説明                                           |
+| -------------------------------- | --------------------------------- | ------------------------ | -------------------------------------------- |
+| `closingBracketNewline`          | 真偽値                               | `false`                  | 複数行の開始タグの閉じ括弧を独立した行に置く                       |
+| `oneAttributePerLine`            | 真偽値                               | `false`                  | 複数行の開始タグで 1 行に 1 属性                          |
+| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`               | 空要素: `<br />` または `<br>`                     |
+| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`               | 空の非空要素（`<div />`）。Vue テンプレートのみ               |
+| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`               | 空のコンポーネント（`<MyComp />`）。Vue テンプレートのみ         |
+| `contentNewline`                 | オブジェクト                            | 無効                       | 複数行の要素のコンテンツを独立した行に置く。`{}` で既定値のまま有効         |
+| `contentNewline.ignore`          | 文字列の配列                            | `pre`、`textarea`、インライン要素 | 中身も含めて手を加えない要素。要素名は大文字小文字を区別せず、コンポーネント名は完全一致 |
+| `contentNewline.allowEmptyLines` | 真偽値                               | `false`                  | コンテンツの前後の空行を残す                               |
 
 ## `groups`
 
@@ -1421,15 +1073,14 @@ JSON Schema（draft-07）は `crates/annealer/schema/profile.schema.json` にあ
 
 詳しくは[スタイルシート](/annealer/ja/guide/concepts/stylesheets.md)を参照してください。
 
-| キー                        | 型                                                     | 既定                | 説明                                                            |
-| ------------------------- | ----------------------------------------------------- | ----------------- | ------------------------------------------------------------- |
-| `declarationOrder`        | `smacss` \| `concentric` \| `alphabetical`            | –                 | プロパティの順序。指定しなければ宣言を並べ替えません。                                   |
-| `declarationOrderGroupBy` | `non-declaration` \| `non-declaration-and-empty-line` | `non-declaration` | 宣言を、個別にソートする区間にどう分けるか                                         |
-| `vendorPrefix`            | `alongside` \| `start`                                | `alongside`       | `start` にすると、ベンダープレフィックス付きの宣言を各区間の先頭にアルファベット順で置く              |
-| `styleAttribute`          | 真偽値                                                   | `false`           | 静的な `style` 属性内の宣言も並べ替える                                      |
-| `malva`                   | オブジェクト                                                | –                 | その他の [malva のオプション](https://malva.netlify.app/config/)をそのまま渡す |
+| キー                        | 型                                                     | 既定                               | 説明                                                                            |
+| ------------------------- | ----------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------- |
+| `declarationOrder`        | `smacss` \| `concentric` \| `alphabetical`            | –                                | プロパティの順序。指定しなければ宣言を並べ替えません。                                                   |
+| `declarationOrderGroupBy` | `non-declaration` \| `non-declaration-and-empty-line` | `non-declaration-and-empty-line` | 宣言を、個別にソートする区間にどう分けるか。既定では空行で区間を区切る。`non-declaration` は空行をまたいでソートし、空行はその位置に残る |
+| `vendorPrefix`            | `alongside` \| `start`                                | `alongside`                      | `start` にすると、ベンダープレフィックス付きの宣言を各区間の先頭にアルファベット順で置く                              |
+| `styleAttribute`          | 真偽値                                                   | `false`                          | 静的な `style` 属性内の宣言も並べ替える                                                      |
 
-`stylesheet.malva` には、`printWidth`、`useTabs`、`indentWidth`、`lineBreak`、`hexCase`、`hexColorLength`、`quotes`、`trailingComma`、`formatComments`、`*.preferSingleLine` 系など malva 自身のオプションを書けます。`declarationOrder` と `declarationOrderGroupBy` は `malva` ではなく `stylesheet` 直下に書きます。未知の malva のキーはエラーになります。`quotes` の既定は annealer では `prefer-single` です（malva 自身の既定は `always-double`）。[引用符](/annealer/ja/guide/concepts/stylesheets.md#quotes)を参照してください。`--print-width`（JavaScript では `printWidth`）を使うと、プロファイルを編集せずに `printWidth` を上書きできます。
+変わるのは宣言の順序だけで、空白や引用符などの整形はフォーマッターに任せます。そのため malva の整形オプションは受け付けません。
 
 ## `classOrder`
 
@@ -1449,7 +1100,7 @@ classOrder: tailwind
 | `name`                | 文字列              | –       | 必須。クラス順の名前                                                                |
 | `description`         | 文字列              | –       | 人間向けの概要                                                                   |
 | `unknown`             | `start` \| `end` | `start` | どのルールにも一致しないクラスの置き場所（元の順を保つ）                                              |
-| `removeDuplicates`    | 真偽値              | `false` | 重複したクラスを、最初のものを残して削除する。`--remove-duplicate-classes` で上書きできる               |
+| `removeDuplicates`    | 真偽値              | `false` | 重複したクラスを、最初のものを残して削除する                                                    |
 | `important`           | 文字列              | –       | 照合の前にユーティリティの先頭か末尾から取り除く印（`!`）                                            |
 | `arbitraryProperties` | 真偽値              | `false` | `[property:value]` 形式のクラスを、`property` を設定するクラスとして扱う                       |
 | `variants`            | オブジェクト           | –       | `separator`（例: `:`）と `order`（バリアントのパターンを順位の低い順に）。リストの項目は同じ順位になる           |
@@ -1467,9 +1118,9 @@ url: /annealer/ja/playground.md
 
 > For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
 
-# デモ
+# プレイグラウンド
 
-このページでannealerの動作確認をすることができます。手持ちのHTMLファイルやVueファイル、スタイルシートなどを入力し結果がどうなるかを確認してください。
+ブラウザー上で annealer を試せます。入力を編集し、言語やプロファイルを選ぶと、整形結果がリアルタイムで更新されます。
 
 
 
@@ -1480,7 +1131,7 @@ url: /annealer/ja/index.md
 
 > For AI agents: the complete documentation index is available at /annealer/ja/llms.txt, the full documentation bundle is available at /annealer/ja/llms-full.txt.
 
-# Annealer
+# annealer
 
 属性を意味の順に
 
@@ -1492,7 +1143,7 @@ url: /annealer/ja/index.md
 
 - [🧭 **意味に基づく属性順**](/guide/concepts/attribute-order): 属性をアルファベット順や入力順ではなく、役割（定義・状態・意味の補足・ARIA・データ・イベント）でグループ化します。
 - [🧩 **vue/attributes-order の上位互換**](/guide/concepts/attribute-order): Vue プロファイルは eslint-plugin-vue の既定順を引き継ぎ、同名クラスタリング、ARIA の細分化、素の HTML、スタイルシートに対応します。
-- [🎨 **malva によるスタイルシート整形**](/guide/concepts/stylesheets): CSS・SCSS・Sass・Less のプロパティ順は malva に委譲し、ベンダープレフィックス付きの宣言は先頭に置きます。
+- [🎨 **スタイルシートの宣言順**](/guide/concepts/stylesheets): CSS・SCSS・Sass・Less の宣言を malva のプロパティ順で並べ替え、ベンダープレフィックス付きの宣言は先頭に置きます。変わるのは順序だけです。
 - [📄 **差し替え可能な YAML プロファイル**](/api/profile): 並び順やレイアウト規則はコードではなくデータです。JSON Schema で検証され、未知のキーはエラーになります。
 - [🦀 **Rust コア・CLI・WebAssembly**](/api/): ファイル I/O を持たない純粋な Rust 関数、anyl CLI、同期的な format() を備えた npm パッケージを提供します。
 - [🛑 **無効化ディレクティブ**](/guide/features/disable-directives): annealer-disable / annealer-enable / annealer-disable-next-line コメントで、指定したコードを書いたとおりに保ちます。

@@ -4,15 +4,7 @@
 
 对属性重新排序可能会破坏标签原有的行布局。配置文件的 `layout` 部分定义排序之后如何布局标签。每条规则都对应一条 eslint-plugin-vue 规则，因此保留这些规则的项目能得到一致的结果。
 
-两个内置配置文件都开启了 `closingBracketNewline`、`oneAttributePerLine` 和 `selfClosing.void`（`<br />`、`<hr />`、`<wbr />` 等）。内容为空的元素和组件的自闭合（`selfClosing.normal`/`component`）以及 `contentNewline` 对标记的改写超出了排序所需，因此内置配置文件虽然定义了它们，但默认关闭（`enabled: false`）。需要时可将其开启：
-
-| 规则               | CLI                 | JavaScript             | 配置文件                              |
-| ---------------- | ------------------- | ---------------------- | --------------------------------- |
-| `selfClosing`    | `--self-closing`    | `selfClosing: true`    | `selfClosing.enabled: true`       |
-| `contentNewline` | `--content-newline` | `contentNewline: true` | `contentNewline.enabled: true`    |
-| `expandNonVoid`  | `--expand-non-void` | `expandNonVoid: true`  | `selfClosing.expandNonVoid: true` |
-
-CLI 参数和 JavaScript 选项会覆盖配置文件中的 `enabled`。在开启了某条规则的配置文件中，`--no-self-closing` / `--no-content-newline`（或 `false`）可将其关闭。
+两个内置配置文件都开启了这些规则。
 
 ## `closingBracketNewline`
 
@@ -40,7 +32,7 @@ CLI 参数和 JavaScript 选项会覆盖配置文件中的 `enabled`。在开启
 
 ## `selfClosing`
 
-等效于 `vue/html-self-closing`。按元素种类分别设置为 `always`、`never` 或 `preserve`。`void` 始终生效；`enabled`（在内置 `vue` 配置文件中为关闭，见上文）只作用于 `normal` 和 `component`：
+等效于 `vue/html-self-closing`。按元素种类分别设置为 `always`、`never` 或 `preserve`：
 
 | 种类          | 示例           | 内置 `html` | 内置 `vue` |
 | ----------- | ------------ | --------- | -------- |
@@ -49,28 +41,8 @@ CLI 参数和 JavaScript 选项会覆盖配置文件中的 `enabled`。在开启
 | `component` | `<MyComp />` | –         | `always` |
 
 - `normal` 和 `component` 仅在 Vue 模板中生效。在纯 HTML 中，`<div />` 是一个未闭合的起始标签。
-- `--void-self-closing` / `--no-void-self-closing`（JavaScript：`voidSelfClosing: true` / `false`）可以在不修改配置文件的情况下将 `void` 设为 `always` / `never`。
 - 仅含空白的内容视为空，`pre` 和 `textarea` 除外。
 - SFC 的顶层块（`<template>`、`<script>`、`<style>`）从不处理。
-
-### `expandNonVoid`
-
-纯 HTML 会忽略非空元素的斜杠，因此 `<div />` 等同于 `<div>`：元素保持打开状态，并吞掉其后的所有内容。`expandNonVoid: true`（`--expand-non-void`，JavaScript `expandNonVoid: true`）会为这类元素补上结束标签。由于它会改变浏览器解析标记的方式，内置配置文件中默认关闭。
-
-<!-- prettier-ignore -->
-
-```html
-<!-- 输入 -->
-<div class="spacer" /><my-icon/>
-<svg><path d="M0 0" /></svg>
-
-<!-- 输出（--expand-non-void） -->
-<div class="spacer"></div><my-icon></my-icon>
-<svg><path d="M0 0" /></svg>
-```
-
-- 外部内容（`<svg>`、`<math>`、`<rdf:RDF>` 等带命名空间的 XML）保持不变：在那里自闭合是合法的（[限制](/annealer/zh/guide/start/limitations.md)）。
-- Vue 模板不受影响；在 Vue 模板中请使用 `normal: never` / `component: never`。
 
 :::warning 与 vue/html-self-closing 的差异
 `void: always` 与 `vue/html-self-closing` 的默认值（`html.void: never`）不同。如果你保留该 ESLint 规则，请在其中设置 `html.void: always`，或在 annealer 配置文件中设置 `void: never`。
@@ -78,7 +50,7 @@ CLI 参数和 JavaScript 选项会覆盖配置文件中的 `enabled`。在开启
 
 ## `contentNewline`
 
-等效于 `vue/multiline-html-element-content-newline`。在内置配置文件中为关闭（见上文）。在你自己的配置文件中，省略该键或设置 `enabled: false` 即可关闭规则；`{}` 表示以默认值开启。在没有该键的配置文件上使用 `--content-newline` 时，同样使用默认值。
+等效于 `vue/multiline-html-element-content-newline`。省略该键即可关闭规则。`{}` 表示以默认值开启。
 
 - 当元素的结束标签起始于比起始标签更靠后的行时，该元素是**多行**的（与 ESLint 规则的定义相同）。此时其内容的开头和结尾各有且仅有一个换行。
 - `allowEmptyLines: true` 会保留空行，而不是将其合并。
@@ -96,7 +68,7 @@ CLI 参数和 JavaScript 选项会覆盖配置文件中的 `enabled`。在开启
     id="x"><MyComp></MyComp></div>
 </template>
 
-<!-- 输出（vue 配置文件，--self-closing --content-newline） -->
+<!-- 输出（vue 配置文件） -->
 <template>
   <div
     id="x"
@@ -107,6 +79,6 @@ CLI 参数和 JavaScript 选项会覆盖配置文件中的 `enabled`。在开启
 </template>
 ```
 
-HTML 配置文件同样定义了这条规则。块级内容开头和结尾的空白不会被渲染，而 `ignore` 列表涵盖了可能会被渲染的元素。
+HTML 配置文件同样开启了该规则。块级内容开头和结尾的空白不会被渲染，而 `ignore` 列表涵盖了可能会显示空白的元素。
 
 将内容移到新行可能会改变嵌套标签的结束括号所对齐的缩进。因此，annealer 会反复格式化文档直到结果稳定（最多 4 轮，通常 2 轮）。

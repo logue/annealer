@@ -1,0 +1,8 @@
+<template>
+  <div class="panel">
+    <span>This span is never closed
+  </div>
+  <p title="A stray end tag follows">ok</p>
+  </section>
+  <img src="logo.png" alt="Logo" alt="Duplicate">
+</template>

@@ -67,19 +67,16 @@ JSON Schema（draft-07）位于 `crates/annealer/schema/profile.schema.json`。�
 
 详情参见[布局](/annealer/zh/guide/features/layout.md)。
 
-| 键                                | 类型                                | 默认                    | 说明                                                                                                                          |
-| -------------------------------- | --------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `closingBracketNewline`          | boolean                           | `false`               | 将多行起始标签的结束括号放在单独一行。                                                                                                         |
-| `oneAttributePerLine`            | boolean                           | `false`               | 多行起始标签中每行一个属性。                                                                                                              |
-| `selfClosing.enabled`            | boolean                           | `true`                | 是否应用 `normal` 和 `component`（`void` 和 `expandNonVoid` 始终应用）。内置 `vue` 配置文件设为 `false`；`--self-closing` 和 `selfClosing` 选项可覆盖它。 |
-| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`            | 空元素：`<br />` 或 `<br>`。`--void-self-closing` 和 `voidSelfClosing` 选项可覆盖它。                                                     |
-| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`            | 内容为空的非空元素（`<div />`）。仅限 Vue 模板。                                                                                             |
-| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`            | 内容为空的组件（`<MyComp />`）。仅限 Vue 模板。                                                                                            |
-| `selfClosing.expandNonVoid`      | boolean                           | `false`               | `<div />` → `<div></div>`。仅限纯 HTML；`<svg>` 和 `<math>` 的内容不受影响。`--expand-non-void` 和 `expandNonVoid` 选项可覆盖它。                 |
-| `contentNewline`                 | object                            | 关闭                    | 让多行元素的内容独占一行。`{}` 表示以默认值开启。                                                                                                 |
-| `contentNewline.enabled`         | boolean                           | `true`                | 是否应用该规则。内置配置文件设为 `false`；`--content-newline` 和 `contentNewline` 选项可覆盖它。                                                     |
-| `contentNewline.ignore`          | string\[]                         | `pre`、`textarea`、行内元素 | 不处理的元素（连同其内部全部内容）。元素名不区分大小写匹配；组件名精确匹配。                                                                                      |
-| `contentNewline.allowEmptyLines` | boolean                           | `false`               | 保留内容前后的空行。                                                                                                                  |
+| 键                                | 类型                                | 默认                    | 说明                                     |
+| -------------------------------- | --------------------------------- | --------------------- | -------------------------------------- |
+| `closingBracketNewline`          | boolean                           | `false`               | 将多行起始标签的结束括号放在单独一行。                    |
+| `oneAttributePerLine`            | boolean                           | `false`               | 多行起始标签中每行一个属性。                         |
+| `selfClosing.void`               | `always` \| `never` \| `preserve` | `preserve`            | 空元素：`<br />` 或 `<br>`。                 |
+| `selfClosing.normal`             | `always` \| `never` \| `preserve` | `preserve`            | 内容为空的非空元素（`<div />`）。仅限 Vue 模板。        |
+| `selfClosing.component`          | `always` \| `never` \| `preserve` | `preserve`            | 内容为空的组件（`<MyComp />`）。仅限 Vue 模板。       |
+| `contentNewline`                 | object                            | 关闭                    | 让多行元素的内容独占一行。`{}` 表示以默认值开启。            |
+| `contentNewline.ignore`          | string\[]                         | `pre`、`textarea`、行内元素 | 不处理的元素（连同其内部全部内容）。元素名不区分大小写匹配；组件名精确匹配。 |
+| `contentNewline.allowEmptyLines` | boolean                           | `false`               | 保留内容前后的空行。                             |
 
 ## `groups`
 
@@ -93,23 +90,22 @@ JSON Schema（draft-07）位于 `crates/annealer/schema/profile.schema.json`。�
 | `fallback`   | boolean                                | `false`  | 接收所有未匹配任何模式的属性。                                |
 | `spreadSafe` | boolean                                | `false`  | 此分组中的属性可以跨越 `v-bind="object"` 展开移动。仅用于编译期指令。   |
 
-模式会与**规范化并转为小写后的键**匹配：`foo`/`:foo`/`v-bind:foo` 对应 `foo`，`@click` 对应 `v-on:click`，`#name` 对应 `v-slot:name`，修饰符会被去除。精确名称优先于任何前缀，较长的前缀优先于较短的前缀。参见[属性顺序](/annealer/zh/guide/concepts/attribute-order.md)。
+模式会与**规范化并转为小写后的键**匹配：`foo` 对应 `foo`/`:foo`/`v-bind:foo`，`@click` 对应 `v-on:click`，`#name` 对应 `v-slot:name`，修饰符会被去除。精确名称优先于任何前缀，较长的前缀优先于较短的前缀。参见[属性顺序](/annealer/zh/guide/concepts/attribute-order.md)。
 
 ## `stylesheet`
 
 详情参见[样式表](/annealer/zh/guide/concepts/stylesheets.md)。
 
-| 键                         | 类型                                                    | 默认                | 说明                                                     |
-| ------------------------- | ----------------------------------------------------- | ----------------- | ------------------------------------------------------ |
-| `declarationOrder`        | `smacss` \| `concentric` \| `alphabetical`            | –                 | 属性顺序。未设置时不对声明排序。                                       |
-| `declarationOrderGroupBy` | `non-declaration` \| `non-declaration-and-empty-line` | `non-declaration` | 如何将声明划分为分别排序的连续段。                                      |
-| `vendorPrefix`            | `alongside` \| `start`                                | `alongside`       | `start` 会将带厂商前缀的声明按字母顺序放在每段的开头。                        |
-| `styleAttribute`          | boolean                                               | `false`           | 同时对静态 `style` 属性中的声明排序。                                |
-| `malva`                   | object                                                | –                 | 其他 [malva 选项](https://malva.netlify.app/config/)，原样传递。 |
+| 键                         | 类型                                                    | 默认                               | 说明                                                               |
+| ------------------------- | ----------------------------------------------------- | -------------------------------- | ---------------------------------------------------------------- |
+| `declarationOrder`        | `smacss` \| `concentric` \| `alphabetical`            | –                                | 属性顺序。未设置时不对声明排序。                                                 |
+| `declarationOrderGroupBy` | `non-declaration` \| `non-declaration-and-empty-line` | `non-declaration-and-empty-line` | 如何将声明划分为分别排序的连续段。默认情况下，空行会结束一段；`non-declaration` 会跨空行排序，但保留空行位置。 |
+| `vendorPrefix`            | `alongside` \| `start`                                | `alongside`                      | `start` 会将带厂商前缀的声明按字母顺序放在每段的开头。                                  |
+| `styleAttribute`          | boolean                                               | `false`                          | 同时对静态 `style` 属性中的声明排序。                                          |
 
-`stylesheet.malva` 接受 malva 自身的选项，例如 `printWidth`、`useTabs`、`indentWidth`、`lineBreak`、`hexCase`、`hexColorLength`、`quotes`、`trailingComma`、`formatComments` 以及各个 `*.preferSingleLine` 选项。`declarationOrder` 和 `declarationOrderGroupBy` 属于 `stylesheet` 本身，而不属于 `malva`。未知的 malva 键会被拒绝。在 annealer 中，`quotes` 默认为 `prefer-single`（malva 自身的默认值是 `always-double`）；参见[引号](/annealer/zh/guide/concepts/stylesheets.md#quotes)。`--print-width`（JavaScript：`printWidth`）可以在不修改配置文件的情况下覆盖 `printWidth`。
+只会改变声明顺序；空白、引号和其他格式交由格式化工具处理。因此不接受 malva 的格式化选项。
 
-## `classOrder`
+## `classOrder` \{#classorder}
 
 静态 `class` 属性中类的顺序（参见[类顺序](/annealer/zh/guide/features/class-order.md)）：内置类顺序名（`tailwind`），或内联书写的[类顺序配置文件](#class-order-profiles)。CLI 的 `--class-order` 和 JavaScript 的 `classOrder` 选项可覆盖它。
 
@@ -127,7 +123,7 @@ classOrder: tailwind
 | `name`                | string              | –       | 必需。类顺序名称。                                                               |
 | `description`         | string              | –       | 供人阅读的简介。                                                                |
 | `unknown`             | `start` \| `end`    | `start` | 未匹配任何规则的类放在哪里（保持源顺序）。                                                   |
-| `removeDuplicates`    | boolean             | `false` | 删除重复的类，保留第一个。`--remove-duplicate-classes` 可覆盖它。                         |
+| `removeDuplicates`    | boolean             | `false` | 删除重复的类，保留第一个。                                                           |
 | `important`           | string              | –       | 匹配前从工具类开头或结尾去除的标记（`!`）。                                                 |
 | `arbitraryProperties` | boolean             | `false` | `[property:value]` 形式的类设置 `property`。                                   |
 | `variants`            | object              | –       | `separator`（如 `:`）和 `order`：按等级排列的变体模式，等级低的在前。一个列表项中的模式具有相同等级。          |

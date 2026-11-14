@@ -1,0 +1,5 @@
+// The nested block is never closed
+.card {
+  color: #333;
+  &:hover { opacity: 0.8;
+}

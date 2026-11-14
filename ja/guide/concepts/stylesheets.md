@@ -2,9 +2,11 @@
 
 # スタイルシート
 
-annealer は CSS プロパティの並べ替えを自前で実装せず、設定可能な `declarationOrder` をすでに持つ [malva](https://github.com/g-plane/malva) に委譲します。プロファイルの `stylesheet` セクションでこれを制御します。
+annealer は CSS プロパティの順序を自前で定義せず、[malva](https://github.com/g-plane/malva) の `declarationOrder` の順序を使います。プロファイルの `stylesheet` セクションでこれを制御します。
 
-整形の対象:
+**変わるのは順序だけです。** 宣言は書かれたとおりのまま移動します。空白・インデント・引用符・色の大文字小文字・数値・コメント・空行には手を加えません。整形は Prettier や Oxfmt などのフォーマッターの役割です。malva 自体はフォーマッターですが、annealer はプロパティ名の並び順を求めるためだけに使い、malva の出力は使いません。
+
+対象:
 
 - HTML と Vue の `<style>` ブロック（`<style lang="scss">`、`lang="less"`、`lang="sass"` を含む）
 - 単体の `.css`、`.scss`、`.sass`（インデント構文）、`.less` ファイル
@@ -22,7 +24,9 @@ stylesheet:
 ```
 
 - `declarationOrder`: `smacss`（重要でレイアウトの流れに影響するプロパティが先）、`concentric`（ボックスモデルの外側から内側へ）、`alphabetical` のいずれか
-- `declarationOrderGroupBy`: 宣言を、個別にソートする区間にどう分けるか。`non-declaration`（既定）または `non-declaration-and-empty-line`
+- `declarationOrderGroupBy`: 宣言を、個別にソートする区間にどう分けるか。`non-declaration-and-empty-line`（既定。空行でも区間を区切る）または `non-declaration`（空行をまたいでソートし、空行はその位置に残る）
+
+宣言は、他の文（ネストしたルール、`@include`、Less のミックスイン呼び出しなど）やコメントをまたいで移動しません。そのため、コメントとそれが見出しになっている宣言のまとまりは崩れません。[無効化ディレクティブ](/annealer/ja/guide/features/disable-directives.md)の対象になっている宣言や、ネストしたブロックを持つ宣言（Sass のネストしたプロパティ）もその位置に留まり、区間を区切ります。
 
 ```css
 /* 入力 */
@@ -48,22 +52,12 @@ body {
 
 `end` ではなく `start` にした理由: プレフィックス付きのプロパティは標準プロパティの別名であることが多く、後に書いた宣言が勝ちます。プレフィックス付きを最後に置くと、方言が標準の値を上書きしてしまうおそれがあります（例: 値を 2 つ取る `-webkit-border-radius`）。`start` なら Autoprefixer の出力と同じく、標準プロパティが最後になります。
 
-malva にはこのオプションがありません（プレフィックスを除いた名前でソートします）。annealer は malva の出力を再解析し、プレフィックス付きの宣言だけを移動します。区間は malva のソート単位と一致します。宣言の間にコメントがある区間には手を加えません。このオプションは `declarationOrder` を設定したときだけ有効です。`alongside`（未指定時の既定）は malva の動作のままです。
+malva にはこのオプションがありません（プレフィックスを除いた名前でソートします）。そのため annealer が同じ区間の中でプレフィックス付きの宣言を移動します。このオプションは `declarationOrder` を設定したときだけ有効です。`alongside`（未指定時の既定）は malva の順序のままです。
 
 ## 静的な `style` 属性（オプトイン） \{#static-style-attributes-opt-in}
 
 `stylesheet.styleAttribute: true` にすると、静的な `style` 属性内の宣言も並べ替えます。どちらの組み込みプロファイルでも無効です。
 
-- 値は 1 行のままです。
-- CSS の文字列には、属性の引用符と反対の引用符を使います。一般的なダブルクォートの属性なら、annealer が元々優先するシングルクォートになります。
-- 末尾の `;` がなければ、ないままにします。
+- 宣言は書かれたとおりのまま移動します。空白や末尾の `;` の有無は変わりません。
 - バインドされた `:style` には一切手を加えません。
-- 引用符がない値、テンプレート構文・コメント・`{}`・`<`・`&` を含む値、通常の宣言として解析できない値は、書かれたとおりに残します。
-
-## その他の malva オプション
-
-その他の malva オプション（`printWidth`、`quotes`、`hexCase` など）は `stylesheet.malva` に書きます。未知のキーはエラーになるため、タイプミスが黙って無視されることはありません。[プロファイルリファレンス](/annealer/ja/api/profile.md#stylesheet)を参照してください。
-
-## 引用符 \{#quotes}
-
-CSS の文字列はシングルクォートで書きます（`@use 'sass:math'`、`font-family: 'Noto Sans'`）。Prettier や oxfmt が `singleQuote` で書くのと同じです。シングルクォートにするとエスケープが必要になる文字列（`"O'Brien"`）はダブルクォートのままです。これは annealer の既定（`quotes: prefer-single`）で、malva 自身の既定はダブルクォートです。変えるには `stylesheet.malva.quotes` を指定します。
+- 引用符がない値、テンプレート構文・`{}`・`<`・`&` を含む値、通常の宣言として解析できない値は、書かれたとおりに残します。

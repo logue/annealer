@@ -8,18 +8,15 @@ annealer has three entry points that share the same Rust core:
 - **`annealer` (npm)**: a JavaScript API backed by WebAssembly.
 - **`annealer` (Rust crate)**: the pure `format()` function.
 
-The current release is **0.1.0-alpha.1**.
+## CLI
 
-## Installation
+Build the CLI from the repository (the npm package and crate are not published yet):
 
 ```bash
-cargo install annealer --version 0.1.0-alpha.1   # anyl CLI
-pnpm add -D annealer@0.1.0-alpha.1               # JavaScript API
+cargo install --path crates/annealer
 ```
 
-Pre-release versions are not picked up by version ranges such as `^0.1.0`, so name the version. To build the CLI from a checkout of the repository, run `cargo install --path crates/annealer`.
-
-## CLI
+Then format files:
 
 ```bash
 anyl src/App.vue                 # print the result

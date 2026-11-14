@@ -1,0 +1,6 @@
+<div class="card">
+  <span>This span is never closed
+</div>
+<p>A stray end tag follows:</p>
+</section>
+<img src="logo.png" alt="Logo" alt="Duplicate">

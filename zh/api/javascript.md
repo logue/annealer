@@ -21,14 +21,8 @@ function format(input: string, options?: FormatOptions): string;
 - `options.language`：输入的语言。默认：`'html'`。
 - `options.profile`：内置配置文件名（`'html'`、`'vue'`）或配置文件的 YAML 文本。默认：与 `language` 对应的内置配置文件。
 - `options.classOrder`：内置类顺序名（`'tailwind'`）或类顺序的 YAML 文本。对静态 `class` 属性中的类排序，并覆盖配置文件中的 `classOrder`。默认：类保持原有顺序。参见[类顺序](/annealer/zh/guide/features/class-order.md)。
-- `options.removeDuplicateClasses`：`true` 会删除静态 `class` 属性中重复的类并保留第一个，无论是否指定 `classOrder`；`false` 则保留重复项。默认：类顺序的 `removeDuplicates`（`tailwind` 中为关闭，没有类顺序时也为关闭）。
-- `options.printWidth`：样式表和 `<style>` 块的行宽（`stylesheet.malva.printWidth`），至少为 1。请与所用格式化工具保持一致：Prettier 和 Biome 为 80，oxfmt 为 100。默认：配置文件中的值（80）。
-- `options.selfClosing`：`true` 会在 Vue 模板中让空元素和组件自闭合（`layout.selfClosing.normal`/`component`：`<div />`、`<MyComp />`）；`false` 将其关闭。默认：配置文件的设置（内置配置文件中为关闭）。空元素（`<br />`）遵循 `voidSelfClosing`。
-- `options.voidSelfClosing`：`true` 会让空元素自闭合（`<input />`、`<meta />`；`layout.selfClosing.void: always`）；`false` 则去掉斜杠（`<input>`、`<meta>`；`never`）。默认：配置文件的设置（内置配置文件中为 `always`）。
-- `options.expandNonVoid`：`true` 会为纯 HTML 中以自闭合形式书写的非空元素补上结束标签（`<div />` → `<div></div>`；`layout.selfClosing.expandNonVoid`）。HTML 会忽略斜杠，所以 `<div />` 会让元素保持未闭合。`<svg>` 和 `<math>` 内部的元素不受影响。`false` 将其关闭。默认：配置文件的设置（内置配置文件中为关闭）。
-- `options.contentNewline`：`true` 会让多行元素的内容独占一行；配置文件中没有 `layout.contentNewline` 时使用该规则的默认值；`false` 将其关闭。默认：配置文件的设置（内置配置文件中为关闭）。参见[布局](/annealer/zh/guide/features/layout.md)。
 
-当输入或配置文件无效时抛出 `Error`，包括输入中含有以 Pug 或 Stylus 编写的 `<template>` 或 `<style>`（`lang="pug"`、`"jade"`、`"stylus"`、`"styl"`）的情况，因为这些语言不受支持。
+当输入或配置文件无效时抛出 `Error`。
 
 ```ts
 format('<a title="Home" href="/" id="home">Home</a>');
@@ -37,9 +31,6 @@ format('<a title="Home" href="/" id="home">Home</a>');
 format(source, { language: 'vue' });
 format(source, { language: 'html', profile: yamlText });
 format(source, { language: 'vue', classOrder: 'tailwind' });
-format(source, { classOrder: 'tailwind', removeDuplicateClasses: true });
-format(source, { language: 'vue', selfClosing: true, contentNewline: true });
-format(source, { expandNonVoid: true, voidSelfClosing: false });
 ```
 
 ## `init()`
@@ -91,12 +82,6 @@ type FormatOptions = {
   language?: Language;
   profile?: string;
   classOrder?: string;
-  removeDuplicateClasses?: boolean;
-  printWidth?: number;
-  selfClosing?: boolean;
-  voidSelfClosing?: boolean;
-  expandNonVoid?: boolean;
-  contentNewline?: boolean;
 };
 
 type Meta = {

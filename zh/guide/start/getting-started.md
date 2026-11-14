@@ -8,18 +8,15 @@ annealer 有三个入口，共用同一个 Rust 核心：
 - **`annealer`（npm）**：基于 WebAssembly 的 JavaScript API。
 - **`annealer`（Rust crate）**：纯函数 `format()`。
 
-当前版本为 **0.1.0-alpha.1**。
+## CLI
 
-## 安装 \{#installation}
+从仓库构建 CLI（npm 包和 crate 尚未发布）：
 
 ```bash
-cargo install annealer --version 0.1.0-alpha.1   # anyl CLI
-pnpm add -D annealer@0.1.0-alpha.1               # JavaScript API
+cargo install --path crates/annealer
 ```
 
-预发布版本不会被 `^0.1.0` 这样的版本范围匹配，因此请明确指定版本。要从仓库的检出副本构建 CLI，请运行 `cargo install --path crates/annealer`。
-
-## CLI
+然后格式化文件：
 
 ```bash
 anyl src/App.vue                 # 输出结果
@@ -93,4 +90,4 @@ format(source, { language: 'html', profile: yamlText });
 | `html` | `.html`、`.css`、`.scss`、`.sass`、`.less` | 面向纯 HTML 的语义顺序。                             |
 | `vue`  | `.vue`                                 | `vue/attributes-order` 的层级加上 annealer 的子排序。 |
 
-如需自定义，可以从内置配置文件开始（JavaScript 中使用 `builtinProfile('vue')`，或参考 `crates/annealer/profiles/*.yaml`），然后通过 `--profile` 或 `profile` 选项传入你的 YAML。参见[配置文件参考](/annealer/zh/api/profile.md)。
+如需自定义，可以从内置配置文件开始（JavaScript 中使用 `builtinProfile('vue')`，或参考 `crates/annealer/profiles/*.yaml`），然后通过 `--profile` 或 `profile` 选项传入 YAML。参见[配置文件参考](/annealer/zh/api/profile.md)。

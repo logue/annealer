@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
     <title>annealer playground</title>
-  <script defer src="./static/js/y.1cc961ea43.js"></script><script defer src="./static/js/index.3dc27ce06a.js"></script><link href="./static/css/index.bd40716950.css" rel="stylesheet"></head>
+  <script defer src="./static/js/h.83eea15743.js"></script><script defer src="./static/js/index.a6f15bb9d2.js"></script><link href="./static/css/index.594273ad4c.css" rel="stylesheet"></head>
   <body>
     <cds-grid>
-      <cds-column sm="4" md="8" lg="5">
+      <cds-column sm="4" md="4" lg="4">
         <cds-select id="language" value="vue" label-text="Language">
           <cds-select-item value="vue" label="Vue">Vue</cds-select-item>
           <cds-select-item value="html" label="HTML">HTML</cds-select-item>
@@ -18,7 +18,18 @@
           <cds-select-item value="less" label="Less">Less</cds-select-item>
         </cds-select>
       </cds-column>
-      <cds-column sm="4" md="4" lg="6">
+      <cds-column sm="4" md="4" lg="4">
+        <cds-select id="sample" value="default" label-text="Sample">
+          <cds-select-item value="default" label="Default">Default</cds-select-item>
+          <cds-select-item value="repairable" label="Repairable errors">
+            Repairable errors
+          </cds-select-item>
+          <cds-select-item value="invalid" label="Unrecoverable error">
+            Unrecoverable error
+          </cds-select-item>
+        </cds-select>
+      </cds-column>
+      <cds-column sm="4" md="4" lg="4">
         <cds-select id="profile" value="default" label-text="Profile">
           <cds-select-item value="default" label="Default for the language">
             Default for the language
@@ -28,24 +39,11 @@
           <cds-select-item value="custom" label="Custom YAML…"> Custom YAML… </cds-select-item>
         </cds-select>
       </cds-column>
-      <cds-column sm="4" md="4" lg="5">
+      <cds-column sm="4" md="4" lg="4">
         <cds-select id="class-order" value="keep" label-text="Class order">
           <cds-select-item value="keep" label="Keep">Keep</cds-select-item>
           <cds-select-item value="tailwind" label="tailwind"> tailwind </cds-select-item>
         </cds-select>
-      </cds-column>
-
-      <cds-column sm="4" md="8" lg="16">
-        <cds-checkbox-group legend-text="Options" orientation="horizontal">
-          <cds-checkbox
-            id="remove-duplicate-classes"
-            label-text="Remove duplicate classes"
-          ></cds-checkbox>
-          <cds-checkbox id="self-closing" label-text="Self-closing"></cds-checkbox>
-          <cds-checkbox id="no-void-self-closing" label-text="Void without slash"></cds-checkbox>
-          <cds-checkbox id="expand-non-void" label-text="Expand non-void"></cds-checkbox>
-          <cds-checkbox id="content-newline" label-text="Content newline"></cds-checkbox>
-        </cds-checkbox-group>
       </cds-column>
 
       <cds-column sm="4" md="8" lg="16">
@@ -87,14 +85,15 @@
 
       <cds-column sm="4" md="8" lg="16">
         <cds-inline-notification
-          id="error"
-          title="Format error"
-          kind="error"
+          id="status"
+          title="Formatted"
+          kind="success"
           hide-close-button
           low-contrast
           hidden
         ></cds-inline-notification>
       </cds-column>
     </cds-grid>
+    <p>Version: <var id="version"></var></p>
   </body>
 </html>

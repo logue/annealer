@@ -2,7 +2,7 @@
 
 # 简介
 
-annealer 是一个按语义对 HTML 和 Vue 模板属性进行排序的格式化工具。它同样会对样式表（CSS、SCSS、Sass、Less）中的声明进行排序。排序规则由可替换的 YAML 配置文件定义，而不是硬编码在程序中。
+annealer 是一个按语义对 HTML 和 Vue 模板属性进行排序的格式化工具。它也会对样式表（CSS、SCSS、Sass、Less）中的声明进行排序。排序规则由可替换的 YAML 配置文件定义，而不是硬编码在程序中。
 
 ```html
 <!-- 输入 -->
@@ -12,15 +12,15 @@ annealer 是一个按语义对 HTML 和 Vue 模板属性进行排序的格式化
 <a id="home" title="Home" href="/">Home</a>
 ```
 
-:::warning Alpha
-当前版本为 annealer 0.1.0-alpha.1。格式化规则和默认值在不同版本之间仍可能变化（内置的 Tailwind 类顺序遵循 Tailwind，属于例外），配置文件格式在宣布稳定之前也可能变化。
+:::warning 开发中
+annealer 仍在积极开发中。npm 包尚未发布，配置文件格式在宣布稳定之前仍可能发生变化。
 :::
 
 ## 为什么属性顺序很重要 \{#why-attribute-order-matters}
 
 ### 顺序是代码审查问题，而非外观问题
 
-当多个贡献者长期编辑同一个组件时，属性会被添加、删除和改写。如果没有固定的规则，属性列表会被打乱，diff 中会混入实际上没有变化的行。基于规则的稳定顺序可以让 diff 只包含真正的改动，从而降低审查成本。
+当多个贡献者长期编辑同一个组件时，属性会被添加、删除和改写。如果没有固定规则，属性列表就会被打乱，diff 中也会混入实际上没有变化的行。稳定且基于规则的顺序可以让 diff 只包含真正的改动，从而降低审查成本。
 
 ### 属性承载着不同的语义分量
 
@@ -48,7 +48,7 @@ Vue.js 风格指南已经为属性定义了优先级列表，eslint-plugin-vue �
 - **同名聚合**：同一属性的静态形式和绑定形式保持在一起（`class` 紧挨 `:class`）。
 - **ARIA 子排序**：role → name → description → property → state，遵循 WAI-ARIA 的属性/状态划分。
 - **纯 HTML 支持**，适用于不使用 Vue 模板的项目。
-- **样式表声明顺序**，交由 [malva](https://github.com/g-plane/malva) 处理。
+- **样式表声明顺序**，采用 [malva](https://github.com/g-plane/malva) 中的属性顺序。
 
 annealer 并不是 `vue/attributes-order` 的竞争对手。它继承并扩展了后者的设计。对于用 rslint 或 oxlint 取代 ESLint 的团队，它让这项功能得以延续。
 
@@ -64,23 +64,22 @@ annealer 并不是 `vue/attributes-order` 的竞争对手。它继承并扩展�
 | oxfmt                             | 按设计无法处理模板标记。                                                      |
 | markup_fmt                        | 可以格式化 Vue/Svelte/Astro 模板，但没有对属性排序的选项。                            |
 
-CSS 属性顺序是个例外：malva 已经提供了可配置的 `declarationOrder`，所以 annealer 直接委托给它。**annealer 新增的是基于语义的属性分组，其余部分都不是从零构建的。**
+CSS 属性顺序是个例外：malva 已经提供了可配置的 `declarationOrder`，所以 annealer 直接使用它的顺序。**annealer 新增的是基于语义的属性分组，其余部分都不是从零构建的。**
 
 ## 适用范围 \{#scope}
 
 - 对 HTML 以及 Vue 3 SFC `<template>` 块中的属性排序。
 - 属性规范化：`v-bind:` → `:`，`v-on:` → `@`，组件 prop 的 camelCase → kebab-case。
-- 多行标签的布局规则，相当于 `vue/html-closing-bracket-newline`、`vue/max-attributes-per-line`（多行）、`vue/html-self-closing`（空元素始终自闭合，其余可选），以及可选的 `vue/multiline-html-element-content-newline`。
-- 通过 malva 对 `<style>` 块和独立文件中的 CSS/SCSS/Sass/Less 声明排序。
-- 可选：对静态 `style` 属性中的声明排序。
+- 多行标签的布局规则，相当于 `vue/html-closing-bracket-newline`、`vue/max-attributes-per-line`（多行）、`vue/html-self-closing` 和 `vue/multiline-html-element-content-newline`。
+- 通过 malva 对 `<style>` 块和独立文件中的 CSS/SCSS/Sass/Less 声明排序。仅改变顺序；格式交由格式化工具处理。
+- 可选择对静态 `style` 属性中的声明排序。
 - 标记和样式表注释中的[禁用指令](/annealer/zh/guide/features/disable-directives.md)。
-- 可选：对静态 `class` 属性进行[类排序](/annealer/zh/guide/features/class-order.md)，内置 Tailwind 顺序。
-- 计划中：[库配置文件](/annealer/zh/guide/design/library-profiles.md)（Bootstrap 等）。
-- Svelte 不在 0.1 的范围内。基于配置文件的设计应当允许日后在不重新设计的情况下加入。
+- 计划中：静态 `class` 属性的[值排序](/annealer/zh/guide/design/value-ordering.md)和[库配置文件](/annealer/zh/guide/design/library-profiles.md)。
+- Svelte 不在首个版本的范围内。基于配置文件的设计应当允许日后在不重新设计的情况下加入。
 
 ## 非目标 \{#non-goals}
 
-- 重排文本或缩进。行宽和缩进交给外部的格式化工具（`rs fmt`、Prettier 等）。
+- 重排文本或缩进。行宽和缩进交给外部格式化工具（`rs fmt`、Prettier 等）。
 - Vue 2 语法（`.sync`、`.native` 等）。
 - 通用的 HTML/CSS 校验。
 - 处理已废弃或过时的标记（`<xmp>`、`<center>`、`<font>`、`<marquee>`、`bgcolor` 等）。annealer 从不对其发出警告、删除或替换。它只在周围文档需要的范围内解析这些标记（例如 `<xmp>` 的内容是原始文本，因此其中的标签保持不变）。检测它们是 linter 或校验器的工作。
@@ -88,6 +87,4 @@ CSS 属性顺序是个例外：malva 已经提供了可配置的 `declarationOrd
 ## 下一步 \{#next-steps}
 
 - [快速开始](/annealer/zh/guide/start/getting-started.md)：通过 CLI 或 JavaScript 运行 annealer。
-- [与其他工具配合使用](/annealer/zh/guide/start/integration.md)：Rslint/`rs fmt`、oxlint/oxfmt 和 Biome 的配置。
-- [限制](/annealer/zh/guide/start/limitations.md)：annealer 目前尚不支持的功能。
-- [属性顺序](/annealer/zh/guide/concepts/attribute-order.md)：属性如何被分类和排序。
+- [属性顺序](/annealer/zh/guide/concepts/attribute-order.md)：了解属性如何被分类和排序。
