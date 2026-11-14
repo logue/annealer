@@ -3,7 +3,7 @@
 use serde_json::Value;
 
 use crate::class_order::ClassOrder;
-use crate::profile::{MALVA_OPTIONS, Profile};
+use crate::profile::Profile;
 
 const SCHEMA: &str = include_str!("../schema/profile.schema.json");
 const CLASS_ORDER_SCHEMA: &str = include_str!("../schema/class-order.schema.json");
@@ -66,21 +66,6 @@ fn builtin_profiles_match_schema() {
 }
 
 #[test]
-fn malva_options_match_schema() {
-    let schema = schema();
-    let mut in_schema: Vec<&str> = schema["definitions"]["malvaOptions"]["properties"]
-        .as_object()
-        .unwrap()
-        .keys()
-        .map(String::as_str)
-        .collect();
-    let mut in_rust = MALVA_OPTIONS.to_vec();
-    in_schema.sort_unstable();
-    in_rust.sort_unstable();
-    assert_eq!(in_schema, in_rust);
-}
-
-#[test]
 fn schema_and_loader_agree() {
     let cases = [
         // (profile, valid)
@@ -93,7 +78,7 @@ fn schema_and_loader_agree() {
         ),
         (
             profile_with(
-                "stylesheet:\n  declarationOrder: concentric\n  malva:\n    printWidth: 100\n",
+                "stylesheet:\n  declarationOrder: concentric\n  declarationOrderGroupBy: non-declaration\n",
             ),
             true,
         ),
@@ -142,11 +127,7 @@ fn schema_and_loader_agree() {
             false,
         ),
         (
-            profile_with("stylesheet:\n  malva:\n    declarationOrder: smacss\n"),
-            false,
-        ),
-        (
-            profile_with("stylesheet:\n  malva:\n    indent_width: 4\n"),
+            profile_with("stylesheet:\n  malva:\n    printWidth: 100\n"),
             false,
         ),
         (profile_with_groups("  - name: a\n"), false),

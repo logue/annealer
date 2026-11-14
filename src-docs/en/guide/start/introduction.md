@@ -14,8 +14,8 @@ annealer is a formatter that reorders HTML and Vue template attributes by their 
 <a id="home" title="Home" href="/">Home</a>
 ```
 
-:::warning Alpha
-This is annealer 0.1.0-alpha.1. Formatting rules and defaults can still change between releases (the built-in Tailwind class order follows Tailwind and is the exception), and the profile format can change before it is declared stable.
+:::warning Work in progress
+annealer is under active development. The npm package is not published yet, and the profile format can still change before it is declared stable.
 :::
 
 ## Why attribute order matters
@@ -50,7 +50,7 @@ On top of that baseline, annealer adds:
 - **Same-name clustering**: the static and bound forms of one attribute stay together (`class` next to `:class`).
 - **ARIA sub-ordering**: role → name → description → property → state, following the WAI-ARIA properties/states split.
 - **Plain HTML support**, for projects without Vue templates.
-- **Stylesheet declaration order**, delegated to [malva](https://github.com/g-plane/malva).
+- **Stylesheet declaration order**, in the property orders of [malva](https://github.com/g-plane/malva).
 
 annealer is not a rival to `vue/attributes-order`. It inherits its design and extends it. For teams that replace ESLint with rslint or oxlint, it keeps this one piece of functionality alive.
 
@@ -66,19 +66,18 @@ Biome, rslint, oxlint, oxfmt and markup_fmt were evaluated. None of them reorder
 | oxfmt                               | Can't reach template markup by design.                                                                                                                                                                   |
 | markup_fmt                          | Formats Vue/Svelte/Astro templates, but has no option to reorder attributes.                                                                                                                             |
 
-CSS property order is the exception: malva already has a configurable `declarationOrder`, so annealer delegates to it. **What annealer adds is the semantic attribute grouping. Nothing else is built from zero.**
+CSS property order is the exception: malva already has a configurable `declarationOrder`, so annealer uses its orders. **What annealer adds is the semantic attribute grouping. Nothing else is built from zero.**
 
 ## Scope
 
 - Attribute reordering in HTML and in Vue 3 SFC `<template>` blocks.
 - Attribute normalization: `v-bind:` → `:`, `v-on:` → `@`, camelCase → kebab-case on component props.
-- Layout rules for multiline tags, equivalent to `vue/html-closing-bracket-newline`, `vue/max-attributes-per-line` (multiline), `vue/html-self-closing` (void elements always, the rest opt-in) and, opt-in, `vue/multiline-html-element-content-newline`.
-- Declaration order for CSS/SCSS/Sass/Less, in `<style>` blocks and in standalone files, via malva.
+- Layout rules for multiline tags, equivalent to `vue/html-closing-bracket-newline`, `vue/max-attributes-per-line` (multiline), `vue/html-self-closing` and `vue/multiline-html-element-content-newline`.
+- Declaration order for CSS/SCSS/Sass/Less, in `<style>` blocks and in standalone files, in malva's property orders. Only the order changes; formatting is left to a formatter.
 - Opt-in declaration order inside static `style` attributes.
 - [Disable directives](../features/disable-directives.md) in markup and stylesheet comments.
-- Opt-in [class order](../features/class-order.md) for static `class` attributes, with a built-in Tailwind order.
-- Planned: [library profiles](../design/library-profiles.md) (Bootstrap and others).
-- Svelte is not part of 0.1. The profile-based design should allow adding it later without a redesign.
+- Planned: [value ordering](../design/value-ordering.md) for static `class` attributes, and [library profiles](../design/library-profiles.md).
+- Svelte is not part of the first release. The profile-based design should allow adding it later without a redesign.
 
 ## Non-goals
 
@@ -90,6 +89,4 @@ CSS property order is the exception: malva already has a configurable `declarati
 ## Next steps
 
 - [Getting started](./getting-started.md): run annealer from the CLI or from JavaScript.
-- [Using with other tools](./integration.md): configuration for Rslint/`rs fmt`, oxlint/oxfmt and Biome.
-- [Limitations](./limitations.md): what annealer does not do yet.
 - [Attribute order](../concepts/attribute-order.md): how attributes are classified and sorted.

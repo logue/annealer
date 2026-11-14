@@ -1,0 +1,136 @@
+@use '@carbon/styles' with (
+  $use-per-family-plex: true,
+  $use-akamai-cdn: true,
+  $font-families: (
+    sans: (
+      'IBM Plex Sans',
+      'IBM Plex Sans JP',
+      'IBM Plex Sans SC',
+      Twemoji,
+      'Helvetica Neue',
+      Arial,
+      sans-serif
+    ),
+    mono: (
+      'IBM Plex Mono',
+      'IBM Plex Sans JP',
+      'IBM Plex Sans SC',
+      Twemoji,
+      Menlo,
+      'DejaVu Sans Mono',
+      monospace
+    )
+  )
+);
+@use '@carbon/styles/scss/spacing' as *;
+@use '@carbon/styles/scss/type';
+
+// Include type reset
+@include type.reset();
+// Include default type styles, targets h1, h2, h3, etc
+@include type.default-type();
+// Include utility classes for type-related properties
+@include type.type-classes();
+// Emoji
+@import 'https://cdn.jsdelivr.net/npm/@sableclient/twemoji-font@1.0.4/dist/index.min.css';
+/*
+ * Carbon's reset, type and theme rules take precedence; only demo-specific layout is defined here.
+ * The theme is applied by toggling the `cds--white` / `cds--g100` zone class on <html>
+ * (see useDemoHost.ts), so everything below follows it through Carbon's CSS custom properties.
+ */
+
+.demo-header {
+  border-bottom: 1px solid var(--cds-border-subtle-01);
+  background-color: var(--cds-layer-01);
+
+  .cds--row {
+    align-items: center;
+  }
+}
+
+.demo-header__content {
+  padding-block: $spacing-05;
+
+  p {
+    @include type.type-style('body-01');
+  }
+}
+
+.demo-header__title {
+  @include type.type-style('heading-03');
+}
+
+.demo-header__actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-block: $spacing-05;
+}
+
+.demo-main {
+  padding-block: $spacing-07;
+}
+
+.demo-grid {
+  row-gap: $spacing-05;
+}
+
+.demo-section + .demo-section {
+  margin-block-start: $spacing-07;
+}
+
+.demo-controls,
+.demo-editors {
+  row-gap: $spacing-05;
+}
+
+.demo-controls cds-select,
+.demo-editors cds-textarea,
+.profile-editor cds-textarea {
+  display: block;
+  width: 100%;
+}
+
+.demo-section__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: $spacing-05;
+
+  p {
+    @include type.type-style('body-01');
+  }
+}
+
+.profile-editor {
+  margin: $spacing-05;
+  padding: $spacing-05;
+  border: 1px solid var(--cds-border-subtle-01);
+  background-color: var(--cds-layer-01);
+
+  summary {
+    cursor: pointer;
+    margin-block-end: $spacing-05;
+  }
+}
+
+.profile-editor[hidden] {
+  display: none;
+}
+
+.demo-error {
+  margin-block-start: $spacing-05;
+  padding-inline-start: $spacing-03;
+  border-inline-start: 4px solid var(--cds-support-error);
+  color: var(--cds-text-error);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.demo-status {
+  @include type.type-style('body-compact-01');
+
+  min-height: 1.5rem;
+  margin-block-start: $spacing-03;
+  color: var(--cds-text-secondary);
+}

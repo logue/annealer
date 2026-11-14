@@ -8,24 +8,11 @@ fn vue(input: &str) -> String {
     run(input, Language::Vue)
 }
 
-/// Formats with the built-in profile and asserts that a second pass is a no-op.
-fn run(input: &str, language: Language) -> String {
-    run_with(input, &Config::for_language(language))
-}
-
-/// Like [`run`], with the optional layout rules (`selfClosing`,
-/// `contentNewline`) of the built-in profile turned on.
-fn run_with_layout_rules(input: &str, language: Language) -> String {
-    let config = Config::for_language(language)
-        .with_self_closing(Some(true))
-        .with_content_newline(Some(true));
-    run_with(input, &config)
-}
-
 /// Formats and asserts that a second pass is a no-op.
-fn run_with(input: &str, config: &Config) -> String {
-    let once = format(input, config).unwrap();
-    let twice = format(&once, config).unwrap();
+fn run(input: &str, language: Language) -> String {
+    let config = Config::for_language(language);
+    let once = format(input, &config).unwrap();
+    let twice = format(&once, &config).unwrap();
     assert_eq!(once, twice, "formatting is not idempotent");
     once
 }
@@ -128,7 +115,8 @@ mod html_profile {
     fn keeps_closing_bracket_of_single_line_tags_on_that_line() {
         assert_eq!(
             html("<a href=\"/\" title=\"t\"\n  >x</a><br\n/><p\n>y</p>"),
-            "<a title=\"t\" href=\"/\">x</a><br /><p>y</p>"
+            // `<p>` spans two lines in the input, so its content is broken too.
+            "<a title=\"t\" href=\"/\">x</a><br /><p>\n  y\n</p>"
         );
     }
 
@@ -152,7 +140,7 @@ mod html_profile {
     fn orders_style_block_properties() {
         assert_eq!(
             html("<style>\n  a { color: red; display: block; }\n</style>"),
-            "<style>\n  a {\n    display: block;\n    color: red;\n  }\n</style>"
+            "<style>\n  a { display: block; color: red; }\n</style>"
         );
     }
 }
@@ -230,7 +218,7 @@ mod vue_profile {
                 r#"<MyComp :itemCount="n" maxLength="3" @updateValue="u"><input maxLength="3"><svg><clipPath clipPathUnits="x"/></svg></MyComp>"#
             )),
             sfc(
-                r#"<MyComp :item-count="n" max-length="3" @updateValue="u"><input maxLength="3" /><svg><clipPath clipPathUnits="x"/></svg></MyComp>"#
+                r#"<MyComp :item-count="n" max-length="3" @updateValue="u"><input maxLength="3" /><svg><clipPath clipPathUnits="x" /></svg></MyComp>"#
             )
         );
     }
@@ -262,75 +250,26 @@ mod vue_profile {
             "</template>\n",
             "\n",
             "<style scoped lang=\"scss\">\n",
-            ".a {\n  position: absolute;\n  color: red;\n}\n",
+            ".a { position: absolute; color: red; }\n",
             "</style>\n",
         );
         assert_eq!(vue(input), expected);
     }
 
     #[test]
-    fn leaves_script_and_custom_blocks_alone() {
+    fn leaves_script_custom_blocks_and_non_html_templates_alone() {
         let input = concat!(
             "<script setup lang=\"ts\">\nconst s = '<a title=\"t\" id=\"i\">';\n</script>\n",
             "<i18n lang=\"json\">{ \"a\": \"<a title='t' id='i'>\" }</i18n>\n",
+            "<template lang=\"pug\">\na(title=\"t\" id=\"i\")\n</template>\n",
+            "<style lang=\"stylus\">\na { color: red; display: block; }\n</style>\n",
         );
         assert_eq!(vue(input), input);
-    }
-
-    #[test]
-    fn rejects_pug_and_stylus_blocks() {
-        let cases = [
-            (
-                "<template lang=\"pug\">\na(title=\"t\" id=\"i\")\n</template>\n",
-                "pug",
-            ),
-            (
-                "<template lang=\"jade\">\na(title=\"t\")\n</template>\n",
-                "jade",
-            ),
-            (
-                "<template>\n<a />\n</template>\n<style lang=\"Stylus\">\na\n  color red\n</style>\n",
-                "stylus",
-            ),
-            ("<style lang=\"styl\">\na\n  color red\n</style>\n", "styl"),
-        ];
-        for (input, expected) in cases {
-            let error = format(input, &Config::for_language(Language::Vue)).unwrap_err();
-            assert!(
-                matches!(&error, FormatError::UnsupportedLanguage { lang, .. } if lang == expected),
-                "{input}: {error}"
-            );
-        }
-    }
-
-    #[test]
-    fn rejects_stylus_style_elements_in_html() {
-        let error = format(
-            "<p>\n  <style lang=\"stylus\">a\n  color red</style>\n</p>\n",
-            &Config::for_language(Language::Html),
-        )
-        .unwrap_err();
-        assert!(matches!(
-            error,
-            FormatError::UnsupportedLanguage {
-                line: 2,
-                column: 3,
-                ..
-            }
-        ));
     }
 }
 
 mod content_newline {
     use super::*;
-
-    fn html(input: &str) -> String {
-        run_with_layout_rules(input, Language::Html)
-    }
-
-    fn vue(input: &str) -> String {
-        run_with_layout_rules(input, Language::Vue)
-    }
 
     #[test]
     fn breaks_content_of_elements_with_multiline_start_tags() {
@@ -416,38 +355,6 @@ mod content_newline {
             "<div\r\n  id=\"i\"\r\n>\r\n  x\r\n</div>"
         );
     }
-
-    #[test]
-    fn is_off_in_the_built_in_profiles() {
-        let input = sfc("<section>text\n  more</section>");
-        assert_eq!(super::vue(&input), input);
-    }
-
-    #[test]
-    fn uses_the_defaults_when_turned_on_for_a_profile_without_it() {
-        let profile = Profile::from_yaml(
-            "schemaVersion: 1\nname: x\ngroups:\n  - name: rest\n    fallback: true\n",
-        )
-        .unwrap();
-        let config = Config::new(Language::Html, profile).with_content_newline(Some(true));
-        assert_eq!(
-            run_with("<div>a\nb</div><span>a\nb</span>", &config),
-            "<div>\n  a\nb\n</div><span>a\nb</span>"
-        );
-    }
-
-    #[test]
-    fn follows_enabled_in_the_profile() {
-        let profile = Profile::from_yaml(
-            "schemaVersion: 1\nname: x\nlayout:\n  contentNewline:\n    enabled: false\ngroups:\n  - name: rest\n    fallback: true\n",
-        )
-        .unwrap();
-        let input = "<div>a\nb</div>";
-        assert_eq!(
-            run_with(input, &Config::new(Language::Html, profile)),
-            input
-        );
-    }
 }
 
 mod style_attribute {
@@ -476,7 +383,7 @@ mod style_attribute {
             with_style_attribute(
                 r#"<p style="color: red; box-shadow:none; -webkit-box-shadow: none; display: block">"#
             ),
-            r#"<p style="-webkit-box-shadow: none; display: block; box-shadow: none; color: red">"#
+            r#"<p style="-webkit-box-shadow: none; display: block; box-shadow:none; color: red">"#
         );
     }
 
@@ -489,7 +396,7 @@ mod style_attribute {
     }
 
     #[test]
-    fn uses_the_opposite_quote_for_css_strings() {
+    fn keeps_css_strings_as_written() {
         assert_eq!(
             with_style_attribute(r#"<p style='font-family: "A B"; position: absolute'>"#),
             r#"<p style='position: absolute; font-family: "A B"'>"#
@@ -505,7 +412,6 @@ mod style_attribute {
         let input = concat!(
             r#"<p style="color: {{ c }}; display: block">"#,
             r#"<p style="color: red; /* x */ display: block">"#,
-            r#"<p style="color: red; display:">"#,
             r#"<p :style="{ color: c, display: d }">"#,
             r#"<p style=color:red>"#,
         );
@@ -515,14 +421,6 @@ mod style_attribute {
 
 mod self_closing {
     use super::*;
-
-    fn html(input: &str) -> String {
-        run_with_layout_rules(input, Language::Html)
-    }
-
-    fn vue(input: &str) -> String {
-        run_with_layout_rules(input, Language::Vue)
-    }
 
     #[test]
     fn self_closes_void_elements_in_html() {
@@ -596,219 +494,6 @@ mod self_closing {
             sfc("<MyComp a=\"b\"></MyComp><div></div><br><img src=\"a\">")
         );
     }
-
-    #[test]
-    fn self_closes_only_void_elements_in_the_built_in_profiles() {
-        assert_eq!(
-            super::vue(&sfc("<div></div><MyComp></MyComp><br><img src=\"a\"/>")),
-            sfc("<div></div><MyComp></MyComp><br /><img src=\"a\" />")
-        );
-    }
-
-    #[test]
-    fn can_be_turned_off_for_a_profile_that_enables_it() {
-        let profile = Profile::from_yaml(
-            "schemaVersion: 1\nname: x\nlayout:\n  selfClosing:\n    void: always\n    normal: always\ngroups:\n  - name: rest\n    fallback: true\n",
-        )
-        .unwrap();
-        let config = Config::new(Language::Vue, profile);
-        let input = sfc("<div></div><br>");
-        assert_eq!(format(&input, &config).unwrap(), sfc("<div /><br />"));
-        let config = config.with_self_closing(Some(false));
-        // `void` applies regardless of `enabled`.
-        assert_eq!(format(&input, &config).unwrap(), sfc("<div></div><br />"));
-    }
-
-    #[test]
-    fn void_self_closing_overrides_the_profile() {
-        let input = r#"<input type="text"><meta charset="utf-8" /><br/>"#;
-        let config = Config::for_language(Language::Html);
-        assert_eq!(
-            run_with(input, &config.clone().with_void_self_closing(Some(true))),
-            r#"<input type="text" /><meta charset="utf-8" /><br />"#
-        );
-        assert_eq!(
-            run_with(input, &config.with_void_self_closing(Some(false))),
-            r#"<input type="text"><meta charset="utf-8"><br>"#
-        );
-        let config = Config::for_language(Language::Vue).with_void_self_closing(Some(false));
-        assert_eq!(
-            run_with(&sfc("<img src=\"a\" /><Link />"), &config),
-            sfc("<img src=\"a\"><Link />")
-        );
-    }
-
-    #[test]
-    fn expand_non_void_is_off_by_default() {
-        let input = "<div /><my-el/>";
-        assert_eq!(super::html(input), input);
-    }
-
-    #[test]
-    fn expand_non_void_adds_end_tags_in_html() {
-        let config = Config::for_language(Language::Html).with_expand_non_void(Some(true));
-        assert_eq!(
-            run_with(
-                r#"<div class="a" /><my-el/><P/><span></span><br/>"#,
-                &config
-            ),
-            r#"<div class="a"></div><my-el></my-el><P></P><span></span><br />"#
-        );
-        assert_eq!(
-            run_with("<div\n  id=\"a\"\n  class=\"b\"\n/>", &config),
-            "<div\n  id=\"a\"\n  class=\"b\"\n></div>"
-        );
-    }
-
-    #[test]
-    fn expand_non_void_leaves_svg_and_math_alone() {
-        let config = Config::for_language(Language::Html).with_expand_non_void(Some(true));
-        let input =
-            "<svg><g><path d=\"M0\" /></g><circle r=\"1\"/></svg><math><mi /></math><svg />";
-        assert_eq!(run_with(input, &config), input);
-        assert_eq!(
-            run_with("<svg><rect /></svg><div />", &config),
-            "<svg><rect /></svg><div></div>"
-        );
-    }
-
-    #[test]
-    fn expand_non_void_follows_the_profile_and_skips_vue() {
-        let profile = Profile::from_yaml(
-            "schemaVersion: 1\nname: x\nlayout:\n  selfClosing:\n    expandNonVoid: true\ngroups:\n  - name: rest\n    fallback: true\n",
-        )
-        .unwrap();
-        let config = Config::new(Language::Html, profile.clone());
-        assert_eq!(run_with("<div />", &config), "<div></div>");
-        assert_eq!(
-            run_with("<div />", &config.with_expand_non_void(Some(false))),
-            "<div />"
-        );
-        // Vue templates use `normal` / `component` instead.
-        let input = sfc("<div />");
-        assert_eq!(
-            run_with(&input, &Config::new(Language::Vue, profile)),
-            input
-        );
-    }
-}
-
-/// SVG, MathML and namespaced XML (RDF) are left as written for now, with
-/// every rule that rewrites markup turned on.
-mod foreign_content {
-    use super::*;
-
-    use annealer::ClassOrder;
-
-    fn everything(language: Language) -> Config {
-        let yaml = include_str!("../profiles/html.yaml").replace(
-            "  vendorPrefix: start\n",
-            "  vendorPrefix: start\n  styleAttribute: true\n",
-        );
-        let profile = match language {
-            Language::Vue => Profile::builtin("vue").unwrap(),
-            _ => Profile::from_yaml(&yaml).unwrap(),
-        };
-        Config::new(language, profile)
-            .with_class_order(ClassOrder::builtin("tailwind"))
-            .with_remove_duplicate_classes(Some(true))
-            .with_self_closing(Some(true))
-            .with_void_self_closing(Some(false))
-            .with_expand_non_void(Some(true))
-            .with_content_newline(Some(true))
-    }
-
-    fn html(input: &str) -> String {
-        run_with(input, &everything(Language::Html))
-    }
-
-    fn vue(input: &str) -> String {
-        run_with(input, &everything(Language::Vue))
-    }
-
-    const SVG: &str = r##"<svg width="24" class="p-4 m-2 p-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" id="icon">
-<style>circle { fill: red; display: block }</style>
-<title>Icon</title><desc></desc>
-<g style="opacity: 1; display: block" class="b a"><path fill="none" d="M0 0h24v24H0z" /><circle r="4" cy="12" cx="12"></circle></g>
-<use href="#a"/><foreignObject width="10" height="10"><div title="t" id="d"/><br /></foreignObject>
-</svg>"##;
-
-    const MATHML: &str = r#"<math display="block" class="b a"><mrow>
-<mi mathvariant="normal">x</mi><mo>=</mo><mfrac linethickness="0"><mn>1</mn><mn>2</mn></mfrac>
-<mspace width="1em" /><annotation-xml encoding="text/html"><p title="t" id="p">a</p></annotation-xml>
-</mrow></math>"#;
-
-    const RDF: &str = r##"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/">
-<rdf:Description rdf:about="" dc:format="image/svg+xml"><dc:title>T</dc:title><dc:creator /></rdf:Description>
-</rdf:RDF>"##;
-
-    #[test]
-    fn leaves_inline_svg_alone() {
-        assert_eq!(html(SVG), SVG);
-    }
-
-    #[test]
-    fn leaves_mathml_alone() {
-        assert_eq!(html(MATHML), MATHML);
-    }
-
-    #[test]
-    fn leaves_rdf_alone() {
-        assert_eq!(html(RDF), RDF);
-    }
-
-    #[test]
-    fn leaves_rdf_inside_svg_metadata_alone() {
-        let input = format!(
-            "<svg viewBox=\"0 0 1 1\" id=\"s\"><metadata>\n{RDF}\n</metadata><rect height=\"1\" width=\"1\"/></svg>"
-        );
-        assert_eq!(html(&input), input);
-    }
-
-    #[test]
-    fn matches_foreign_roots_case_insensitively_in_html() {
-        let input = r#"<SVG width="1" id="s"><Path d="M0" /></SVG><MATH><mi /></MATH>"#;
-        assert_eq!(html(input), input);
-    }
-
-    #[test]
-    fn formats_markup_around_foreign_content() {
-        let input = format!(
-            "<p title=\"a\" id=\"b\" class=\"b a b\"><br/>\n{SVG}\n<span id=\"x\" class=\"p-4 m-2\" /></p>\n{MATHML}\n<div title=\"c\" id=\"d\"><input type=\"text\" /></div>"
-        );
-        let expected = format!(
-            "<p id=\"b\" class=\"b a\" title=\"a\">\n  <br>\n{SVG}\n<span id=\"x\" class=\"m-2 p-4\"></span>\n</p>\n{MATHML}\n<div id=\"d\" title=\"c\"><input type=\"text\"></div>"
-        );
-        assert_eq!(html(&input), expected);
-    }
-
-    #[test]
-    fn leaves_unclosed_foreign_content_alone_to_the_end() {
-        let input = r#"<div title="a" id="b"></div><svg><path d="M0" /><div title="a" id="b" />"#;
-        assert_eq!(
-            html(input),
-            r#"<div id="b" title="a"></div><svg><path d="M0" /><div title="a" id="b" />"#
-        );
-    }
-
-    #[test]
-    fn leaves_svg_and_mathml_in_vue_templates_alone() {
-        let template = r#"<svg :width="size" v-if="show" class="b a" viewBox="0 0 24 24"><template v-for="p in paths" :key="p"><path :d="p"></path></template><MyIcon v-bind:name="n"></MyIcon></svg>
-<math><mi v-text="x"></mi></math>
-<div v-if="show" id="a"></div>"#;
-        let expected = r#"<svg :width="size" v-if="show" class="b a" viewBox="0 0 24 24"><template v-for="p in paths" :key="p"><path :d="p"></path></template><MyIcon v-bind:name="n"></MyIcon></svg>
-<math><mi v-text="x"></mi></math>
-<div v-if="show" id="a" />"#;
-        assert_eq!(vue(&sfc(template)), sfc(expected));
-    }
-
-    #[test]
-    fn treats_capitalized_names_as_components_in_vue() {
-        assert_eq!(
-            vue(&sfc(r#"<Svg title="a" v-if="b"></Svg>"#)),
-            sfc(r#"<Svg v-if="b" title="a" />"#)
-        );
-    }
 }
 
 mod directives {
@@ -826,7 +511,7 @@ mod directives {
             "<a title=\"t\" id=\"i\"><br></a>\n",
             "<a id=\"i\" title=\"t\"><br /></a>\n",
         );
-        assert_eq!(run_with_layout_rules(input, Language::Html), expected);
+        assert_eq!(html(input), expected);
     }
 
     #[test]
@@ -934,11 +619,11 @@ mod directives {
                 Language::Css
             ),
             concat!(
-                "a {\n  display: block;\n  color: red;\n}\n",
+                "a { display: block; color: red; }\n",
                 "/* annealer-disable */\n",
                 "b { color: red;   display: block; }\n",
                 "/* annealer-enable */\n",
-                "c {\n  display: block;\n  color: red;\n}\n",
+                "c { display: block; color: red; }\n",
             )
         );
     }
@@ -950,7 +635,7 @@ mod directives {
                 "a {\n  /* annealer-disable */\n  top:0;\n  -webkit-x:1;\n  /* annealer-enable */\n  color: red; display: block;\n}\n",
                 Language::Scss
             ),
-            "a {\n  /* annealer-disable */\n  top:0;\n  -webkit-x:1;\n  /* annealer-enable */\n  display: block;\n  color: red;\n}\n"
+            "a {\n  /* annealer-disable */\n  top:0;\n  -webkit-x:1;\n  /* annealer-enable */\n  display: block; color: red;\n}\n"
         );
     }
 
@@ -999,10 +684,60 @@ mod stylesheets {
     use super::*;
 
     #[test]
-    fn delegates_property_order_to_malva() {
+    fn orders_declarations_in_malva_order() {
         assert_eq!(
             run("a { color: red; display: block; }\n", Language::Css),
-            "a {\n  display: block;\n  color: red;\n}\n"
+            "a { display: block; color: red; }\n"
+        );
+    }
+
+    #[test]
+    fn only_moves_declarations_as_written() {
+        // Quotes, colors, numbers, spacing and missing semicolons are a
+        // formatter's job, not annealer's.
+        let input = concat!(
+            "@use 'sass:math';\n",
+            "a[type=text] {\n",
+            "  content: 'x';\n",
+            "  color:#ABC ;\n",
+            "  width: .5px;\n",
+            "  display:block\n",
+            "}\n",
+        );
+        assert_eq!(
+            run(input, Language::Scss),
+            concat!(
+                "@use 'sass:math';\n",
+                "a[type=text] {\n",
+                "  display:block;\n",
+                "  width: .5px;\n",
+                "  content: 'x';\n",
+                "  color:#ABC \n",
+                "}\n",
+            )
+        );
+    }
+
+    #[test]
+    fn does_not_move_declarations_across_comments() {
+        let input =
+            "a {\n  /* text */\n  color: red;\n  /* box */\n  width: 1px;\n  display: block;\n}\n";
+        assert_eq!(
+            run(input, Language::Css),
+            "a {\n  /* text */\n  color: red;\n  /* box */\n  display: block;\n  width: 1px;\n}\n"
+        );
+    }
+
+    #[test]
+    fn sorts_across_empty_lines_with_non_declaration_grouping() {
+        let yaml = include_str!("../profiles/html.yaml").replace(
+            "  vendorPrefix: start\n",
+            "  vendorPrefix: start\n  declarationOrderGroupBy: non-declaration\n",
+        );
+        let config = Config::new(Language::Css, Profile::from_yaml(&yaml).unwrap());
+        assert_eq!(
+            format("a {\n  color: red;\n\n  display: block;\n}\n", &config).unwrap(),
+            "a {\n  display: block;\n\n  color: red;\n}\n"
         );
     }
 
@@ -1013,7 +748,7 @@ mod stylesheets {
                 "a { -webkit-transition: x; transition: x; -moz-appearance: none; appearance: none; color: red; -webkit-appearance: none; }\n",
                 Language::Css
             ),
-            "a {\n  -moz-appearance: none;\n  -webkit-appearance: none;\n  -webkit-transition: x;\n  appearance: none;\n  color: red;\n  transition: x;\n}\n"
+            "a { -moz-appearance: none; -webkit-appearance: none; -webkit-transition: x; appearance: none; color: red; transition: x; }\n"
         );
     }
 
@@ -1025,7 +760,7 @@ mod stylesheets {
                 "a {\n  -webkit-user-select: none;\n  display: block;\n  &:hover { -moz-opacity: 1; color: red; }\n  --x: 1;\n  -ms-zoom: 1;\n}\n",
                 Language::Scss
             ),
-            "a {\n  -webkit-user-select: none;\n  display: block;\n  &:hover {\n    -moz-opacity: 1;\n    color: red;\n  }\n  -ms-zoom: 1;\n  --x: 1;\n}\n"
+            "a {\n  -webkit-user-select: none;\n  display: block;\n  &:hover { -moz-opacity: 1; color: red; }\n  -ms-zoom: 1;\n  --x: 1;\n}\n"
         );
     }
 
@@ -1038,31 +773,24 @@ mod stylesheets {
     }
 
     #[test]
-    fn prefers_single_quotes() {
-        assert_eq!(
-            run(
-                "@use \"sass:math\";\na { font-family: \"Noto Sans\", \"O'Brien\"; }\n",
-                Language::Scss
-            ),
-            // Double quotes stay where single quotes would need escaping.
-            "@use 'sass:math';\na {\n  font-family: 'Noto Sans', \"O'Brien\";\n}\n"
-        );
+    fn keeps_empty_lines_between_declarations() {
+        let block = "{\n  font-size: 16px;\n\n  line-height: 1.7;\n}\n";
+        for language in [Language::Css, Language::Scss, Language::Less] {
+            let input = format!(".card {block}");
+            assert_eq!(run(&input, language), input, "{language:?}");
+        }
+        let sass = ".card\n  font-size: 16px\n\n  line-height: 1.7\n";
+        assert_eq!(run(sass, Language::Sass), sass);
     }
 
     #[test]
-    fn single_quotes_are_the_default_for_custom_profiles_too() {
-        let profile = |malva: &str| {
-            Profile::from_yaml(&format!(
-                "schemaVersion: 1\nname: x\ngroups:\n  - name: r\n    fallback: true\nstylesheet:\n  declarationOrder: smacss\n{malva}"
-            ))
-            .unwrap()
-        };
-        let css = "a { font-family: \"A B\"; }\n";
-        let format_with = |profile| format(css, &Config::new(Language::Css, profile)).unwrap();
-        assert_eq!(format_with(profile("")), "a {\n  font-family: 'A B';\n}\n");
+    fn sorts_each_empty_line_separated_group_on_its_own() {
         assert_eq!(
-            format_with(profile("  malva:\n    quotes: always-double\n")),
-            "a {\n  font-family: \"A B\";\n}\n"
+            run(
+                "a {\n  color: red;\n  display: block;\n\n  width: 1px;\n  position: absolute;\n}\n",
+                Language::Scss
+            ),
+            "a {\n  display: block;\n  color: red;\n\n  position: absolute;\n  width: 1px;\n}\n"
         );
     }
 
@@ -1070,7 +798,7 @@ mod stylesheets {
     fn orders_vendor_prefixes_in_style_blocks() {
         assert_eq!(
             vue("<style>\n.a { box-shadow: none; -webkit-box-shadow: none; }\n</style>\n"),
-            "<style>\n.a {\n  -webkit-box-shadow: none;\n  box-shadow: none;\n}\n</style>\n"
+            "<style>\n.a { -webkit-box-shadow: none; box-shadow: none; }\n</style>\n"
         );
     }
 }
@@ -1085,7 +813,7 @@ mod less_and_sass {
                 "@w: 1px;\na { color: red; -webkit-box-shadow: none; .m(); display: block; width: @w; }\n",
                 Language::Less
             ),
-            "@w: 1px;\na {\n  -webkit-box-shadow: none;\n  color: red;\n  .m();\n  display: block;\n  width: @w;\n}\n"
+            "@w: 1px;\na { -webkit-box-shadow: none; color: red; .m(); display: block; width: @w; }\n"
         );
     }
 
@@ -1145,9 +873,19 @@ mod less_and_sass {
                 "<style lang=\"sass\">\n.a\n  color: red\n  display: block\n</style>\n",
             )),
             concat!(
-                "<style lang=\"less\">\n.a {\n  display: block;\n  color: red;\n}\n</style>\n",
+                "<style lang=\"less\">\n.a { display: block; color: red; }\n</style>\n",
                 "<style lang=\"sass\">\n.a\n  display: block\n  color: red\n</style>\n",
             )
+        );
+    }
+
+    #[test]
+    fn orders_indented_sass_style_blocks_in_html() {
+        assert_eq!(
+            html(
+                "<body>\n  <style lang=\"sass\">\n    .a\n      color: red\n\n      position: absolute\n      display: block\n  </style>\n</body>\n"
+            ),
+            "<body>\n  <style lang=\"sass\">\n    .a\n      color: red\n\n      display: block\n      position: absolute\n  </style>\n</body>\n"
         );
     }
 }
@@ -1243,33 +981,6 @@ mod class_order {
     }
 
     #[test]
-    fn removes_duplicate_classes_when_asked() {
-        let input = r#"<p class="p-4 m-2 p-4">"#;
-        assert_eq!(
-            tailwind(input, Language::Html),
-            r#"<p class="m-2 p-4 p-4">"#
-        );
-        let config = Config::for_language(Language::Html)
-            .with_class_order(ClassOrder::builtin("tailwind"))
-            .with_remove_duplicate_classes(Some(true));
-        assert_eq!(format(input, &config).unwrap(), r#"<p class="m-2 p-4">"#);
-    }
-
-    #[test]
-    fn removes_duplicate_classes_without_a_class_order() {
-        let config = Config::for_language(Language::Vue).with_remove_duplicate_classes(Some(true));
-        assert_eq!(
-            format(
-                &sfc(r#"<p class="card  is-active card" :class="['a', 'a']">"#),
-                &config
-            )
-            .unwrap(),
-            // Source order stays; bound classes are expressions and stay as written.
-            sfc(r#"<p class="card  is-active" :class="['a', 'a']">"#)
-        );
-    }
-
-    #[test]
     fn respects_disable_directives() {
         let input = "<!-- annealer-disable-next-line -->\n<p class=\"p-4 m-2\">";
         assert_eq!(tailwind(input, Language::Html), input);
@@ -1332,30 +1043,5 @@ mod class_order {
             ),
             Err(annealer::ProfileError::UnknownClassOrder(name)) if name == "bootstrap"
         ));
-    }
-}
-
-mod print_width {
-    use super::*;
-
-    const INPUT: &str = "a { width: calc(100% - var(--sidebar-width) - var(--gutter-width) - var(--scrollbar-width)); }\n";
-    const WIDE: &str = "  width: calc(100% - var(--sidebar-width) - var(--gutter-width) - var(--scrollbar-width));\n";
-
-    #[test]
-    fn defaults_to_80() {
-        let output = format(INPUT, &Config::for_language(Language::Css)).unwrap();
-        assert!(output.lines().all(|line| line.len() <= 80), "{output}");
-    }
-
-    #[test]
-    fn can_be_widened_for_stylesheets_and_style_blocks() {
-        let config = Config::for_language(Language::Css).with_print_width(Some(100));
-        assert_eq!(format(INPUT, &config).unwrap(), format!("a {{\n{WIDE}}}\n"));
-
-        let sfc = format!("<template><p></p></template>\n<style>\n{INPUT}</style>\n");
-        let config = Config::for_language(Language::Vue).with_print_width(Some(100));
-        assert!(format(&sfc, &config).unwrap().contains(WIDE));
-        let output = format(&sfc, &Config::for_language(Language::Vue)).unwrap();
-        assert!(!output.contains(WIDE), "{output}");
     }
 }

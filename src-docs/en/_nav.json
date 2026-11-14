@@ -13,5 +13,9 @@
     "text": "Playground",
     "link": "/playground",
     "activeMatch": "/playground"
+  },
+  {
+    "text": "GitHub",
+    "link": "https://github.com/logue/annealer"
   }
 ]

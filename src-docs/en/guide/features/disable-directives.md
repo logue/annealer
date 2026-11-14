@@ -38,6 +38,4 @@ Some code must keep its exact form, for example a third-party snippet or a legac
 
 ## Implementation note (stylesheets)
 
-malva's own ignore comment (`malva-ignore`) can't be reused. It rejects the `: reason` form, and sorting still moves the ignored declaration. Instead, annealer marks covered statements with internal markers before calling malva and removes them afterwards.
-
-Sass (indented syntax) has no `;`, so the markers go on lines of their own there. malva honors its ignore comment in Sass only on its own line.
+A covered declaration keeps its position and ends the run of declarations sorted around it, so nothing moves across it. A covered rule is left exactly as written, nested blocks included. malva's own ignore comment (`malva-ignore`) is not used: it rejects the `: reason` form.

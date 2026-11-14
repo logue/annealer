@@ -4,7 +4,7 @@
 //! attribute lists. Everything else is copied through byte-for-byte.
 
 use crate::attribute::{Key, is_component, key_of, normalize_name};
-use crate::class_order::Classes;
+use crate::class_order::ClassOrder;
 use crate::directive::{self, Disabled};
 use crate::error::{FormatError, line_col};
 use crate::order::attribute_order;
@@ -17,16 +17,8 @@ const VOID_ELEMENTS: &[&str] = &[
     "track", "wbr",
 ];
 
-/// Roots of foreign content (SVG, MathML), left as written for now.
-/// Namespaced XML elements (`<rdf:RDF>`) are foreign content too.
-const FOREIGN_ELEMENTS: &[&str] = &["svg", "math"];
-
 /// Elements where whitespace-only content is significant.
 const WHITESPACE_SENSITIVE: &[&str] = &["pre", "textarea"];
-
-/// `lang` values of `<template>` and `<style>` that annealer rejects instead of
-/// skipping: Pug and Stylus are not supported yet.
-const UNSUPPORTED_LANGS: &[&str] = &["pug", "jade", "stylus", "styl"];
 
 /// Elements whose content is raw text and must not be scanned for tags.
 ///
@@ -76,8 +68,6 @@ struct OpenElement<'a> {
     break_content: bool,
     /// Inside an element `layout.contentNewline` ignores.
     in_ignored: bool,
-    /// The element is, or is inside, foreign content.
-    in_foreign: bool,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -113,7 +103,7 @@ pub(crate) struct Scanner<'a> {
     copied: usize,
     out: String,
     profile: &'a Profile,
-    classes: Classes<'a>,
+    class_order: Option<&'a ClassOrder>,
     vue: bool,
     disabled: Disabled,
     /// `layout.contentNewline` moved content onto a new line.
@@ -121,7 +111,12 @@ pub(crate) struct Scanner<'a> {
 }
 
 impl<'a> Scanner<'a> {
-    pub(crate) fn new(src: &'a str, profile: &'a Profile, classes: Classes<'a>, vue: bool) -> Self {
+    pub(crate) fn new(
+        src: &'a str,
+        profile: &'a Profile,
+        class_order: Option<&'a ClassOrder>,
+        vue: bool,
+    ) -> Self {
         Self {
             src,
             bytes: src.as_bytes(),
@@ -129,7 +124,7 @@ impl<'a> Scanner<'a> {
             copied: 0,
             out: String::with_capacity(src.len()),
             profile,
-            classes,
+            class_order,
             vue,
             disabled: Disabled::new(src),
             content_moved: false,
@@ -142,13 +137,13 @@ impl<'a> Scanner<'a> {
     pub(crate) fn format(
         src: &str,
         profile: &Profile,
-        classes: Classes<'_>,
+        class_order: Option<&ClassOrder>,
         vue: bool,
     ) -> Result<String, FormatError> {
         const MAX_PASSES: usize = 4;
         let mut text = src.to_owned();
         for _ in 0..MAX_PASSES {
-            let mut scanner = Scanner::new(&text, profile, classes, vue);
+            let mut scanner = Scanner::new(&text, profile, class_order, vue);
             scanner.scan()?;
             let moved = scanner.content_moved;
             text = scanner.finish();
@@ -215,15 +210,12 @@ impl<'a> Scanner<'a> {
             } else if self.at("<!") || self.at("<?") || self.at("</") {
                 self.skip_past(">");
             } else if self.at_start_tag() {
-                let tag = self.start_tag(false, false)?;
+                let tag = self.start_tag(false)?;
                 if tag.closed {
                     continue;
                 }
                 let name = tag.name.to_ascii_lowercase();
                 let lang = tag.attribute("lang").map(str::to_ascii_lowercase);
-                if matches!(name.as_str(), "template" | "style") {
-                    reject_unsupported(self.src, tag.start, lang.as_deref())?;
-                }
                 match name.as_str() {
                     "template" if lang.as_deref().is_none_or(|lang| lang == "html") => {
                         self.scan_markup(true)?;
@@ -275,8 +267,7 @@ impl<'a> Scanner<'a> {
             } else if self.at_start_tag() {
                 self.flush(self.pos);
                 let tag_out_start = self.out.len();
-                let in_foreign = open.last().is_some_and(|element| element.in_foreign);
-                let tag = self.start_tag(true, in_foreign)?;
+                let tag = self.start_tag(true)?;
                 if tag.closed {
                     continue;
                 }
@@ -287,13 +278,10 @@ impl<'a> Scanner<'a> {
                     self.flush(self.pos);
                     open.push(self.open_element(&tag, tag_out_start, open.last()));
                 }
-                let lang = tag.attribute("lang").map(str::to_ascii_lowercase);
-                if name == "style" {
-                    reject_unsupported(self.src, tag.start, lang.as_deref())?;
-                }
                 if name == "template" {
                     template_depth += 1;
                 } else if name == "style" && !tag.disabled {
+                    let lang = tag.attribute("lang").map(str::to_ascii_lowercase);
                     self.style_element(lang.as_deref())?;
                 } else if RAW_TEXT_ELEMENTS.contains(&name.as_str()) {
                     self.raw_text(&name);
@@ -311,7 +299,7 @@ impl<'a> Scanner<'a> {
         tag_out_start: usize,
         parent: Option<&OpenElement<'_>>,
     ) -> OpenElement<'a> {
-        let rule = self.profile.layout.content_newline();
+        let rule = self.profile.layout.content_newline.as_ref();
         let ignored = rule.is_some_and(|rule| {
             let component = self.vue && is_component(tag.name);
             rule.ignore
@@ -331,7 +319,6 @@ impl<'a> Scanner<'a> {
             attribute_indent,
             break_content: rule.is_some() && !in_ignored && !tag.disabled,
             in_ignored,
-            in_foreign: parent.is_some_and(|parent| parent.in_foreign) || self.is_foreign(tag.name),
         }
     }
 
@@ -361,7 +348,7 @@ impl<'a> Scanner<'a> {
 
     /// Puts the content of `element`, which ends at `end`, on lines of its own.
     fn break_content(&mut self, element: &OpenElement<'_>, end: usize) {
-        let Some(rule) = self.profile.layout.content_newline() else {
+        let Some(rule) = &self.profile.layout.content_newline else {
             return;
         };
         self.flush(end);
@@ -464,8 +451,7 @@ impl<'a> Scanner<'a> {
         if content.trim().is_empty() {
             return Ok(());
         }
-        let base_indent = line_indent(self.src, end);
-        match stylesheet::format_embedded(content, lang, options, base_indent) {
+        match stylesheet::format_embedded(content, lang, options) {
             Ok(formatted) => {
                 if formatted != content {
                     self.replace(start, end, &formatted);
@@ -499,15 +485,9 @@ impl<'a> Scanner<'a> {
 
     /// Tokenizes the start tag at `self.pos`, rewrites it, and advances past it.
     /// With `self_closing_rules`, applies the profile's self-closing style.
-    /// Tags of foreign content (`in_foreign`, or a foreign root) are left as
-    /// written, like those an `annealer-disable*` directive covers.
-    fn start_tag(
-        &mut self,
-        self_closing_rules: bool,
-        in_foreign: bool,
-    ) -> Result<StartTag<'a>, FormatError> {
+    fn start_tag(&mut self, self_closing_rules: bool) -> Result<StartTag<'a>, FormatError> {
         let mut tag = self.parse_start_tag(self.pos)?;
-        if in_foreign || self.is_foreign(tag.name) || self.disabled.covers(tag.start) {
+        if self.disabled.covers(tag.start) {
             tag.disabled = true;
             self.pos = tag.end;
             return Ok(tag);
@@ -524,20 +504,6 @@ impl<'a> Scanner<'a> {
             self.replace(tag.start, end, &text);
         }
         Ok(tag)
-    }
-
-    /// Whether `name` starts foreign content: `<svg>`, `<math>`, or a
-    /// namespaced XML element (`<rdf:RDF>`).
-    fn is_foreign(&self, name: &str) -> bool {
-        // Vue matches `svg` and `math` case-sensitively, like void elements.
-        name.contains(':')
-            || if self.vue {
-                FOREIGN_ELEMENTS.contains(&name)
-            } else {
-                FOREIGN_ELEMENTS
-                    .iter()
-                    .any(|foreign| foreign.eq_ignore_ascii_case(name))
-            }
     }
 
     fn element_kind(&self, name: &str) -> ElementKind {
@@ -564,11 +530,8 @@ impl<'a> Scanner<'a> {
         let kind = self.element_kind(tag.name);
         let policy = match kind {
             ElementKind::Void => rules.void,
-            // `<div />` is an unclosed start tag in plain HTML: it may only be
-            // expanded there.
-            _ if !self.vue && rules.expand_non_void => SelfClosing::Never,
+            // `<div />` is an unclosed start tag in plain HTML.
             _ if !self.vue => SelfClosing::Preserve,
-            _ if !rules.enabled => SelfClosing::Preserve,
             ElementKind::Normal => rules.normal,
             ElementKind::Component => rules.component,
         };
@@ -745,13 +708,10 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    /// The reordered (or deduplicated) value of a static `class` attribute,
-    /// when a class order or duplicate removal is set. Values holding template
-    /// syntax are left as written.
+    /// The reordered value of a static `class` attribute, when a class order
+    /// is set. Values holding template syntax are left as written.
     fn class_attribute(&self, attribute: &Attribute<'_>, key: &Key) -> Option<String> {
-        if !self.classes.is_active() {
-            return None;
-        }
+        let class_order = self.class_order?;
         attribute.quote?;
         let value = attribute.value?;
         if key.bound
@@ -762,7 +722,7 @@ impl<'a> Scanner<'a> {
         {
             return None;
         }
-        self.classes.rewrite(value)
+        class_order.sort_value(value)
     }
 
     /// The reordered value of a static `style` attribute, when enabled.
@@ -771,7 +731,7 @@ impl<'a> Scanner<'a> {
         if !options.style_attribute || key.bound || !attribute.name.eq_ignore_ascii_case("style") {
             return None;
         }
-        stylesheet::format_style_attribute(attribute.value?, attribute.quote?, options)
+        stylesheet::format_style_attribute(attribute.value?, options)
     }
 
     /// Builds the rewritten start tag (plus the end tag when `closing` asks for it).
@@ -853,22 +813,6 @@ impl<'a> Scanner<'a> {
             text.push('>');
         }
         text
-    }
-}
-
-/// Fails on a `lang` listed in [`UNSUPPORTED_LANGS`], so the block is reported
-/// rather than silently skipped or scanned as markup.
-fn reject_unsupported(src: &str, offset: usize, lang: Option<&str>) -> Result<(), FormatError> {
-    match lang {
-        Some(lang) if UNSUPPORTED_LANGS.contains(&lang) => {
-            let (line, column) = line_col(src, offset);
-            Err(FormatError::UnsupportedLanguage {
-                line,
-                column,
-                lang: lang.to_owned(),
-            })
-        }
-        _ => Ok(()),
     }
 }
 

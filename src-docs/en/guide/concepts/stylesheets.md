@@ -1,12 +1,14 @@
 ---
-description: How annealer orders declarations in CSS, SCSS, Sass and Less through malva, where vendor-prefixed declarations go, and the opt-in style attribute support.
+description: How annealer orders declarations in CSS, SCSS, Sass and Less in malva's property order, what it leaves to a formatter, where vendor-prefixed declarations go, and the opt-in style attribute support.
 ---
 
 # Stylesheets
 
-annealer doesn't implement CSS property ordering itself. It delegates to [malva](https://github.com/g-plane/malva), which already has a configurable `declarationOrder`. The `stylesheet` section of a profile controls this.
+annealer doesn't define CSS property orders itself. It uses the orders of [malva](https://github.com/g-plane/malva)'s `declarationOrder`. The `stylesheet` section of a profile controls this.
 
-Formatted inputs:
+**Only the order changes.** Declarations are moved exactly as written. Whitespace, indentation, quotes, color case, numbers, comments and blank lines are left alone: formatting is the job of a formatter such as Prettier or Oxfmt. malva is a formatter, but annealer uses it only to find out how property names sort, not to print the stylesheet.
+
+Inputs:
 
 - `<style>` blocks in HTML and Vue, including `<style lang="scss">`, `lang="less"` and `lang="sass"`.
 - Standalone `.css`, `.scss`, `.sass` (indented syntax) and `.less` files.
@@ -24,7 +26,9 @@ stylesheet:
 ```
 
 - `declarationOrder`: `smacss` (important, flow-affecting properties first), `concentric` (from outside the box model inward), or `alphabetical`.
-- `declarationOrderGroupBy`: how declarations are split into independently sorted runs: `non-declaration` (default) or `non-declaration-and-empty-line`.
+- `declarationOrderGroupBy`: how declarations are split into independently sorted runs: `non-declaration-and-empty-line` (default; a blank line also ends a run) or `non-declaration` (declarations are sorted across blank lines, which stay where they are).
+
+Declarations never move across another statement (a nested rule, `@include`, a Less mixin call, …) or a comment, so comments and the groups they label stay intact. A declaration covered by a [disable directive](../features/disable-directives.md) or holding a nested block (Sass nested properties) also stays in place and ends the run.
 
 ```css
 /* Input */
@@ -50,22 +54,12 @@ Vendor-prefixed declarations (`-webkit-…`, `-moz-…`) are treated as separate
 
 Why `start` and not `end`: a prefixed property is often an alias of the standard one, and the later declaration wins. Putting prefixes last could let a dialect override the standard value (for example, `-webkit-border-radius` with two values). `start` keeps the standard property last, as Autoprefixer's output does.
 
-malva has no such option (it sorts by the unprefixed name). annealer re-parses malva's output and moves only the prefixed declarations. Runs match malva's sort units. A run with a comment between its declarations is left alone. The option applies only when `declarationOrder` is set. `alongside` (the default when not set) keeps malva's behavior.
+malva has no such option (it sorts by the unprefixed name), so annealer moves the prefixed declarations itself, within the same runs. The option applies only when `declarationOrder` is set. `alongside` (the default when not set) keeps malva's order.
 
 ## Static `style` attributes (opt-in) {#static-style-attributes-opt-in}
 
 `stylesheet.styleAttribute: true` also orders the declarations inside static `style` attributes. It is off in both built-in profiles.
 
-- The value stays on one line.
-- CSS strings use the quote opposite to the attribute's quote. With the usual double-quoted attribute, that is the single quote annealer prefers anyway.
-- A missing trailing `;` stays missing.
+- Declarations are moved as written; spacing and a missing trailing `;` don't change.
 - Bound `:style` is never touched.
-- Values are left as written when they are unquoted, contain template syntax, comments, `{}`, `<` or `&`, or don't parse as plain declarations.
-
-## Other malva options
-
-Other malva options go under `stylesheet.malva` (for example `printWidth`, `quotes`, `hexCase`). Unknown keys are rejected, so a typo isn't silently ignored. See the [Profile reference](../../api/profile.md#stylesheet).
-
-## Quotes
-
-CSS strings use single quotes (`@use 'sass:math'`, `font-family: 'Noto Sans'`), as Prettier and oxfmt write them with `singleQuote`. A string keeps double quotes where single quotes would need escaping (`"O'Brien"`). This is annealer's default (`quotes: prefer-single`); malva's own default is double quotes. Set `stylesheet.malva.quotes` to change it.
+- Values are left as written when they are unquoted, contain template syntax, `{}`, `<` or `&`, or don't parse as plain declarations.

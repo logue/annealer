@@ -39,3 +39,7 @@ cargo:
 skills:
   dirs:
     - .agents/skills
+
+permissions:
+  taze:
+    skills: true

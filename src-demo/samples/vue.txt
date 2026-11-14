@@ -1,0 +1,10 @@
+<template>
+  <MyButton @click="submit" :disabled="busy" v-if="visible" class="primary" :class="{ busy }" id="submit" aria-label="Submit"></MyButton>
+  <p class="text-sm p-3 hover:bg-gray-100 card flex mt-4 md:p-6 font-bold">Tailwind classes</p>
+  <div
+    title="Panel" v-for="item in items" :key="item.id">{{ item.name }}</div>
+</template>
+
+<style scoped>
+.panel { color: red; -webkit-box-shadow: none; display: flex; box-shadow: none; position: relative; }
+</style>

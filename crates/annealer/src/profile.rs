@@ -2,7 +2,7 @@
 
 use std::collections::HashSet;
 
-use malva::config::{DeclarationOrder, DeclarationOrderGroupBy, FormatOptions, Quotes};
+use malva::config::{DeclarationOrder, DeclarationOrderGroupBy};
 use serde::Deserialize;
 
 use crate::class_order::ClassOrder;
@@ -65,30 +65,6 @@ pub struct Layout {
     pub content_newline: Option<ContentNewline>,
 }
 
-impl Layout {
-    /// Turns the optional rules on or off; `None` keeps the profile's setting.
-    /// Turning on `contentNewline` in a profile without it uses its defaults.
-    pub(crate) fn enable(&mut self, self_closing: Option<bool>, content_newline: Option<bool>) {
-        if let Some(enabled) = self_closing {
-            self.self_closing.enabled = enabled;
-        }
-        match (content_newline, &mut self.content_newline) {
-            (Some(enabled), Some(rule)) => rule.enabled = enabled,
-            (Some(true), None) => self.content_newline = Some(ContentNewline::default()),
-            _ => {}
-        }
-    }
-
-    /// The `contentNewline` rule, if it is on.
-    pub(crate) fn content_newline(&self) -> Option<&ContentNewline> {
-        self.content_newline.as_ref().filter(|rule| rule.enabled)
-    }
-}
-
-fn enabled() -> bool {
-    true
-}
-
 /// Puts the content of a multiline element on lines of its own, like
 /// `vue/multiline-html-element-content-newline`.
 ///
@@ -97,10 +73,6 @@ fn enabled() -> bool {
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ContentNewline {
-    /// Whether the rule applies. Off in the built-in profiles; turned on by
-    /// `--content-newline` or the `contentNewline` format option.
-    #[serde(default = "enabled")]
-    pub enabled: bool,
     /// Elements left alone, together with everything inside them. Element
     /// names match case-insensitively; component names match exactly.
     #[serde(default = "default_content_newline_ignore")]
@@ -109,16 +81,6 @@ pub struct ContentNewline {
     /// them to a single line break.
     #[serde(default)]
     pub allow_empty_lines: bool,
-}
-
-impl Default for ContentNewline {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            ignore: default_content_newline_ignore(),
-            allow_empty_lines: false,
-        }
-    }
 }
 
 /// `vue/multiline-html-element-content-newline`'s default `ignores`: `pre`,
@@ -151,15 +113,10 @@ pub enum SelfClosing {
 }
 
 /// Self-closing style per element kind, mirroring `vue/html-self-closing`.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SelfClosingRules {
-    /// Whether the `normal` and `component` rules apply. Off in the built-in
-    /// profiles; turned on by `--self-closing` or the `selfClosing` format
-    /// option. `void` and `expandNonVoid` always apply.
-    #[serde(default = "enabled")]
-    pub enabled: bool,
-    /// Void elements (`br`, `img`, `input`, …). Applies regardless of `enabled`.
+    /// Void elements (`br`, `img`, `input`, …).
     #[serde(default)]
     pub void: SelfClosing,
     /// Empty non-void HTML/SVG elements. Vue templates only: in plain HTML,
@@ -169,26 +126,6 @@ pub struct SelfClosingRules {
     /// Empty components. Vue templates only.
     #[serde(default)]
     pub component: SelfClosing,
-    /// Plain HTML only: give non-void elements written self-closing
-    /// (`<div />`) an end tag (`<div></div>`). HTML ignores the `/`, so
-    /// `<div />` leaves the element open. Elements inside `<svg>` and `<math>`,
-    /// where self-closing is valid, are left alone. Applies regardless of
-    /// `enabled`; turned on by `--expand-non-void` or the `expandNonVoid`
-    /// format option.
-    #[serde(default)]
-    pub expand_non_void: bool,
-}
-
-impl Default for SelfClosingRules {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            void: SelfClosing::default(),
-            normal: SelfClosing::default(),
-            component: SelfClosing::default(),
-            expand_non_void: false,
-        }
-    }
 }
 
 #[derive(Deserialize)]
@@ -221,8 +158,6 @@ struct RawStylesheet {
     vendor_prefix: VendorPrefix,
     #[serde(default)]
     style_attribute: bool,
-    #[serde(default)]
-    malva: Option<yaml_serde::Mapping>,
 }
 
 /// Where vendor-prefixed declarations (`-webkit-…`) go when declarations are sorted.
@@ -240,89 +175,34 @@ pub enum VendorPrefix {
     Start,
 }
 
-/// Stylesheet formatting options resolved from a profile.
+/// Stylesheet options resolved from a profile.
 #[derive(Clone, Debug)]
 pub(crate) struct StylesheetOptions {
-    pub malva: FormatOptions,
+    /// Property order; without it, declarations are not reordered.
+    pub declaration_order: Option<DeclarationOrder>,
+    /// Whether a blank line also ends a run of sorted declarations.
+    pub split_on_empty_line: bool,
     pub vendor_prefix: VendorPrefix,
     /// Also order the declarations of static `style` attributes.
     pub style_attribute: bool,
 }
 
-/// malva options accepted under `stylesheet.malva`. Kept in sync with
-/// `schema/profile.schema.json` by a test. `declarationOrder` and
-/// `declarationOrderGroupBy` are deliberately absent: they live on
-/// `stylesheet` itself.
-pub(crate) const MALVA_OPTIONS: &[&str] = &[
-    "printWidth",
-    "useTabs",
-    "indentWidth",
-    "lineBreak",
-    "hexCase",
-    "hexColorLength",
-    "quotes",
-    "attrSelector.quotes",
-    "operatorLineBreak",
-    "blockSelectorLineBreak",
-    "omitNumberLeadingZero",
-    "trailingComma",
-    "formatComments",
-    "alignComments",
-    "lineBreakInPseudoParens",
-    "singleLineBlockThreshold",
-    "keyframeSelectorNotation",
-    "attrValueQuotes",
-    "preferSingleLine",
-    "selectors.preferSingleLine",
-    "functionArgs.preferSingleLine",
-    "sassContentAtRule.preferSingleLine",
-    "sassIncludeAtRule.preferSingleLine",
-    "sassMap.preferSingleLine",
-    "sassModuleConfig.preferSingleLine",
-    "sassParams.preferSingleLine",
-    "lessImportOptions.preferSingleLine",
-    "lessMixinArgs.preferSingleLine",
-    "lessMixinParams.preferSingleLine",
-    "singleLineTopLevelDeclarations",
-    "fontFamilyNames",
-    "nthPlusSpacing",
-    "selectorOverrideCommentDirective",
-    "ignoreCommentDirective",
-    "ignoreFileCommentDirective",
-];
-
 impl RawStylesheet {
-    /// Builds malva options, rejecting keys malva would silently ignore.
-    fn into_options(self) -> Result<StylesheetOptions, ProfileError> {
-        let mut quotes_set = false;
-        let mut options = match self.malva {
-            None => FormatOptions::default(),
-            Some(mapping) => {
-                for key in mapping.keys() {
-                    let key = key.as_str().unwrap_or_default();
-                    if !MALVA_OPTIONS.contains(&key) {
-                        return Err(ProfileError::MalvaOption(key.to_owned()));
-                    }
-                    quotes_set |= key == "quotes";
-                }
-                yaml_serde::from_value(yaml_serde::Value::Mapping(mapping))?
-            }
-        };
-        // Single quotes are annealer's default (malva's is double), like
-        // Prettier's and oxfmt's `singleQuote`: a string switches to double
-        // quotes only when that needs fewer escapes.
-        if !quotes_set {
-            options.language.quotes = Quotes::PreferSingle;
-        }
-        options.language.declaration_order = self.declaration_order;
-        if let Some(group_by) = self.declaration_order_group_by {
-            options.language.declaration_order_group_by = group_by;
-        }
-        Ok(StylesheetOptions {
-            malva: options,
+    fn into_options(self) -> StylesheetOptions {
+        // Unlike malva, a blank line ends a run by default: authors use blank
+        // lines to group declarations.
+        let group_by = self
+            .declaration_order_group_by
+            .unwrap_or(DeclarationOrderGroupBy::NonDeclarationAndEmptyLine);
+        StylesheetOptions {
+            declaration_order: self.declaration_order,
+            split_on_empty_line: matches!(
+                group_by,
+                DeclarationOrderGroupBy::NonDeclarationAndEmptyLine
+            ),
             vendor_prefix: self.vendor_prefix,
             style_attribute: self.style_attribute,
-        })
+        }
     }
 }
 
@@ -438,10 +318,7 @@ impl Profile {
             fallback,
             normalize: raw.normalize,
             layout: raw.layout,
-            stylesheet: raw
-                .stylesheet
-                .map(RawStylesheet::into_options)
-                .transpose()?,
+            stylesheet: raw.stylesheet.map(RawStylesheet::into_options),
             class_order: raw.class_order.map(class_order_of).transpose()?,
         })
     }
@@ -572,26 +449,22 @@ mod tests {
 
     #[test]
     fn builds_stylesheet_options() {
-        let yaml = "schemaVersion: 1\nname: x\ngroups:\n  - name: a\n    fallback: true\nstylesheet:\n  declarationOrder: concentric\n  malva:\n    indentWidth: 4\n    quotes: prefer-single\n";
-        let options = Profile::from_yaml(yaml).unwrap().stylesheet.unwrap().malva;
+        let yaml = "schemaVersion: 1\nname: x\ngroups:\n  - name: a\n    fallback: true\nstylesheet:\n  declarationOrder: concentric\n";
+        let options = Profile::from_yaml(yaml).unwrap().stylesheet.unwrap();
         assert!(matches!(
-            options.language.declaration_order,
+            options.declaration_order,
             Some(DeclarationOrder::Concentric)
         ));
-        assert_eq!(options.layout.indent_width, 4);
+        assert!(options.split_on_empty_line);
     }
 
     #[test]
-    fn rejects_unknown_malva_options() {
-        let misplaced = "schemaVersion: 1\nname: x\ngroups:\n  - name: a\n    fallback: true\nstylesheet:\n  malva:\n    declarationOrder: smacss\n";
+    fn rejects_formatting_options() {
+        // Formatting is left to a formatter; malva's options are not accepted.
+        let yaml = "schemaVersion: 1\nname: x\ngroups:\n  - name: a\n    fallback: true\nstylesheet:\n  malva:\n    quotes: prefer-single\n";
         assert!(matches!(
-            Profile::from_yaml(misplaced),
-            Err(ProfileError::MalvaOption(key)) if key == "declarationOrder"
-        ));
-        let snake_case = "schemaVersion: 1\nname: x\ngroups:\n  - name: a\n    fallback: true\nstylesheet:\n  malva:\n    indent_width: 4\n";
-        assert!(matches!(
-            Profile::from_yaml(snake_case),
-            Err(ProfileError::MalvaOption(_))
+            Profile::from_yaml(yaml),
+            Err(ProfileError::Yaml(_))
         ));
     }
 

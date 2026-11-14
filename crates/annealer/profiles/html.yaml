@@ -12,24 +12,14 @@ layout:
   closingBracketNewline: true
   oneAttributePerLine: true
   selfClosing:
-    # `<br />`: makes the element's end explicit in the source. Always applied;
-    # `--no-void-self-closing` (CLI) or `voidSelfClosing: false` (JS) writes
-    # `<br>` instead.
+    # `<br />`: makes the element's end explicit in the source.
     void: always
     # `normal`/`component` only apply to Vue templates.
-    # `<div />` -> `<div></div>`: HTML ignores the slash, so the element would
-    # stay open. Rewrites markup beyond attribute order, so it is off here.
-    # Turn it on with `--expand-non-void` (CLI) or `expandNonVoid` (JS).
-    expandNonVoid: false
-  # Rewrites markup beyond attribute order, so it is off here. Turn it on with
-  # `--content-newline` (CLI), `contentNewline` (JS), or `enabled: true` in a
-  # profile.
-  # Content of a multiline element goes on lines of its own
-  # (vue/multiline-html-element-content-newline). `pre`, `textarea` and inline
-  # elements (`a`, `span`, `strong`, …) are left alone by default, because the
-  # added whitespace could be visible there.
-  contentNewline:
-    enabled: false
+    # Content of a multiline element goes on lines of its own
+    # (vue/multiline-html-element-content-newline). `pre`, `textarea` and inline
+    # elements (`a`, `span`, `strong`, …) are left alone by default, because the
+    # added whitespace could be visible there.
+  contentNewline: {}
 
 groups:
   # 1. Global awareness
@@ -103,8 +93,3 @@ stylesheet:
   # Vendor-prefixed declarations go first, alphabetically (no grouping), so the
   # standard property is declared last and wins where the prefixed one is an alias.
   vendorPrefix: start
-  malva:
-    # Single-quoted CSS strings, as Prettier and oxfmt write them with
-    # `singleQuote` (also annealer's default). Double quotes are used only
-    # where they need fewer escapes.
-    quotes: prefer-single

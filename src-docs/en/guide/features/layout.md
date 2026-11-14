@@ -6,15 +6,7 @@ description: Layout rules for multiline start tags, self-closing elements and el
 
 Reordering attributes can break the original line layout of a tag. The `layout` section of a profile defines how tags are laid out afterwards. Each rule mirrors an eslint-plugin-vue rule, so projects that keep those rules get consistent results.
 
-Both built-in profiles turn `closingBracketNewline`, `oneAttributePerLine` and `selfClosing.void` (`<br />`, `<hr />`, `<wbr />`, …) on. Self-closing empty elements and components (`selfClosing.normal`/`component`) and `contentNewline` rewrite markup beyond what reordering needs, so the built-in profiles define them but leave them off (`enabled: false`). Turn them on when needed:
-
-| Rule             | CLI                 | JavaScript             | Profile                           |
-| ---------------- | ------------------- | ---------------------- | --------------------------------- |
-| `selfClosing`    | `--self-closing`    | `selfClosing: true`    | `selfClosing.enabled: true`       |
-| `contentNewline` | `--content-newline` | `contentNewline: true` | `contentNewline.enabled: true`    |
-| `expandNonVoid`  | `--expand-non-void` | `expandNonVoid: true`  | `selfClosing.expandNonVoid: true` |
-
-The CLI flags and JavaScript options override the profile's `enabled`. `--no-self-closing` / `--no-content-newline` (or `false`) turn a rule off in a profile that enables it.
+Both built-in profiles turn all of these rules on.
 
 ## `closingBracketNewline`
 
@@ -41,7 +33,7 @@ This is needed because reordering could otherwise put two attributes on one line
 
 ## `selfClosing`
 
-Equivalent to `vue/html-self-closing`. Set per element kind, each to `always`, `never` or `preserve`. `void` always applies; `enabled` (off in the built-in `vue` profile, see above) covers `normal` and `component` only:
+Equivalent to `vue/html-self-closing`. Set per element kind, each to `always`, `never` or `preserve`:
 
 | Kind        | Example      | Built-in `html` | Built-in `vue` |
 | ----------- | ------------ | --------------- | -------------- |
@@ -50,27 +42,8 @@ Equivalent to `vue/html-self-closing`. Set per element kind, each to `always`, `
 | `component` | `<MyComp />` | –               | `always`       |
 
 - `normal` and `component` apply in Vue templates only. In plain HTML, `<div />` is an unclosed start tag.
-- `--void-self-closing` / `--no-void-self-closing` (JavaScript: `voidSelfClosing: true` / `false`) set `void` to `always` / `never` without editing the profile.
 - Whitespace-only content counts as empty, except in `pre` and `textarea`.
 - SFC top-level blocks (`<template>`, `<script>`, `<style>`) are never touched.
-
-### `expandNonVoid`
-
-Plain HTML ignores the slash of a non-void element, so `<div />` is the same as `<div>`: the element stays open and swallows whatever follows. `expandNonVoid: true` (`--expand-non-void`, JavaScript `expandNonVoid: true`) gives such elements an end tag. Off in the built-in profiles, because it changes how browsers parse the markup.
-
-<!-- prettier-ignore -->
-```html
-<!-- Input -->
-<div class="spacer" /><my-icon/>
-<svg><path d="M0 0" /></svg>
-
-<!-- Output (--expand-non-void) -->
-<div class="spacer"></div><my-icon></my-icon>
-<svg><path d="M0 0" /></svg>
-```
-
-- Foreign content (`<svg>`, `<math>`, namespaced XML such as `<rdf:RDF>`) is left alone: self-closing is valid there ([Limitations](../start/limitations.md)).
-- Vue templates are not affected; use `normal: never` / `component: never` there.
 
 :::warning Difference from vue/html-self-closing
 `void: always` differs from the default of `vue/html-self-closing` (`html.void: never`). If you keep that ESLint rule, set `html.void: always` there, or `void: never` in your annealer profile.
@@ -78,7 +51,7 @@ Plain HTML ignores the slash of a non-void element, so `<div />` is the same as 
 
 ## `contentNewline`
 
-Equivalent to `vue/multiline-html-element-content-newline`. Off in the built-in profiles (see above). In your own profile, omit the key or set `enabled: false` to turn the rule off; `{}` turns it on with the defaults. `--content-newline` on a profile without the key also uses the defaults.
+Equivalent to `vue/multiline-html-element-content-newline`. Omit the key to turn the rule off. `{}` turns it on with the defaults.
 
 - An element is **multiline** when its end tag starts on a later line than its start tag (the ESLint rule's definition). Its content then starts and ends with exactly one line break.
 - `allowEmptyLines: true` keeps blank lines instead of collapsing them.
@@ -95,7 +68,7 @@ Equivalent to `vue/multiline-html-element-content-newline`. Off in the built-in 
     id="x"><MyComp></MyComp></div>
 </template>
 
-<!-- Output (vue profile, --self-closing --content-newline) -->
+<!-- Output (vue profile) -->
 <template>
   <div
     id="x"
@@ -106,6 +79,6 @@ Equivalent to `vue/multiline-html-element-content-newline`. Off in the built-in 
 </template>
 ```
 
-The HTML profile defines the rule too. Whitespace at the start and end of block-level content is not rendered, and the `ignore` list covers the elements where it could be.
+The rule is also on in the HTML profile. Whitespace at the start and end of block-level content is not rendered, and the `ignore` list covers the elements where it could be.
 
 Moving content to a new line can change the indentation that a nested tag's closing bracket aligns to. annealer therefore formats the document again until it is stable (at most 4 passes, normally 2).

@@ -1,11 +1,13 @@
 import '@carbon/web-components/es/components/accordion/index.js';
+
+import { findMarkupIssues } from './markup-issues';
+
 import type CDSAccordionItem from '@carbon/web-components/es/components/accordion/accordion-item.js';
-import '@carbon/web-components/es/components/checkbox/index.js';
-import type CDSCheckbox from '@carbon/web-components/es/components/checkbox/checkbox.js';
 import '@carbon/web-components/es/components/grid/index.js';
 import '@carbon/web-components/es/components/notification/inline-notification.js';
 import type CDSInlineNotification from '@carbon/web-components/es/components/notification/inline-notification.js';
 import '@carbon/web-components/es/components/select/index.js';
+import type CDSSelectItem from '@carbon/web-components/es/components/select/select-item.js';
 import type CDSSelect from '@carbon/web-components/es/components/select/select.js';
 import '@carbon/web-components/es/components/tag/tag.js';
 import '@carbon/web-components/es/components/textarea/index.js';
@@ -13,42 +15,23 @@ import type CDSTextarea from '@carbon/web-components/es/components/textarea/text
 
 import { type Language, Meta, builtinProfile, format, init } from '@/';
 
-// The linter's resolver ignores stylesheets; Rsbuild resolves this import.
-// rslint-disable-next-line import/no-unresolved
-import './style.scss';
+import './index.scss';
 
-const SAMPLES: Record<Language, string> = {
-  vue: `<template>
-  <MyButton @click="submit" :disabled="busy" v-if="visible" class="primary" :class="{ busy }" id="submit" aria-label="Submit"></MyButton>
-  <p class="text-sm p-3 hover:bg-gray-100 card flex mt-4 md:p-6 font-bold">Tailwind classes</p>
-  <div
-    title="Panel" v-for="item in items" :key="item.id">{{ item.name }}</div>
-</template>
+/** Sample flavors selectable in the Sample dropdown. */
+type SampleVariant = 'default' | 'repairable' | 'invalid';
 
-<style scoped>
-.panel { color: red; -webkit-box-shadow: none; display: flex; box-shadow: none; position: relative; }
-</style>
-`,
-  html: `<img onload="loaded()" data-z="1" data-a="2" width="80" src="logo.png" alt="Logo" class="logo" id="logo">
-<button aria-expanded="false" aria-controls="menu" aria-label="Menu" role="button" type="button">Menu</button>
-`,
-  css: `.card { color: #333; margin: 0; -webkit-transition: opacity 0.2s; transition: opacity 0.2s; display: block; position: relative; }
-`,
-  scss: `.card {
-  color: #333; display: block;
-  &:hover { opacity: 0.8; position: relative; }
-}
-`,
-  sass: `.card
-  color: #333
-  display: block
-  &:hover
-    opacity: 0.8
-    position: relative
-`,
-  less: `@gap: 8px;
-.card { color: #333; margin: @gap; display: block; }
-`
+/**
+ * Samples available per language. Each entry maps to a text file under
+ * `samples/`: `default` to `{language}.txt`, the failure patterns to
+ * `{language}.{variant}.txt`.
+ */
+const SAMPLE_VARIANTS: Record<Language, readonly SampleVariant[]> = {
+  vue: ['default', 'repairable', 'invalid'],
+  html: ['default', 'repairable', 'invalid'],
+  css: ['default', 'invalid'],
+  scss: ['default', 'invalid'],
+  sass: ['default', 'invalid'],
+  less: ['default', 'invalid']
 };
 
 const element = (id: string): HTMLElement => {
@@ -58,18 +41,14 @@ const element = (id: string): HTMLElement => {
 };
 
 const language = element('language') as CDSSelect;
+const sample = element('sample') as CDSSelect;
 const profile = element('profile') as CDSSelect;
 const classOrder = element('class-order') as CDSSelect;
-const removeDuplicateClasses = element('remove-duplicate-classes') as CDSCheckbox;
-const selfClosing = element('self-closing') as CDSCheckbox;
-const noVoidSelfClosing = element('no-void-self-closing') as CDSCheckbox;
-const expandNonVoid = element('expand-non-void') as CDSCheckbox;
-const contentNewline = element('content-newline') as CDSCheckbox;
 const profileEditor = element('profile-editor') as CDSAccordionItem;
 const profileYaml = element('profile-yaml') as CDSTextarea;
 const input = element('input') as CDSTextarea;
 const output = element('output') as CDSTextarea;
-const error = element('error') as CDSInlineNotification;
+const status = element('status') as CDSInlineNotification;
 
 // Carbon's select treats an empty value as "unset", so the defaults use
 // sentinel values that map back to `undefined` here.
@@ -84,25 +63,75 @@ const selectedProfile = (): string | undefined => {
   }
 };
 
+const showStatus = (
+  kind: 'success' | 'warning' | 'error',
+  title: string,
+  subtitle: string
+): void => {
+  status.setAttribute('kind', kind);
+  status.title = title;
+  status.subtitle = subtitle;
+  status.hidden = false;
+};
+
 const render = (): void => {
+  const inputLanguage = language.value as Language;
   try {
     output.value = format(input.value, {
-      language: language.value as Language,
+      language: inputLanguage,
       profile: selectedProfile(),
-      classOrder: classOrder.value === 'keep' ? undefined : classOrder.value,
-      // Unchecked keeps the profile's (or class order's) setting.
-      removeDuplicateClasses: removeDuplicateClasses.checked || undefined,
-      selfClosing: selfClosing.checked || undefined,
-      voidSelfClosing: noVoidSelfClosing.checked ? false : undefined,
-      expandNonVoid: expandNonVoid.checked || undefined,
-      contentNewline: contentNewline.checked || undefined
+      classOrder: classOrder.value === 'keep' ? undefined : classOrder.value
     });
-    error.subtitle = '';
-    error.hidden = true;
-  } catch (error_) {
+  } catch (error) {
     output.value = '';
-    error.subtitle = String(error_);
-    error.hidden = false;
+    showStatus('error', 'Could not format', String(error));
+    return;
+  }
+  // The formatter recovers from markup problems without reporting them, so
+  // scan the input to tell "formatted" apart from "repaired and formatted".
+  const issues =
+    inputLanguage === 'html' || inputLanguage === 'vue' ? findMarkupIssues(input.value) : [];
+  if (issues.length > 0) {
+    showStatus('warning', 'Repaired and formatted', `Recovered from: ${issues.join('; ')}.`);
+  } else {
+    showStatus('success', 'Formatted', 'No problems found.');
+  }
+};
+
+// Sample sources live in `samples/*.txt` next to the page (plain text, so
+// formatters leave the intentionally broken ones alone) and load on demand.
+const sampleCache: Map<string, string> = new Map();
+
+const loadSample = async (): Promise<void> => {
+  const name = sample.value === 'default' ? language.value : `${language.value}.${sample.value}`;
+  let text = sampleCache.get(name);
+  if (text === undefined) {
+    const response = await fetch(`samples/${name}.txt`);
+    if (!response.ok) {
+      throw new Error(`failed to load sample \`${name}.txt\` (HTTP ${String(response.status)})`);
+    }
+    text = await response.text();
+    sampleCache.set(name, text);
+  }
+  input.value = text;
+  render();
+};
+
+const applySample = (): void => {
+  loadSample().catch((error: unknown) => {
+    output.value = '';
+    showStatus('error', 'Could not load the sample', String(error));
+  });
+};
+
+/** Greys out the Sample entries the current language has no file for. */
+const syncSampleOptions = (): void => {
+  const variants = SAMPLE_VARIANTS[language.value as Language];
+  for (const item of sample.querySelectorAll<CDSSelectItem>('cds-select-item')) {
+    item.disabled = !variants.includes(item.value as SampleVariant);
+  }
+  if (!variants.includes(sample.value as SampleVariant)) {
+    sample.value = 'default';
   }
 };
 
@@ -119,9 +148,10 @@ const applyTheme = (dark: boolean): void => {
 // Regist Events
 
 language.addEventListener('cds-select-selected', () => {
-  input.value = SAMPLES[language.value as Language];
-  render();
+  syncSampleOptions();
+  applySample();
 });
+sample.addEventListener('cds-select-selected', applySample);
 profile.addEventListener('cds-select-selected', () => {
   if (profile.value === 'custom') {
     if (profileYaml.value === '') {
@@ -132,11 +162,6 @@ profile.addEventListener('cds-select-selected', () => {
   render();
 });
 classOrder.addEventListener('cds-select-selected', render);
-removeDuplicateClasses.addEventListener('cds-checkbox-changed', render);
-selfClosing.addEventListener('cds-checkbox-changed', render);
-noVoidSelfClosing.addEventListener('cds-checkbox-changed', render);
-expandNonVoid.addEventListener('cds-checkbox-changed', render);
-contentNewline.addEventListener('cds-checkbox-changed', render);
 profileYaml.addEventListener('input', render);
 input.addEventListener('input', render);
 
@@ -155,6 +180,6 @@ observer.observe(document.body, { childList: true, subtree: true });
 
 applyTheme(darkScheme.matches);
 element('version').textContent = `v${Meta.version}`;
-input.value = SAMPLES.vue;
 await init();
-render();
+syncSampleOptions();
+applySample();

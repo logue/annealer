@@ -16,13 +16,6 @@ pub enum FormatError {
         message: String,
     },
 
-    #[error("unsupported language `{lang}` at {line}:{column} (Pug and Stylus are not supported)")]
-    UnsupportedLanguage {
-        line: usize,
-        column: usize,
-        lang: String,
-    },
-
     #[error("failed to format stylesheet starting at {line}:{column}: {message}")]
     Stylesheet {
         line: usize,
@@ -56,9 +49,6 @@ pub enum ProfileError {
         "invalid pattern `{pattern}` in group `{group}`: `*` is only allowed as the last character"
     )]
     Pattern { group: String, pattern: String },
-
-    #[error("unknown malva option `stylesheet.malva.{0}`")]
-    MalvaOption(String),
 
     #[error("unknown built-in class order `{0}`")]
     UnknownClassOrder(String),

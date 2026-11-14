@@ -13,5 +13,9 @@
     "text": "在线演示",
     "link": "/playground",
     "activeMatch": "/playground"
+  },
+  {
+    "text": "GitHub",
+    "link": "https://github.com/logue/annealer"
   }
 ]

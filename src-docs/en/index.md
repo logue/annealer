@@ -1,9 +1,9 @@
 ---
-description: Annealer reorders HTML and Vue attributes, and stylesheet declarations, by semantic meaning using swappable YAML profiles.
+description: annealer reorders HTML and Vue attributes, and stylesheet declarations, by semantic meaning using swappable YAML profiles.
 pageType: home
 
 hero:
-  name: Annealer
+  name: annealer
   text: Attribute order by meaning
   tagline: Reorders HTML/Vue attributes and stylesheet declarations by semantic meaning, using swappable YAML profiles.
   actions:
@@ -22,8 +22,8 @@ features:
     details: The Vue profile keeps eslint-plugin-vue's default order and adds same-name clustering, ARIA sub-ordering, plain HTML and stylesheets.
     icon: 🧩
     link: /guide/concepts/attribute-order
-  - title: Stylesheets via malva
-    details: Property order for CSS, SCSS, Sass and Less is delegated to malva, with vendor-prefixed declarations placed first.
+  - title: Stylesheet declaration order
+    details: Declarations in CSS, SCSS, Sass and Less are reordered in malva's property order, with vendor-prefixed declarations placed first. Only the order changes.
     icon: 🎨
     link: /guide/concepts/stylesheets
   - title: Swappable YAML profiles

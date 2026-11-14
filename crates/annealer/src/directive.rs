@@ -81,10 +81,6 @@ impl Disabled {
         }
     }
 
-    pub(crate) fn is_empty(&self) -> bool {
-        self.switches.iter().all(|&(_, disabled)| !disabled) && self.lines.is_empty()
-    }
-
     /// Whether a construct starting at `offset` must be left untouched.
     pub(crate) fn covers(&self, offset: usize) -> bool {
         let in_range = self

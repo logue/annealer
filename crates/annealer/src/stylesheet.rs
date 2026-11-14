@@ -1,21 +1,22 @@
-//! Stylesheet property ordering, delegated to `malva`.
+//! Stylesheet declaration ordering.
+//!
+//! annealer only reorders: declarations are moved as written, and everything
+//! else (whitespace, quotes, colors, numbers, comments, blank lines) is kept
+//! byte for byte. Formatting is left to a formatter such as Prettier or Oxfmt.
+//!
+//! The order itself comes from `malva`'s `declarationOrder`. malva is a
+//! formatter, so its output is not used; annealer only asks it how a run of
+//! property names sorts and applies that permutation to the source.
 
 use malva::Syntax;
-use malva::config::{DeclarationOrderGroupBy, Quotes};
-use raffia::ParserBuilder;
+use malva::config::{DeclarationOrder, FormatOptions, LayoutOptions};
 use raffia::ast::Stylesheet;
+use raffia::token::{Comment, CommentKind};
+use raffia::{ParserBuilder, ParserOptions};
 use serde_json::Value;
 
 use crate::directive::{self, Disabled};
 use crate::profile::{StylesheetOptions, VendorPrefix};
-
-/// Internal at-rule inserted around disabled declarations so malva's sorting
-/// can't move them (a non-declaration statement ends a sort run). Removed
-/// from the output.
-const FENCE: &str = "@annealer-fence-5d1c;";
-/// Internal comment directive telling malva to print the next statement
-/// verbatim. Removed from the output.
-const VERBATIM: &str = "annealer-verbatim-5d1c";
 
 /// Stylesheet syntaxes annealer formats.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -49,82 +50,85 @@ impl StyleLang {
     }
 }
 
-/// Formats a whole stylesheet.
+/// Reorders the declarations of a whole stylesheet.
 pub(crate) fn format(
     input: &str,
     lang: StyleLang,
     options: &StylesheetOptions,
 ) -> Result<String, String> {
-    let protected = match protect_disabled(input, lang.syntax())? {
-        Protection::None => None,
-        Protection::All => return Ok(input.to_owned()),
-        Protection::Marked(marked) => Some(marked),
+    let Some(order) = &options.declaration_order else {
+        return Ok(input.to_owned());
     };
-    let formatted = match &protected {
-        None => malva::format_text(input, lang.syntax(), &options.malva),
-        Some(marked) => {
-            let mut malva_options = options.malva.clone();
-            malva_options.language.ignore_comment_directive = VERBATIM.to_owned();
-            malva::format_text(marked, lang.syntax(), &malva_options)
-        }
-    }
-    .map_err(|error| error.to_string())?;
-    let formatted = sort_vendor_prefixes(formatted, lang, options);
-    Ok(if protected.is_some() {
-        remove_markers(&formatted)
-    } else {
-        formatted
-    })
-}
 
-fn sort_vendor_prefixes(formatted: String, lang: StyleLang, options: &StylesheetOptions) -> String {
-    let language = &options.malva.language;
-    if options.vendor_prefix == VendorPrefix::Start && language.declaration_order.is_some() {
-        let split_on_empty_line = matches!(
-            language.declaration_order_group_by,
-            DeclarationOrderGroupBy::NonDeclarationAndEmptyLine
-        );
-        move_vendor_prefixed_first(&formatted, lang.syntax(), split_on_empty_line)
-    } else {
-        formatted
-    }
-}
-
-enum Protection {
-    /// No `annealer-disable*` directive applies.
-    None,
-    /// Everything is disabled; return the input unchanged.
-    All,
-    /// The input with markers around disabled statements.
-    Marked(String),
-}
-
-/// Applies `/* annealer-disable* */` directives: marks every outermost
-/// statement they cover so malva prints it verbatim and in place.
-fn protect_disabled(css: &str, syntax: Syntax) -> Result<Protection, String> {
     let mut comments = Vec::new();
-    let mut parser = ParserBuilder::new(css)
-        .syntax(syntax)
+    let mut parser = ParserBuilder::new(input)
+        .syntax(lang.syntax())
         .comments(&mut comments)
+        .options(ParserOptions {
+            try_parsing_value_in_custom_property: true,
+            tolerate_semicolon_in_sass: true,
+        })
         .build();
-    // Syntax errors are left for malva to report.
-    let Ok(stylesheet) = parser.parse::<Stylesheet>() else {
-        return Ok(Protection::None);
-    };
+    let stylesheet = parser.parse::<Stylesheet>().map_err(|error| {
+        let (line, column) = line_col(input, error.span.start);
+        format!("syntax error at line {line}, col {column}: {}", error.kind)
+    })?;
 
+    let disabled = disabled_ranges(input, &comments)?;
+    if stylesheet
+        .statements
+        .first()
+        .is_some_and(|first| disabled.covers_rest(raffia::Spanned::span(first).start))
+    {
+        return Ok(input.to_owned());
+    }
+
+    let Ok(ast) = serde_json::to_value(&stylesheet) else {
+        return Ok(input.to_owned());
+    };
+    let comment_starts: Vec<usize> = comments.iter().map(|comment| comment.span.start).collect();
+    let mut runs = Vec::new();
+    RunCollector {
+        css: input,
+        disabled: &disabled,
+        comment_starts: &comment_starts,
+        split_on_empty_line: options.split_on_empty_line,
+        runs: &mut runs,
+    }
+    .visit(&ast);
+    runs.retain(|run| run.len() > 1);
+
+    let orders = sorted_orders(&runs, order);
+    let mut edits = Vec::new();
+    for (run, order) in runs.iter().zip(orders) {
+        let Some(mut order) = order else { continue };
+        if options.vendor_prefix == VendorPrefix::Start {
+            move_vendor_prefixed_first(run, &mut order);
+        }
+        edits.extend(permute(run, &order, input));
+    }
+    Ok(apply(input, edits))
+}
+
+/// 1-based line and column of `offset`.
+fn line_col(css: &str, offset: usize) -> (usize, usize) {
+    let before = &css[..offset.min(css.len())];
+    let line_start = before.rfind('\n').map_or(0, |i| i + 1);
+    (
+        before.matches('\n').count() + 1,
+        before[line_start..].chars().count() + 1,
+    )
+}
+
+/// Applies `/* annealer-disable* */` directives found in block comments.
+fn disabled_ranges(css: &str, comments: &[Comment<'_>]) -> Result<Disabled, String> {
     let mut disabled = Disabled::new(css);
-    let mut enable_comments = Vec::new();
-    for comment in &comments {
-        if !matches!(comment.kind, raffia::token::CommentKind::Block) {
+    for comment in comments {
+        if !matches!(comment.kind, CommentKind::Block) {
             continue;
         }
         match directive::parse(comment.content) {
-            Ok(Some(directive)) => {
-                disabled.add(directive, comment.span.end);
-                if directive == directive::Directive::Enable {
-                    enable_comments.push(comment.span.end);
-                }
-            }
+            Ok(Some(directive)) => disabled.add(directive, comment.span.end),
             Ok(None) => {}
             Err(message) => {
                 let line = disabled.line_of(comment.span.start) + 1;
@@ -132,354 +136,204 @@ fn protect_disabled(css: &str, syntax: Syntax) -> Result<Protection, String> {
             }
         }
     }
-    if disabled.is_empty() {
-        return Ok(Protection::None);
-    }
-    if stylesheet
-        .statements
-        .first()
-        .is_some_and(|first| disabled.covers_rest(raffia::Spanned::span(first).start))
-    {
-        return Ok(Protection::All);
-    }
-
-    let Ok(ast) = serde_json::to_value(&stylesheet) else {
-        return Ok(Protection::None);
-    };
-    let mut targets = Vec::new();
-    find_disabled(&ast, &disabled, &mut targets);
-    if targets.is_empty() {
-        return Ok(Protection::None);
-    }
-
-    // Indented Sass has no `;`: statements end at line breaks, so the markers
-    // go on lines of their own, at the statement's indentation.
-    let indented = syntax == Syntax::Sass;
-    let fence_after = |offset: usize| {
-        if indented {
-            format!(
-                "\n{}{}",
-                line_indent(css, offset),
-                &FENCE[..FENCE.len() - 1]
-            )
-        } else {
-            format!(" {FENCE}")
-        }
-    };
-
-    // (offset, text) insertions, applied in order.
-    let mut insertions: Vec<(usize, String)> = Vec::new();
-    for (start, end, declaration) in targets {
-        let before = match (declaration, indented) {
-            // The newline keeps malva from treating the marker comment as a
-            // trailing comment of the fence.
-            (true, false) => format!("{FENCE}\n/* {VERBATIM} */ "),
-            // malva only honors the comment on a line of its own here.
-            (true, true) => {
-                let indent = line_indent(css, start);
-                format!(
-                    "{}\n{indent}/* {VERBATIM} */\n{indent}",
-                    &FENCE[..FENCE.len() - 1]
-                )
-            }
-            (false, true) => format!("/* {VERBATIM} */\n{}", line_indent(css, start)),
-            (false, false) => format!("/* {VERBATIM} */ "),
-        };
-        insertions.push((start, before));
-        if declaration {
-            let after_spaces =
-                end + css[end..].len() - css[end..].trim_start_matches([' ', '\t']).len();
-            if indented {
-                insertions.push((end, fence_after(start)));
-            } else if css[after_spaces..].starts_with(';') {
-                insertions.push((after_spaces + 1, format!(" {FENCE}")));
-            } else {
-                insertions.push((end, format!("; {FENCE}")));
-            }
-        }
-    }
-    // malva attaches a comment to the following statement, which sorting may
-    // move; a fence after `annealer-enable` keeps the comment in place.
-    for end in enable_comments {
-        insertions.push((end, fence_after(end)));
-    }
-    insertions.sort_by_key(|&(offset, _)| offset);
-
-    let mut marked = String::with_capacity(css.len() + insertions.len() * 32);
-    let mut copied = 0;
-    for (offset, text) in insertions {
-        marked.push_str(&css[copied..offset]);
-        marked.push_str(&text);
-        copied = offset;
-    }
-    marked.push_str(&css[copied..]);
-    Ok(Protection::Marked(marked))
+    Ok(disabled)
 }
 
-/// Collects `(start, end, is_declaration)` of the outermost disabled statements.
-fn find_disabled(node: &Value, disabled: &Disabled, targets: &mut Vec<(usize, usize, bool)>) {
-    match node {
-        Value::Object(map) => {
-            for (key, value) in map {
-                match (key.as_str(), value) {
-                    ("statements", Value::Array(statements)) => {
-                        for statement in statements {
-                            let span =
-                                |key: &str| statement["span"][key].as_u64().map(|n| n as usize);
-                            match (span("start"), span("end")) {
-                                (Some(start), Some(end)) if disabled.covers(start) => {
-                                    let declaration = statement["type"] == "Declaration";
-                                    targets.push((start, end, declaration));
-                                }
-                                _ => find_disabled(statement, disabled, targets),
-                            }
-                        }
-                    }
-                    _ => find_disabled(value, disabled, targets),
-                }
-            }
-        }
-        Value::Array(items) => {
-            for item in items {
-                find_disabled(item, disabled, targets);
-            }
-        }
-        _ => {}
-    }
-}
-
-/// Leading whitespace of the line containing `offset`.
-fn line_indent(css: &str, offset: usize) -> &str {
-    let line_start = css[..offset].rfind('\n').map_or(0, |i| i + 1);
-    let line = &css[line_start..];
-    &line[..line.len() - line.trim_start_matches([' ', '\t']).len()]
-}
-
-/// Removes the internal markers inserted by [`protect_disabled`], dropping
-/// lines that held nothing else.
-fn remove_markers(css: &str) -> String {
-    let comment = format!("/* {VERBATIM} */");
-    let mut out = String::with_capacity(css.len());
-    for line in css.split_inclusive('\n') {
-        if !line.contains(&FENCE[..FENCE.len() - 1]) && !line.contains(&comment) {
-            out.push_str(line);
-            continue;
-        }
-        let stripped = line
-            .replace(&format!("{FENCE} "), "")
-            .replace(&format!(" {FENCE}"), "")
-            .replace(FENCE, "")
-            .replace(&FENCE[..FENCE.len() - 1], "")
-            .replace(&format!("{comment} "), "")
-            .replace(&comment, "");
-        if !stripped.trim().is_empty() {
-            out.push_str(&stripped);
-        }
-    }
-    out
-}
-
-/// Whether malva printed this statement verbatim (it follows the marker).
-fn is_verbatim(css: &str, start: usize) -> bool {
-    css[..start]
-        .trim_end()
-        .ends_with(&format!("/* {VERBATIM} */"))
-}
-
-/// Orders the declarations of a static `style` attribute value quoted with
-/// `quote`. Returns `None` to leave the value as written: it doesn't parse as
-/// plain declarations (e.g. it holds template syntax or comments), or the
-/// result would need the attribute's quote character.
-pub(crate) fn format_style_attribute(
-    value: &str,
-    quote: char,
-    options: &StylesheetOptions,
-) -> Option<String> {
-    let value = value.trim();
-    if value.is_empty() || value.contains(['{', '}', '<', '&']) || value.contains("/*") {
-        return None;
-    }
-    let mut options = options.clone();
-    // One declaration per line, so each line is a whole declaration.
-    options.malva.layout.print_width = usize::MAX;
-    options.malva.language.quotes = if quote == '"' {
-        Quotes::AlwaysSingle
-    } else {
-        Quotes::AlwaysDouble
-    };
-    let formatted = format(&format!("a {{ {value} }}"), StyleLang::Css, &options).ok()?;
-    let mut lines = formatted.lines();
-    if lines.next() != Some("a {") {
-        return None;
-    }
-    let mut declarations = Vec::new();
-    for line in lines {
-        let line = line.trim();
-        match line {
-            "}" => break,
-            // malva tolerates a missing value (`display: ;`); keep the input then.
-            _ if line.ends_with(';') && !line[..line.len() - 1].trim_end().ends_with(':') => {
-                declarations.push(line);
-            }
-            _ => return None,
-        }
-    }
-    let mut text = declarations.join(" ");
-    if !value.ends_with(';') {
-        text.pop();
-    }
-    (!text.is_empty() && !text.contains(quote)).then_some(text)
-}
-
-/// Formats the content of a `<style>` element, keeping it indented relative to
-/// the tag and putting the closing tag on its own line at `base_indent`.
-pub(crate) fn format_embedded(
-    content: &str,
-    lang: StyleLang,
-    options: &StylesheetOptions,
-    base_indent: &str,
-) -> Result<String, String> {
-    let inner_indent = content
-        .lines()
-        .filter(|line| !line.trim().is_empty())
-        .map(|line| &line[..line.len() - line.trim_start_matches([' ', '\t']).len()])
-        .min_by_key(|indent| indent.len())
-        .unwrap_or("");
-    // A style block written on the `<style>` line itself has no usable indent.
-    let inner_indent = if content
-        .trim_start_matches([' ', '\t'])
-        .starts_with(['\n', '\r'])
-    {
-        inner_indent
-    } else {
-        base_indent
-    };
-
-    let dedented: String = content
-        .lines()
-        .map(|line| line.strip_prefix(inner_indent).unwrap_or(line.trim_start()))
-        .collect::<Vec<_>>()
-        .join("\n");
-    let formatted = format(&dedented, lang, options)?;
-
-    let newline = if content.contains("\r\n") {
-        "\r\n"
-    } else {
-        "\n"
-    };
-    let mut out = String::with_capacity(formatted.len() + 16);
-    out.push_str(newline);
-    for line in formatted.lines() {
-        if !line.is_empty() {
-            out.push_str(inner_indent);
-            out.push_str(line);
-        }
-        out.push_str(newline);
-    }
-    out.push_str(base_indent);
-    Ok(out)
-}
-
-/// One declaration in malva's output.
+/// One declaration in the source.
 struct Declaration<'a> {
     start: usize,
     end: usize,
     name: &'a str,
 }
 
-/// Moves vendor-prefixed declarations before the other declarations of each
-/// run, sorted alphabetically. A run is what malva sorts as a unit:
-/// consecutive declarations, optionally split by empty lines.
+/// Collects the runs of declarations that are sorted as a unit.
 ///
-/// Works on malva's output so malva's own order is kept for everything else.
+/// A run is a sequence of consecutive declarations with a literal name. It is
+/// ended by any other statement, a comment, a declaration an
+/// `annealer-disable*` directive covers, a declaration holding a nested block
+/// and, with `split_on_empty_line`, a blank line. Declarations never move
+/// across these, so comments and blank lines stay attached to their
+/// neighbors.
+///
 /// The AST is walked as JSON because raffia has no visitor and blocks appear
 /// in many node types.
-fn move_vendor_prefixed_first(css: &str, syntax: Syntax, split_on_empty_line: bool) -> String {
-    let mut parser = ParserBuilder::new(css).syntax(syntax).build();
-    let Ok(stylesheet) = parser.parse::<Stylesheet>() else {
-        return css.to_owned();
-    };
-    let Ok(ast) = serde_json::to_value(&stylesheet) else {
-        return css.to_owned();
-    };
-
-    let mut edits = Vec::new();
-    collect_edits(&ast, css, split_on_empty_line, &mut edits);
-    edits.sort_by_key(|&(start, _, _)| start);
-
-    let mut out = String::with_capacity(css.len());
-    let mut copied = 0;
-    for (start, end, text) in edits {
-        out.push_str(&css[copied..start]);
-        out.push_str(&text);
-        copied = end;
-    }
-    out.push_str(&css[copied..]);
-    out
-}
-
-fn collect_edits(
-    node: &Value,
-    css: &str,
+struct RunCollector<'r, 'a> {
+    css: &'a str,
+    disabled: &'r Disabled,
+    comment_starts: &'r [usize],
     split_on_empty_line: bool,
-    edits: &mut Vec<(usize, usize, String)>,
-) {
-    match node {
-        Value::Object(map) => {
-            if let Some(Value::Array(statements)) = map.get("statements") {
-                let mut run: Vec<Declaration<'_>> = Vec::new();
-                for statement in statements {
-                    let declaration = literal_declaration(statement, css)
-                        .filter(|declaration| !is_verbatim(css, declaration.start));
-                    let continues = declaration.as_ref().is_some_and(|next| {
-                        run.last().is_none_or(|previous| {
-                            !split_on_empty_line
-                                || css[previous.end..next.start].matches('\n').count() < 2
-                        })
-                    });
-                    if !continues {
-                        edits.extend(reorder_run(&run, css));
-                        run.clear();
+    runs: &'r mut Vec<Vec<Declaration<'a>>>,
+}
+
+impl<'a> RunCollector<'_, 'a> {
+    fn visit(&mut self, node: &Value) {
+        match node {
+            Value::Object(map) => {
+                for (key, value) in map {
+                    match (key.as_str(), value) {
+                        ("statements", Value::Array(statements)) => self.statements(statements),
+                        _ => self.visit(value),
                     }
-                    run.extend(declaration);
                 }
-                edits.extend(reorder_run(&run, css));
             }
-            for (key, value) in map {
-                if let ("statements", Value::Array(statements)) = (key.as_str(), value) {
-                    for statement in statements {
-                        let verbatim = statement["span"]["start"]
-                            .as_u64()
-                            .is_some_and(|start| is_verbatim(css, start as usize));
-                        if !verbatim {
-                            collect_edits(statement, css, split_on_empty_line, edits);
-                        }
+            Value::Array(items) => {
+                for item in items {
+                    self.visit(item);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn statements(&mut self, statements: &[Value]) {
+        let mut run: Vec<Declaration<'a>> = Vec::new();
+        for statement in statements {
+            let start = offset(statement, "start");
+            if start.is_some_and(|start| self.disabled.covers(start)) {
+                // Left exactly as written, nested blocks included.
+                self.runs.push(std::mem::take(&mut run));
+                continue;
+            }
+            let declaration = self
+                .sortable_declaration(statement)
+                .filter(|_| !contains_block(statement));
+            match declaration {
+                Some(next) => {
+                    if run
+                        .last()
+                        .is_some_and(|previous| !self.joins(previous, &next))
+                    {
+                        self.runs.push(std::mem::take(&mut run));
                     }
-                } else {
-                    collect_edits(value, css, split_on_empty_line, edits);
+                    run.push(next);
+                }
+                None => {
+                    self.runs.push(std::mem::take(&mut run));
+                    self.visit(statement);
                 }
             }
         }
-        Value::Array(items) => {
-            for item in items {
-                collect_edits(item, css, split_on_empty_line, edits);
-            }
+        self.runs.push(run);
+    }
+
+    fn sortable_declaration(&self, statement: &Value) -> Option<Declaration<'a>> {
+        if statement["type"] != "Declaration" || statement["name"]["type"] != "Ident" {
+            return None;
         }
-        _ => {}
+        let name = &statement["name"];
+        let mut end = offset(statement, "end")?;
+        // Spaces before the `;` belong to the declaration and move with it.
+        let rest = self.css.get(end..)?;
+        let spaces = rest.len() - rest.trim_start_matches([' ', '\t']).len();
+        if rest[spaces..].starts_with(';') {
+            end += spaces;
+        }
+        Some(Declaration {
+            start: offset(statement, "start")?,
+            end,
+            name: self.css.get(offset(name, "start")?..offset(name, "end")?)?,
+        })
+    }
+
+    /// Whether `next` continues the run that ends with `previous`.
+    fn joins(&self, previous: &Declaration<'_>, next: &Declaration<'_>) -> bool {
+        let has_comment = self
+            .comment_starts
+            .iter()
+            .any(|&start| previous.end <= start && start < next.start);
+        let lines: Vec<&str> = self.css[previous.end..next.start].split('\n').collect();
+        // The first and last pieces are the rest of the previous line and the
+        // indentation of the next one; anything between is a whole line.
+        let has_empty_line = lines.len() > 2
+            && lines[1..lines.len() - 1]
+                .iter()
+                .any(|line| line.trim().is_empty());
+        !has_comment && !(self.split_on_empty_line && has_empty_line)
     }
 }
 
-fn literal_declaration<'a>(statement: &Value, css: &'a str) -> Option<Declaration<'a>> {
-    if statement["type"] != "Declaration" || statement["name"]["type"] != "Ident" {
-        return None;
+fn offset(node: &Value, key: &str) -> Option<usize> {
+    node["span"][key].as_u64().map(|n| n as usize)
+}
+
+/// Whether the node holds a block (e.g. Sass nested properties).
+fn contains_block(node: &Value) -> bool {
+    match node {
+        Value::Object(map) => map
+            .iter()
+            .any(|(key, value)| key == "statements" || contains_block(value)),
+        Value::Array(items) => items.iter().any(contains_block),
+        _ => false,
     }
-    let offset = |node: &Value, key: &str| node["span"][key].as_u64().map(|n| n as usize);
-    let name = &statement["name"];
-    Some(Declaration {
-        start: offset(statement, "start")?,
-        end: offset(statement, "end")?,
-        name: css.get(offset(name, "start")?..offset(name, "end")?)?,
-    })
+}
+
+/// Asks malva how each run sorts. Returns, per run, the source indices in
+/// sorted order, or `None` to leave the run as written.
+///
+/// All runs go into one synthetic stylesheet, one rule per run, with each
+/// declaration's index as its value. malva sorts by name only, and stably.
+fn sorted_orders(
+    runs: &[Vec<Declaration<'_>>],
+    order: &DeclarationOrder,
+) -> Vec<Option<Vec<usize>>> {
+    if runs.is_empty() {
+        return Vec::new();
+    }
+    let mut synthetic = String::new();
+    for run in runs {
+        synthetic.push_str("a{");
+        for (index, declaration) in run.iter().enumerate() {
+            synthetic.push_str(declaration.name);
+            synthetic.push(':');
+            synthetic.push_str(&index.to_string());
+            synthetic.push(';');
+        }
+        synthetic.push_str("}\n");
+    }
+    let mut options = FormatOptions {
+        layout: LayoutOptions {
+            print_width: usize::MAX,
+            ..LayoutOptions::default()
+        },
+        ..FormatOptions::default()
+    };
+    options.language.declaration_order = Some(order.clone());
+    let Ok(sorted) = malva::format_text(&synthetic, Syntax::Css, &options) else {
+        return vec![None; runs.len()];
+    };
+
+    let mut blocks: Vec<Vec<usize>> = Vec::with_capacity(runs.len());
+    let mut current: Option<Vec<usize>> = None;
+    for line in sorted.lines().map(str::trim) {
+        match line {
+            "a {" => current = Some(Vec::new()),
+            "}" => blocks.extend(current.take()),
+            _ => {
+                let index = line
+                    .strip_suffix(';')
+                    .and_then(|declaration| declaration.rsplit_once(':'))
+                    .and_then(|(_, value)| value.trim().parse().ok());
+                match (&mut current, index) {
+                    (Some(block), Some(index)) => block.push(index),
+                    _ => return vec![None; runs.len()],
+                }
+            }
+        }
+    }
+    if blocks.len() != runs.len() {
+        return vec![None; runs.len()];
+    }
+    runs.iter()
+        .zip(blocks)
+        .map(|(run, block)| {
+            let mut seen = vec![false; run.len()];
+            let valid = block.len() == run.len()
+                && block
+                    .iter()
+                    .all(|&i| i < run.len() && !std::mem::replace(&mut seen[i], true));
+            valid.then_some(block)
+        })
+        .collect()
 }
 
 /// `-webkit-foo`, `-moz-foo`, … but not custom properties (`--foo`).
@@ -493,39 +347,115 @@ fn is_vendor_prefixed(name: &str) -> bool {
         })
 }
 
-fn reorder_run(run: &[Declaration<'_>], css: &str) -> Option<(usize, usize, String)> {
-    let separators: Vec<&str> = run
-        .windows(2)
-        .map(|pair| &css[pair[0].end..pair[1].start])
-        .collect();
-    // Comments between declarations belong to their neighbors; nested blocks
-    // (Sass nested properties) are handled on their own. Leave both alone.
-    if separators
+/// Moves vendor-prefixed declarations before the others, alphabetically.
+/// malva sorts them by the unprefixed name, next to the standard property.
+fn move_vendor_prefixed_first(run: &[Declaration<'_>], order: &mut Vec<usize>) {
+    let (mut vendor, standard): (Vec<usize>, Vec<usize>) = order
         .iter()
-        .any(|separator| separator.contains("/*") || separator.contains("//"))
-        || run
-            .iter()
-            .any(|declaration| css[declaration.start..declaration.end].contains('{'))
-    {
-        return None;
-    }
-
-    let (mut vendor, standard): (Vec<usize>, Vec<usize>) =
-        (0..run.len()).partition(|&i| is_vendor_prefixed(run[i].name));
+        .partition(|&&i| is_vendor_prefixed(run[i].name));
     vendor.sort_by_cached_key(|&i| run[i].name.to_ascii_lowercase());
-    let order: Vec<usize> = vendor.into_iter().chain(standard).collect();
+    *order = vendor.into_iter().chain(standard).collect();
+}
+
+/// Rewrites a run in `order`. Separators (`;`, whitespace) stay in place, so
+/// a missing trailing `;` stays missing and the layout doesn't change.
+fn permute(run: &[Declaration<'_>], order: &[usize], css: &str) -> Option<(usize, usize, String)> {
     if order.iter().enumerate().all(|(position, &i)| position == i) {
         return None;
     }
-
     let mut text = String::new();
     for (position, &i) in order.iter().enumerate() {
         if position > 0 {
-            text.push_str(separators[position - 1]);
+            text.push_str(&css[run[position - 1].end..run[position].start]);
         }
         text.push_str(&css[run[i].start..run[i].end]);
     }
     Some((run[0].start, run[run.len() - 1].end, text))
+}
+
+/// Applies non-overlapping `(start, end, replacement)` edits.
+fn apply(css: &str, mut edits: Vec<(usize, usize, String)>) -> String {
+    if edits.is_empty() {
+        return css.to_owned();
+    }
+    edits.sort_by_key(|&(start, _, _)| start);
+    let mut out = String::with_capacity(css.len());
+    let mut copied = 0;
+    for (start, end, text) in edits {
+        out.push_str(&css[copied..start]);
+        out.push_str(&text);
+        copied = end;
+    }
+    out.push_str(&css[copied..]);
+    out
+}
+
+/// Orders the declarations of a static `style` attribute value. Returns
+/// `None` to leave the value as written: nothing moves, or it doesn't parse
+/// as plain declarations (e.g. it holds template syntax).
+pub(crate) fn format_style_attribute(value: &str, options: &StylesheetOptions) -> Option<String> {
+    if value.trim().is_empty() || value.contains(['{', '}', '<', '&']) {
+        return None;
+    }
+    let wrapped = format!("a{{{value}}}");
+    let formatted = format(&wrapped, StyleLang::Css, options).ok()?;
+    let reordered = formatted.strip_prefix("a{")?.strip_suffix('}')?;
+    (reordered != value).then(|| reordered.to_owned())
+}
+
+/// Reorders the content of a `<style>` element.
+pub(crate) fn format_embedded(
+    content: &str,
+    lang: StyleLang,
+    options: &StylesheetOptions,
+) -> Result<String, String> {
+    if lang != StyleLang::Sass {
+        return format(content, lang, options);
+    }
+    // Indented Sass reads indentation as structure, so the block's common
+    // indentation is removed first and put back afterwards. Declarations
+    // are whole lines in Sass, so every non-blank line of the result had it.
+    let Some((first, rest)) = content.split_once('\n') else {
+        return format(content, lang, options);
+    };
+    if !first.trim().is_empty() {
+        return format(content, lang, options);
+    }
+    let indent = rest
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| &line[..line.len() - line.trim_start_matches([' ', '\t']).len()])
+        .min_by_key(|indent| indent.len())
+        .unwrap_or("");
+    let is_blank = |line: &str| line.trim().is_empty();
+    if indent.is_empty()
+        || !rest
+            .lines()
+            .all(|line| is_blank(line) || line.starts_with(indent))
+    {
+        return format(content, lang, options);
+    }
+    let dedented: String = rest
+        .split_inclusive('\n')
+        .map(|line| {
+            if is_blank(line) {
+                line
+            } else {
+                &line[indent.len()..]
+            }
+        })
+        .collect();
+    let formatted = format(&dedented, lang, options)?;
+    let mut out = String::with_capacity(content.len());
+    out.push_str(first);
+    out.push('\n');
+    for line in formatted.split_inclusive('\n') {
+        if !is_blank(line) {
+            out.push_str(indent);
+        }
+        out.push_str(line);
+    }
+    Ok(out)
 }
 
 #[cfg(test)]
@@ -540,5 +470,11 @@ mod tests {
         assert!(!is_vendor_prefixed("--custom"));
         assert!(!is_vendor_prefixed("transition"));
         assert!(!is_vendor_prefixed("-webkit-"));
+    }
+
+    #[test]
+    fn reports_line_and_column() {
+        assert_eq!(line_col("a\nbc", 3), (2, 2));
+        assert_eq!(line_col("abc", 0), (1, 1));
     }
 }

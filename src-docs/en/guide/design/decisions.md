@@ -10,7 +10,7 @@ description: Architecture of annealer and the design decisions made during imple
 annealer (core)  pure function: format(input: &str, config: &Config)
                    -> Result<String, FormatError>
                  No file I/O. Builds for wasm32-unknown-unknown.
-                 Uses malva for CSS/SCSS/Sass/Less declaration order.
+                 Uses malva's property order for CSS/SCSS/Sass/Less.
 
 anyl (CLI)       File I/O and argument parsing; calls the core.
 
@@ -21,6 +21,7 @@ annealer (npm)   WebAssembly build of the core with a TypeScript wrapper.
 - **Profiles are YAML, not code.** HTML, Vue and future profiles are data. Each profile has `schemaVersion`, because the format is as much a public API as the Rust function signature.
 - **Strict validation.** Unknown keys are rejected when the profile is parsed, so typos surface immediately. A JSON Schema (draft-07) is provided for editor support. Two rules that draft-07 can't express (exactly one fallback group, unique group names) are checked only by the loader.
 - **malva is pinned loosely** (`0.16`), in line with the library dependency policy used in other projects.
+- **Only the order changes.** annealer asks malva how property names sort and moves declarations as written; malva's printed output is not used. Whitespace, quotes and other formatting are left to a formatter such as Prettier or Oxfmt.
 - **The npm package embeds the WebAssembly binary** as base64 instead of shipping a separate `.wasm` file. The cost is about 33% more bytes before compression. In return, `format()` is synchronous and needs no bundler or loader setup.
 
 ## Decisions made during implementation
@@ -31,9 +32,8 @@ annealer (npm)   WebAssembly build of the core with a TypeScript wrapper.
 4. **One attribute per line in multiline tags.** Otherwise reordering could put two attributes on one line. This matches the multiline default of `vue/max-attributes-per-line` and can be turned off with `layout.oneAttributePerLine`.
 5. **Vue tier 8 is split** into other directives, then other attributes, as in `vue/attributes-order` (`OTHER_DIRECTIVES` → `OTHER_ATTR`).
 6. **`void: always` differs from `vue/html-self-closing`'s default** (`html.void: never`). Projects that keep that ESLint rule need to align one side.
-7. **`contentNewline` is defined in the HTML profile too.** Whitespace at the start and end of block-level content isn't rendered, and the `ignore` list covers the elements where it could be.
+7. **`contentNewline` is on in the HTML profile too.** Whitespace at the start and end of block-level content isn't rendered, and the `ignore` list covers the elements where it could be.
 8. **Vendor-prefixed declarations go first** (`vendorPrefix: start`), so the standard property is declared last and wins. See [Stylesheets](../concepts/stylesheets.md#vendor-prefixes-vendorprefix-start).
-9. **Self-closing empty elements and components, and `contentNewline`, are opt-in.** They rewrite markup beyond what reordering needs, and they conflict with setups that don't use those eslint-plugin-vue rules (Prettier, for example). The built-in profiles keep their settings with `enabled: false`; `--self-closing` / `--content-newline` or the matching JavaScript options turn them on. Void elements (`<br />`) are self-closed always, as Prettier also writes them.
 
 ## Resolved questions
 

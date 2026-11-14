@@ -14,8 +14,8 @@ annealer は、HTML と Vue テンプレートの属性を意味に基づいて�
 <a id="home" title="Home" href="/">Home</a>
 ```
 
-:::warning アルファ版
-これは annealer 0.1.0-alpha.1 です。整形ルールと既定値はリリース間で変わる可能性があり（Tailwind に従う組み込みの Tailwind クラス順は例外です）、プロファイル形式も安定版として宣言するまでは変更される可能性があります。
+:::warning 開発中
+annealer は開発中です。npm パッケージは未公開で、プロファイル形式も安定版として宣言するまでは変更される可能性があります。
 :::
 
 ## 属性順が重要な理由
@@ -50,7 +50,7 @@ Vue.js スタイルガイドはすでに属性の優先順位を定めており�
 - **同名クラスタリング**: 同じ属性の静的形式とバインド形式をまとめます（`class` の隣に `:class`）。
 - **ARIA の細分化**: WAI-ARIA のプロパティ／ステートの区別に従い、role → 名前 → 説明 → プロパティ → ステートの順に並べます。
 - **素の HTML への対応**: Vue テンプレートを使わないプロジェクトにも使えます。
-- **スタイルシートの宣言順**: [malva](https://github.com/g-plane/malva) に委譲します。
+- **スタイルシートの宣言順**: [malva](https://github.com/g-plane/malva) のプロパティ順を使います。
 
 annealer は `vue/attributes-order` と競合するものではなく、その設計を引き継いで拡張したものです。ESLint を rslint や oxlint に置き換えるチームにとっては、この機能を引き続き使うための後継になります。
 
@@ -66,19 +66,18 @@ Biome、rslint、oxlint、oxfmt、markup_fmt を検討しましたが、Vue/HTML
 | oxfmt                                | 設計上、テンプレートのマークアップを扱えない。                                                                                                                   |
 | markup_fmt                           | Vue/Svelte/Astro のテンプレートを整形できるが、属性を並べ替えるオプションはない。                                                                                |
 
-CSS のプロパティ順だけは例外で、malva がすでに設定可能な `declarationOrder` を持っているため、annealer はそれに委譲します。**annealer が新たに提供するのは、意味に基づく属性のグループ化です。それ以外をゼロから作る必要はありません。**
+CSS のプロパティ順だけは例外で、malva がすでに設定可能な `declarationOrder` を持っているため、annealer はその順序を使います。**annealer が新たに提供するのは、意味に基づく属性のグループ化です。それ以外をゼロから作る必要はありません。**
 
 ## 対象範囲
 
 - HTML と Vue 3 SFC の `<template>` ブロックにおける属性の並べ替え
 - 属性名の正規化: `v-bind:` → `:`、`v-on:` → `@`、コンポーネントの props の camelCase → kebab-case
-- 複数行タグのレイアウト規則（`vue/html-closing-bracket-newline`、`vue/max-attributes-per-line`（複数行）、`vue/html-self-closing`（空要素は常時、それ以外はオプトイン）相当。オプトインで `vue/multiline-html-element-content-newline` 相当）
-- `<style>` ブロックと単体ファイルにおける CSS/SCSS/Sass/Less の宣言順（malva 経由）
+- 複数行タグのレイアウト規則（`vue/html-closing-bracket-newline`、`vue/max-attributes-per-line`（複数行）、`vue/html-self-closing`、`vue/multiline-html-element-content-newline` 相当）
+- `<style>` ブロックと単体ファイルにおける CSS/SCSS/Sass/Less の宣言順（malva のプロパティ順。変わるのは順序だけで、整形はフォーマッターに任せる）
 - 静的な `style` 属性内の宣言順（オプトイン）
 - マークアップとスタイルシートのコメントによる[無効化ディレクティブ](../features/disable-directives.md)
-- 静的な `class` 属性の[クラス順](../features/class-order.md)（オプトイン、Tailwind の順序を組み込み）
-- 予定: [ライブラリプロファイル](../design/library-profiles.md)（Bootstrap など）
-- Svelte は 0.1 には含めません。プロファイルベースの設計なので、後から作り直しなしで追加できる見込みです。
+- 予定: 静的な `class` 属性の[値の並べ替え](../design/value-ordering.md)と[ライブラリプロファイル](../design/library-profiles.md)
+- Svelte は最初のリリースには含めません。プロファイルベースの設計なので、後から作り直しなしで追加できる見込みです。
 
 ## 対象外
 
@@ -90,6 +89,4 @@ CSS のプロパティ順だけは例外で、malva がすでに設定可能な 
 ## 次のステップ
 
 - [使い方](./getting-started.md): CLI または JavaScript から annealer を実行します。
-- [他のツールとの併用](./integration.md): Rslint/`rs fmt`、oxlint/oxfmt、Biome の設定例です。
-- [制約事項](./limitations.md): annealer がまだ対応していないことです。
 - [属性順](../concepts/attribute-order.md): 属性の分類と並べ替えの仕組みです。

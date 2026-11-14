@@ -1,9 +1,9 @@
 ---
-description: Annealer 依据可替换的 YAML 配置文件，按语义对 HTML、Vue 属性和样式表声明进行排序。
+description: annealer 依据可替换的 YAML 配置文件，按语义对 HTML、Vue 属性和样式表声明进行排序。
 pageType: home
 
 hero:
-  name: Annealer
+  name: annealer
   text: 按语义排列属性
   tagline: 依据可替换的 YAML 配置文件，按语义对 HTML/Vue 属性和样式表声明进行排序。
   actions:
@@ -22,8 +22,8 @@ features:
     details: Vue 配置文件沿用 eslint-plugin-vue 的默认顺序，并增加同名聚合、ARIA 子排序、纯 HTML 和样式表支持。
     icon: 🧩
     link: /guide/concepts/attribute-order
-  - title: 通过 malva 处理样式表
-    details: CSS、SCSS、Sass 和 Less 的属性顺序交由 malva 处理，带厂商前缀的声明放在最前面。
+  - title: 样式表声明顺序
+    details: CSS、SCSS、Sass 和 Less 声明按 malva 的属性顺序重新排列，带厂商前缀的声明放在最前。只改变顺序。
     icon: 🎨
     link: /guide/concepts/stylesheets
   - title: 可替换的 YAML 配置文件

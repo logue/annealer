@@ -37,7 +37,7 @@ annealer 并不运行 Tailwind。该顺序是数据，由 `scripts/generate-tail
 与运行 Tailwind 的区别：
 
 - **你自己的主题和工具类是未知的。** 自定义颜色（`bg-brand-500`）会像主题颜色一样排序，因为未匹配其他规则的值会回退到颜色规则。自定义工具类（`@utility`）是未知类。
-- **默认保留重复项。** `eslint-plugin-tailwindcss` 默认会删除它们（`removeDuplicates`）。删除类属于 lint 的职责，因此内置配置文件会保留它们。如需删除，请传入 `--remove-duplicate-classes`（JavaScript：`removeDuplicateClasses: true`），或使用带有 `removeDuplicates: true` 的类顺序。该选项在没有类顺序时同样有效：类保持原有顺序，只去掉重复项。
+- **重复项会保留。** `eslint-plugin-tailwindcss` 默认会删除重复项（`removeDuplicates`）。删除类属于 lint 的职责，因此内置配置文件会保留它们。设置 `removeDuplicates: true` 的类顺序配置文件会删除重复项。
 - **仅限静态 `class` 属性。** `:class` 绑定和 `clsx()` 风格的调用是表达式，annealer 从不读取它们。
 
 ## 类的排序方式 {#how-classes-are-ordered}

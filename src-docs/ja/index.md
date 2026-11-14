@@ -1,9 +1,9 @@
 ---
-description: Annealer は HTML・Vue の属性とスタイルシートの宣言を、差し替え可能な YAML プロファイルに従って意味に基づき並べ替えます。
+description: annealer は HTML・Vue の属性とスタイルシートの宣言を、差し替え可能な YAML プロファイルに従って意味に基づき並べ替えます。
 pageType: home
 
 hero:
-  name: Annealer
+  name: annealer
   text: 属性を意味の順に
   tagline: HTML・Vue の属性とスタイルシートの宣言を、差し替え可能な YAML プロファイルに従って意味に基づき並べ替えます。
   actions:
@@ -22,8 +22,8 @@ features:
     details: Vue プロファイルは eslint-plugin-vue の既定順を引き継ぎ、同名クラスタリング、ARIA の細分化、素の HTML、スタイルシートに対応します。
     icon: 🧩
     link: /guide/concepts/attribute-order
-  - title: malva によるスタイルシート整形
-    details: CSS・SCSS・Sass・Less のプロパティ順は malva に委譲し、ベンダープレフィックス付きの宣言は先頭に置きます。
+  - title: スタイルシートの宣言順
+    details: CSS・SCSS・Sass・Less の宣言を malva のプロパティ順で並べ替え、ベンダープレフィックス付きの宣言は先頭に置きます。変わるのは順序だけです。
     icon: 🎨
     link: /guide/concepts/stylesheets
   - title: 差し替え可能な YAML プロファイル

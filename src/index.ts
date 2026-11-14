@@ -50,8 +50,7 @@ export const init = async (): Promise<void> => {
 /**
  * Reorders attributes (HTML, Vue) or declarations (CSS, SCSS, Sass, Less)
  * by semantic meaning, and optionally the classes of static `class`
- * attributes (`classOrder`, `removeDuplicateClasses`) and the layout rules
- * `selfClosing`, `voidSelfClosing`, `expandNonVoid` and `contentNewline`.
+ * attributes (`classOrder`).
  *
  * @throws {Error} when the input or the profile is invalid.
  */
@@ -61,13 +60,7 @@ export const format = (input: string, options: FormatOptions = {}): string => {
     input,
     options.language ?? FormatOptions.language,
     options.profile,
-    options.classOrder,
-    options.selfClosing,
-    options.contentNewline,
-    options.removeDuplicateClasses,
-    options.printWidth,
-    options.voidSelfClosing,
-    options.expandNonVoid
+    options.classOrder
   );
 };
 

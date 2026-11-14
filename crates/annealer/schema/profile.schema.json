@@ -57,13 +57,8 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "enabled": {
-              "description": "Whether the `normal` and `component` rules apply (`void` and `expandNonVoid` always do). The built-in `vue` profile sets this to `false`; `--self-closing` (CLI) and the `selfClosing` format option (JS) override it.",
-              "type": "boolean",
-              "default": true
-            },
             "void": {
-              "description": "Void elements (`br`, `img`, `input`, …): `always` → `<br />`, `never` → `<br>`. `--void-self-closing` / `--no-void-self-closing` (CLI) and the `voidSelfClosing` format option (JS) override it.",
+              "description": "Void elements (`br`, `img`, `input`, …): `always` → `<br />`, `never` → `<br>`.",
               "$ref": "#/definitions/selfClosing"
             },
             "normal": {
@@ -73,24 +68,14 @@
             "component": {
               "description": "Empty components: `always` → `<MyComp />`. Applied in Vue templates only.",
               "$ref": "#/definitions/selfClosing"
-            },
-            "expandNonVoid": {
-              "description": "Plain HTML only: give non-void elements written self-closing an end tag (`<div />` → `<div></div>`). HTML ignores the slash, so `<div />` leaves the element open. Elements inside `<svg>` and `<math>`, where self-closing is valid, are left alone. `--expand-non-void` (CLI) and the `expandNonVoid` format option (JS) override it.",
-              "type": "boolean",
-              "default": false
             }
           }
         },
         "contentNewline": {
-          "description": "Put the content of a multiline element (its end tag starts on a later line than its start tag) on lines of its own (like `vue/multiline-html-element-content-newline`). Elements without content are left alone. Omit this key or set `enabled: false` to turn the rule off; `{}` turns it on with the defaults.",
+          "description": "Put the content of a multiline element (its end tag starts on a later line than its start tag) on lines of its own (like `vue/multiline-html-element-content-newline`). Elements without content are left alone. Omit this key to turn the rule off; `{}` turns it on with the defaults.",
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "enabled": {
-              "description": "Whether the rule applies. The built-in profiles set this to `false`; `--content-newline` (CLI) and the `contentNewline` format option (JS) override it.",
-              "type": "boolean",
-              "default": true
-            },
             "ignore": {
               "description": "Elements left alone, together with everything inside them. Element names match case-insensitively; component names match exactly. Defaults to `pre`, `textarea`, and inline elements, where added whitespace could be visible.",
               "type": "array",
@@ -168,7 +153,7 @@
       }
     },
     "stylesheet": {
-      "description": "Stylesheet formatting for `<style>` blocks and standalone stylesheets, delegated to malva. Omit this key to leave stylesheets untouched.",
+      "description": "Declaration ordering for `<style>` blocks and standalone stylesheets. Only the order changes: declarations are moved as written, and whitespace, quotes and other formatting are left to a formatter. Omit this key to leave stylesheets untouched.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -177,9 +162,9 @@
           "enum": ["smacss", "concentric", "alphabetical"]
         },
         "declarationOrderGroupBy": {
-          "description": "How declarations are split into independently sorted runs.",
+          "description": "How declarations are split into independently sorted runs. Other statements and comments always end a run. `non-declaration-and-empty-line` (default): a blank line also ends a run. `non-declaration`: declarations are sorted across blank lines, which stay where they are.",
           "enum": ["non-declaration", "non-declaration-and-empty-line"],
-          "default": "non-declaration"
+          "default": "non-declaration-and-empty-line"
         },
         "vendorPrefix": {
           "description": "Where vendor-prefixed declarations (`-webkit-…`, `-moz-…`) go when `declarationOrder` is set. `alongside`: next to the unprefixed property (malva's behavior). `start`: before the other declarations of the same run, in simple alphabetical order, so the standard property is declared last and wins where the prefixed one is an alias.",
@@ -187,12 +172,9 @@
           "default": "alongside"
         },
         "styleAttribute": {
-          "description": "Also order the declarations of static `style` attributes (bound `:style` is never touched). The value stays on one line; CSS strings use the quote character opposite to the attribute's. Values that don't parse as plain declarations (template syntax, comments, character references) are left as written.",
+          "description": "Also order the declarations of static `style` attributes (bound `:style` is never touched). Declarations are moved as written. Values that don't parse as plain declarations (template syntax, character references) are left as written.",
           "type": "boolean",
           "default": false
-        },
-        "malva": {
-          "$ref": "#/definitions/malvaOptions"
         }
       }
     },
@@ -258,145 +240,6 @@
           "match": {
             "minItems": 1
           }
-        }
-      }
-    },
-    "preferSingleLine": {
-      "type": "boolean"
-    },
-    "malvaOptions": {
-      "description": "Other malva options (https://malva.netlify.app/config/). `declarationOrder` and `declarationOrderGroupBy` belong to `stylesheet` itself.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "printWidth": {
-          "type": "integer",
-          "minimum": 1,
-          "default": 80
-        },
-        "useTabs": {
-          "type": "boolean",
-          "default": false
-        },
-        "indentWidth": {
-          "type": "integer",
-          "minimum": 0,
-          "default": 2
-        },
-        "lineBreak": {
-          "enum": ["lf", "crlf"],
-          "default": "lf"
-        },
-        "hexCase": {
-          "enum": ["ignore", "lower", "upper"],
-          "default": "lower"
-        },
-        "hexColorLength": {
-          "enum": ["short", "long"]
-        },
-        "quotes": {
-          "enum": ["always-double", "always-single", "prefer-double", "prefer-single"],
-          "default": "prefer-single"
-        },
-        "attrSelector.quotes": {
-          "enum": ["always-double", "always-single", "prefer-double", "prefer-single"]
-        },
-        "operatorLineBreak": {
-          "enum": ["before", "after"],
-          "default": "after"
-        },
-        "blockSelectorLineBreak": {
-          "enum": ["always", "consistent", "wrap"],
-          "default": "consistent"
-        },
-        "omitNumberLeadingZero": {
-          "type": "boolean",
-          "default": false
-        },
-        "trailingComma": {
-          "type": "boolean",
-          "default": false
-        },
-        "formatComments": {
-          "type": "boolean",
-          "default": false
-        },
-        "alignComments": {
-          "type": "boolean",
-          "default": true
-        },
-        "lineBreakInPseudoParens": {
-          "type": "boolean",
-          "default": false
-        },
-        "singleLineBlockThreshold": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "keyframeSelectorNotation": {
-          "enum": ["keyword", "percentage"]
-        },
-        "attrValueQuotes": {
-          "enum": ["always", "ignore"],
-          "default": "always"
-        },
-        "preferSingleLine": {
-          "type": "boolean",
-          "default": false
-        },
-        "selectors.preferSingleLine": {
-          "$ref": "#/definitions/preferSingleLine"
-        },
-        "functionArgs.preferSingleLine": {
-          "$ref": "#/definitions/preferSingleLine"
-        },
-        "sassContentAtRule.preferSingleLine": {
-          "$ref": "#/definitions/preferSingleLine"
-        },
-        "sassIncludeAtRule.preferSingleLine": {
-          "$ref": "#/definitions/preferSingleLine"
-        },
-        "sassMap.preferSingleLine": {
-          "$ref": "#/definitions/preferSingleLine"
-        },
-        "sassModuleConfig.preferSingleLine": {
-          "$ref": "#/definitions/preferSingleLine"
-        },
-        "sassParams.preferSingleLine": {
-          "$ref": "#/definitions/preferSingleLine"
-        },
-        "lessImportOptions.preferSingleLine": {
-          "$ref": "#/definitions/preferSingleLine"
-        },
-        "lessMixinArgs.preferSingleLine": {
-          "$ref": "#/definitions/preferSingleLine"
-        },
-        "lessMixinParams.preferSingleLine": {
-          "$ref": "#/definitions/preferSingleLine"
-        },
-        "singleLineTopLevelDeclarations": {
-          "type": "boolean",
-          "default": false
-        },
-        "fontFamilyNames": {
-          "enum": ["consistent", "wrap"],
-          "default": "consistent"
-        },
-        "nthPlusSpacing": {
-          "type": "boolean",
-          "default": false
-        },
-        "selectorOverrideCommentDirective": {
-          "type": "string",
-          "default": "malva-selector-override"
-        },
-        "ignoreCommentDirective": {
-          "type": "string",
-          "default": "malva-ignore"
-        },
-        "ignoreFileCommentDirective": {
-          "type": "string",
-          "default": "malva-ignore-file"
         }
       }
     },
