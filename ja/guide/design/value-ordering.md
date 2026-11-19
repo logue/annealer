@@ -3,7 +3,7 @@
 # 値の並べ替え
 
 :::info 状況
-どちらも実装済みです。静的な `style` 属性（オプトイン。[スタイルシート](/annealer/ja/guide/concepts/stylesheets.md#static-style-attributes-opt-in)を参照）と、差し替え可能なクラス順による `class` の値（[クラス順](/annealer/ja/guide/features/class-order.md)を参照）で、組み込みの `tailwind` 順があります。Bootstrap のプロファイルはまだ書いていません。このページには、その背景にある原則をまとめます。
+どちらも実装済みです。静的な `style` 属性（オプトイン。[スタイルシート](/annealer/ja/guide/concepts/stylesheets.md#static-style-attributes-opt-in)を参照）と、差し替え可能なクラス順による `class` の値（[クラス順](/annealer/ja/guide/features/class-order.md)を参照）で、組み込みの `tailwind` 順があります。Bootstrap 6（アルファ版）向けの下書き `bootstrap` 順も組み込まれています。このページには、その背景にある原則をまとめます。
 :::
 
 属性の並び順が 1 つの軸だとすれば、属性内の値の並び順はもう 1 つの軸です。これは Tailwind に限った需要ではありません。クラスベースの CSS フレームワーク（Bootstrap、Tailwind、プロジェクト独自のユーティリティ群）なら、属性と同じく差分を安定させるという理由で、決まったクラス順の恩恵を受けます。

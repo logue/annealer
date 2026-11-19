@@ -531,6 +531,26 @@ annealer 并不运行 Tailwind。该顺序是数据，由 `scripts/generate-tail
 - **重复项会保留。** `eslint-plugin-tailwindcss` 默认会删除重复项（`removeDuplicates`）。删除类属于 lint 的职责，因此内置配置文件会保留它们。设置 `removeDuplicates: true` 的类顺序配置文件会删除重复项。
 - **仅限静态 `class` 属性。** `:class` 绑定和 `clsx()` 风格的调用是表达式，annealer 从不读取它们。
 
+## 内置：`bootstrap` \{#built-in-bootstrap}
+
+内置的 `bootstrap` 类顺序适用于 Bootstrap 6（由 `6.0.0-alpha.1` 生成）。Bootstrap 没有官方的类排序工具，因此该顺序遵循 Bootstrap 自身的层叠顺序：
+
+1. 层叠层 `layout`、`content`、`forms`、`components`、`helpers` 中的类（`row`、`col-6`、`btn`、`card`、`theme-primary` 等），按层排列。同一层内按名称排序，因此基础类排在修饰类之前（`btn btn-solid`）。
+2. 工具类（`d-flex`、`mt-3`、`text-center` 等），按其设置的 CSS 属性排序，属性顺序即 Bootstrap 工具类层中的出现顺序。
+3. 响应式和状态变体（`md:`、`lg-down:`、`hover:`）排在不带变体的类之后。
+
+<!-- prettier-ignore -->
+
+```html
+<!-- Input -->
+<button class="mt-3 theme-primary md:mt-0 btn-solid d-flex btn js-save"></button>
+
+<!-- Output -->
+<button class="js-save btn btn-solid theme-primary d-flex mt-3 md:mt-0"></button>
+```
+
+该顺序是数据，由 `scripts/generate-bootstrap-order.mjs` 从 `bootstrap/dist/css/bootstrap.css` 生成。每个非工具类层是 `propertyOrder` 中的一项（`@layer components`）。项目自行添加的类为未知类。Bootstrap 6 仍处于 alpha 阶段，Bootstrap 更新后请重新生成该配置文件。
+
 ## 类的排序方式 \{#how-classes-are-ordered}
 
 1. 未匹配任何规则的类（`card`、`js-toggle`）排在最前，保持源顺序（`unknown: end` 会将它们放在最后）。
@@ -631,7 +651,7 @@ url: /annealer/zh/guide/design/value-ordering.md
 # 值排序
 
 :::info 状态
-两者均已实现：静态 `style` 属性（可选，参见[样式表](/annealer/zh/guide/concepts/stylesheets.md#static-style-attributes-opt-in)）和使用可替换类顺序的 `class` 值（参见[类顺序](/annealer/zh/guide/features/class-order.md)），并内置 `tailwind` 顺序。Bootstrap 配置文件尚未编写。本页记录其背后的原则。
+两者均已实现：静态 `style` 属性（可选，参见[样式表](/annealer/zh/guide/concepts/stylesheets.md#static-style-attributes-opt-in)）和使用可替换类顺序的 `class` 值（参见[类顺序](/annealer/zh/guide/features/class-order.md)），并内置 `tailwind` 顺序。另外还内置了 Bootstrap 6（alpha）的草案 `bootstrap` 顺序。本页记录其背后的原则。
 :::
 
 属性顺序是一个维度，属性内部值的顺序是另一个维度。这一需求并非 Tailwind 所特有：任何基于类的 CSS 框架（Bootstrap、Tailwind、项目自己的工具类集合）都能从固定的类顺序中受益，理由与属性相同——保持 diff 稳定。
@@ -826,15 +846,15 @@ anyl [OPTIONS] [FILES]...
 
 ## 选项
 
-| 选项                            | 说明                                                                            |
-| ----------------------------- | ----------------------------------------------------------------------------- |
-| `-w`, `--write`               | 直接覆盖文件。不能与 `--check` 同时使用。                                                    |
-| `-c`, `--check`               | 输出会被修改的文件路径；只要有一个文件会被修改，就以状态码 1 退出。                                           |
-| `-p`, `--profile <PROFILE>`   | 内置配置文件名（`html`、`vue`）或配置文件 YAML 的路径。默认使用与各文件语言对应的内置配置文件。                      |
-| `--class-order <CLASS_ORDER>` | 对静态 `class` 属性中的类排序：内置类顺序名（`tailwind`）或类顺序 YAML 文件的路径。会覆盖配置文件中的 `classOrder`。 |
-| `-l`, `--language <LANGUAGE>` | 标准输入的语言：`html`（默认）、`vue`、`css`、`scss`、`sass`、`less`。                          |
-| `-h`, `--help`                | 显示帮助。                                                                         |
-| `-V`, `--version`             | 显示版本。                                                                         |
+| 选项                            | 说明                                                                                        |
+| ----------------------------- | ----------------------------------------------------------------------------------------- |
+| `-w`, `--write`               | 直接覆盖文件。不能与 `--check` 同时使用。                                                                |
+| `-c`, `--check`               | 输出会被修改的文件路径；只要有一个文件会被修改，就以状态码 1 退出。                                                       |
+| `-p`, `--profile <PROFILE>`   | 内置配置文件名（`html`、`vue`）或配置文件 YAML 的路径。默认使用与各文件语言对应的内置配置文件。                                  |
+| `--class-order <CLASS_ORDER>` | 对静态 `class` 属性中的类排序：内置类顺序名（`tailwind`、`bootstrap`）或类顺序 YAML 文件的路径。会覆盖配置文件中的 `classOrder`。 |
+| `-l`, `--language <LANGUAGE>` | 标准输入的语言：`html`（默认）、`vue`、`css`、`scss`、`sass`、`less`。                                      |
+| `-h`, `--help`                | 显示帮助。                                                                                     |
+| `-V`, `--version`             | 显示版本。                                                                                     |
 
 ## 语言
 
@@ -1020,16 +1040,51 @@ JSON Schema（draft-07）位于 `crates/annealer/schema/profile.schema.json`。�
 
 ## 顶层 \{#top-level}
 
-| 键               | 类型               | 必需 | 说明                            |
-| --------------- | ---------------- | -- | ----------------------------- |
-| `schemaVersion` | `1`              | 是  | 配置文件格式版本。                     |
-| `name`          | string           | 是  | 配置文件名称。                       |
-| `description`   | string           |    | 供人阅读的简介。                      |
-| `normalize`     | object           |    | 属性名改写。                        |
-| `layout`        | object           |    | 起始标签的布局规则。                    |
-| `groups`        | array            | 是  | 按输出顺序排列的属性分组。                 |
-| `stylesheet`    | object           |    | 样式表格式化。省略时样式表保持不变。            |
-| `classOrder`    | string \| object |    | 静态 `class` 属性的类顺序。省略时类保持原有顺序。 |
+| 键               | 类型                  | 必需 | 说明                                  |
+| --------------- | ------------------- | -- | ----------------------------------- |
+| `schemaVersion` | `1`                 | 是  | 配置文件格式版本。                           |
+| `name`          | string              | 是  | 配置文件名称。                             |
+| `description`   | string              |    | 供人阅读的简介。                            |
+| `extends`       | string \| string\[] |    | 作为基础的配置文件。参见 [`extends`](#extends)。 |
+| `normalize`     | object              |    | 属性名改写。                              |
+| `layout`        | object              |    | 起始标签的布局规则。                          |
+| `groups`        | array               | 是¹ | 按输出顺序排列的属性分组。                       |
+| `stylesheet`    | object              |    | 样式表格式化。省略时样式表保持不变。                  |
+| `classOrder`    | string \| object    |    | 静态 `class` 属性的类顺序。省略时类保持原有顺序。       |
+
+¹ 使用 `extends` 时可省略；合并后的配置文件必须具备。
+
+## `extends` \{#extends}
+
+以其他配置文件为基础：内置配置文件名（`html`、`vue`）、相对于继承方文件的路径（仅 CLI），或它们的列表。
+
+```yaml
+schemaVersion: 1
+name: my-html
+extends: [html, ./bootstrap-data.yaml]
+```
+
+```yaml
+# bootstrap-data.yaml：作为 mixin 使用的部分配置文件
+schemaVersion: 1
+name: bootstrap-data
+groups:
+  - name: bootstrap
+    match: [data-bs-toggle, data-bs-target, data-bs-*]
+    sort: listed
+    before: data
+```
+
+配置文件按顺序合并，因此**后写的优先**：`extends` 的每一项覆盖其之前的项，配置文件自身覆盖所有项。
+
+- **映射**（`normalize`、`layout`、`stylesheet` 等）按键合并。
+- **其他值**（标量、列表、`classOrder`）被替换。
+- **`groups` 按 `name` 合并。** 与继承分组同名的分组按键更新该分组；其 `match` 列表被替换而非追加，位置保持不变。新分组追加到末尾。
+- **`before` / `after`** 指定要把分组（新分组或继承的分组）放在其旁边的分组名。可以指定此前合并的任何配置文件中的分组，因此 mixin 可以把自己的分组放到前面配置文件的分组之间。
+
+继承链会先被展平：自身带有 `extends` 的基础配置文件会把它的基础展开在自己之前。校验只在合并结果上进行一次，因此基础配置文件可以是部分的（没有 `groups`、没有 fallback 分组）。直接或间接继承自身会报错。
+
+JavaScript API 没有文件系统，因此 `extends` 只能指定内置配置文件。
 
 ## `normalize`
 
@@ -1066,6 +1121,8 @@ JSON Schema（draft-07）位于 `crates/annealer/schema/profile.schema.json`。�
 | `sort`       | `source` \| `alphabetical` \| `listed` | `source` | 分组内的顺序：按书写顺序、按键名，或按 `match` 中的顺序。              |
 | `fallback`   | boolean                                | `false`  | 接收所有未匹配任何模式的属性。                                |
 | `spreadSafe` | boolean                                | `false`  | 此分组中的属性可以跨越 `v-bind="object"` 展开移动。仅用于编译期指令。   |
+| `before`     | string                                 | –        | 将分组放在该分组之前。参见 [`extends`](#extends)。           |
+| `after`      | string                                 | –        | 将分组放在该分组之后。参见 [`extends`](#extends)。           |
 
 模式会与**规范化并转为小写后的键**匹配：`foo` 对应 `foo`/`:foo`/`v-bind:foo`，`@click` 对应 `v-on:click`，`#name` 对应 `v-slot:name`，修饰符会被去除。精确名称优先于任何前缀，较长的前缀优先于较短的前缀。参见[属性顺序](/annealer/zh/guide/concepts/attribute-order.md)。
 
@@ -1084,7 +1141,7 @@ JSON Schema（draft-07）位于 `crates/annealer/schema/profile.schema.json`。�
 
 ## `classOrder` \{#classorder}
 
-静态 `class` 属性中类的顺序（参见[类顺序](/annealer/zh/guide/features/class-order.md)）：内置类顺序名（`tailwind`），或内联书写的[类顺序配置文件](#class-order-profiles)。CLI 的 `--class-order` 和 JavaScript 的 `classOrder` 选项可覆盖它。
+静态 `class` 属性中类的顺序（参见[类顺序](/annealer/zh/guide/features/class-order.md)）：内置类顺序名（`tailwind`、`bootstrap`），或内联书写的[类顺序配置文件](#class-order-profiles)。CLI 的 `--class-order` 和 JavaScript 的 `classOrder` 选项可覆盖它。
 
 ```yaml
 classOrder: tailwind

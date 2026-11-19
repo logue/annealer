@@ -39,6 +39,26 @@ Differences from running Tailwind:
 - **Duplicates are kept.** `eslint-plugin-tailwindcss` removes them by default (`removeDuplicates`). Removing classes is a lint concern, so the built-in profile keeps them. A class order with `removeDuplicates: true` removes them.
 - **Only static `class` attributes.** `:class` bindings and `clsx()`-style calls are expressions, and annealer never reads them.
 
+## Built-in: `bootstrap`
+
+The built-in `bootstrap` class order is for Bootstrap 6 (generated from `6.0.0-alpha.1`). Bootstrap has no official class sorter, so the order follows Bootstrap's own cascade:
+
+1. Classes of the `layout`, `content`, `forms`, `components` and `helpers` cascade layers (`row`, `col-6`, `btn`, `card`, `theme-primary`, …), layer by layer. Within a layer, classes go by name, so a base class precedes its modifiers (`btn btn-solid`).
+2. Utilities (`d-flex`, `mt-3`, `text-center`, …), by the CSS property they set, in the order Bootstrap's utilities layer sets them.
+3. Responsive and state variants (`md:`, `lg-down:`, `hover:`) after the classes without them.
+
+<!-- prettier-ignore -->
+
+```html
+<!-- Input -->
+<button class="mt-3 theme-primary md:mt-0 btn-solid d-flex btn js-save"></button>
+
+<!-- Output -->
+<button class="js-save btn btn-solid theme-primary d-flex mt-3 md:mt-0"></button>
+```
+
+The order is data, generated from `bootstrap/dist/css/bootstrap.css` by `scripts/generate-bootstrap-order.mjs`. Each non-utility layer is one `propertyOrder` entry (`@layer components`). Classes your project adds itself are unknown classes. Since Bootstrap 6 is still an alpha, regenerate the profile when Bootstrap changes.
+
 ## How classes are ordered
 
 1. Classes no rule matches (`card`, `js-toggle`) go first, in their source order (`unknown: end` puts them last).

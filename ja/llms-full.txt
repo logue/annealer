@@ -531,6 +531,26 @@ Tailwind を実行する場合との違い:
 - **重複は残します。** `eslint-plugin-tailwindcss` は既定で重複を削除します（`removeDuplicates`）。クラスの削除はリンターの役割なので、組み込みプロファイルでは残します。`removeDuplicates: true` のクラス順なら削除します。
 - **静的な `class` 属性のみ。** `:class` のバインドや `clsx()` のような呼び出しは式なので、annealer は読みません。
 
+## 組み込み: `bootstrap`
+
+組み込みの `bootstrap` は Bootstrap 6 用のクラス順です（`6.0.0-alpha.1` から生成）。Bootstrap には公式のクラス並べ替えツールがないため、Bootstrap 自身のカスケード順に従います。
+
+1. カスケードレイヤー `layout`、`content`、`forms`、`components`、`helpers` のクラス（`row`、`col-6`、`btn`、`card`、`theme-primary` など）をレイヤー順に。同じレイヤー内では名前順なので、基底クラスが修飾クラスより前に来ます（`btn btn-solid`）。
+2. ユーティリティ（`d-flex`、`mt-3`、`text-center` など）を、設定する CSS プロパティの順に。プロパティの順序は Bootstrap のユーティリティレイヤーでの出現順です。
+3. レスポンシブ・状態バリアント（`md:`、`lg-down:`、`hover:`）は、バリアントなしのクラスの後に。
+
+<!-- prettier-ignore -->
+
+```html
+<!-- Input -->
+<button class="mt-3 theme-primary md:mt-0 btn-solid d-flex btn js-save"></button>
+
+<!-- Output -->
+<button class="js-save btn btn-solid theme-primary d-flex mt-3 md:mt-0"></button>
+```
+
+並び順はデータで、`scripts/generate-bootstrap-order.mjs` が `bootstrap/dist/css/bootstrap.css` から生成します。ユーティリティ以外のレイヤーはそれぞれ `propertyOrder` の 1 項目（`@layer components`）です。プロジェクト独自のクラスは未知のクラスになります。Bootstrap 6 はまだアルファ版なので、Bootstrap が更新されたらプロファイルを再生成してください。
+
 ## 並び順の決まり方
 
 1. どのルールにも一致しないクラス（`card`、`js-toggle`）を先頭に、元の順のまま置きます（`unknown: end` なら末尾）。
@@ -631,7 +651,7 @@ url: /annealer/ja/guide/design/value-ordering.md
 # 値の並べ替え
 
 :::info 状況
-どちらも実装済みです。静的な `style` 属性（オプトイン。[スタイルシート](/annealer/ja/guide/concepts/stylesheets.md#static-style-attributes-opt-in)を参照）と、差し替え可能なクラス順による `class` の値（[クラス順](/annealer/ja/guide/features/class-order.md)を参照）で、組み込みの `tailwind` 順があります。Bootstrap のプロファイルはまだ書いていません。このページには、その背景にある原則をまとめます。
+どちらも実装済みです。静的な `style` 属性（オプトイン。[スタイルシート](/annealer/ja/guide/concepts/stylesheets.md#static-style-attributes-opt-in)を参照）と、差し替え可能なクラス順による `class` の値（[クラス順](/annealer/ja/guide/features/class-order.md)を参照）で、組み込みの `tailwind` 順があります。Bootstrap 6（アルファ版）向けの下書き `bootstrap` 順も組み込まれています。このページには、その背景にある原則をまとめます。
 :::
 
 属性の並び順が 1 つの軸だとすれば、属性内の値の並び順はもう 1 つの軸です。これは Tailwind に限った需要ではありません。クラスベースの CSS フレームワーク（Bootstrap、Tailwind、プロジェクト独自のユーティリティ群）なら、属性と同じく差分を安定させるという理由で、決まったクラス順の恩恵を受けます。
@@ -826,15 +846,15 @@ anyl [OPTIONS] [FILES]...
 
 ## オプション
 
-| オプション                         | 説明                                                                                                    |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `-w`, `--write`               | ファイルをその場で上書きします。`--check` とは併用できません。                                                                  |
-| `-c`, `--check`               | 変更が必要なファイルのパスを出力し、1 つでもあれば終了コード 1 で終了します。                                                             |
-| `-p`, `--profile <PROFILE>`   | 組み込みプロファイル名（`html`、`vue`）またはプロファイル YAML ファイルのパス。既定は各ファイルの言語に対応する組み込みプロファイルです。                         |
-| `--class-order <CLASS_ORDER>` | 静的な `class` 属性のクラスを並べ替えます。組み込みのクラス順の名前（`tailwind`）またはクラス順 YAML ファイルのパス。プロファイルの `classOrder` より優先されます。 |
-| `-l`, `--language <LANGUAGE>` | 標準入力の言語: `html`（既定）、`vue`、`css`、`scss`、`sass`、`less`                                                  |
-| `-h`, `--help`                | ヘルプを表示します。                                                                                            |
-| `-V`, `--version`             | バージョンを表示します。                                                                                          |
+| オプション                         | 説明                                                                                                                |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `-w`, `--write`               | ファイルをその場で上書きします。`--check` とは併用できません。                                                                              |
+| `-c`, `--check`               | 変更が必要なファイルのパスを出力し、1 つでもあれば終了コード 1 で終了します。                                                                         |
+| `-p`, `--profile <PROFILE>`   | 組み込みプロファイル名（`html`、`vue`）またはプロファイル YAML ファイルのパス。既定は各ファイルの言語に対応する組み込みプロファイルです。                                     |
+| `--class-order <CLASS_ORDER>` | 静的な `class` 属性のクラスを並べ替えます。組み込みのクラス順の名前（`tailwind`、`bootstrap`）またはクラス順 YAML ファイルのパス。プロファイルの `classOrder` より優先されます。 |
+| `-l`, `--language <LANGUAGE>` | 標準入力の言語: `html`（既定）、`vue`、`css`、`scss`、`sass`、`less`                                                              |
+| `-h`, `--help`                | ヘルプを表示します。                                                                                                        |
+| `-V`, `--version`             | バージョンを表示します。                                                                                                      |
 
 ## 言語
 
@@ -1025,11 +1045,46 @@ JSON Schema（draft-07）は `crates/annealer/schema/profile.schema.json` にあ
 | `schemaVersion` | `1`           | ○  | プロファイル形式のバージョン                         |
 | `name`          | 文字列           | ○  | プロファイル名                                |
 | `description`   | 文字列           |    | 人間向けの概要                                |
+| `extends`       | 文字列 \| 文字列\[] |    | 土台にするプロファイル。[`extends`](#extends) を参照  |
 | `normalize`     | オブジェクト        |    | 属性名の書き換え                               |
 | `layout`        | オブジェクト        |    | 開始タグのレイアウト規則                           |
-| `groups`        | 配列            | ○  | 出力順に並べた属性グループ                          |
+| `groups`        | 配列            | ○¹ | 出力順に並べた属性グループ                          |
 | `stylesheet`    | オブジェクト        |    | スタイルシートの整形。省略するとスタイルシートには手を加えません。      |
 | `classOrder`    | 文字列 \| オブジェクト |    | 静的な `class` 属性のクラス順。省略するとクラスは元の順のままです。 |
+
+¹ `extends` があるときは省略できます。マージ後のプロファイルには必要です。
+
+## `extends` \{#extends}
+
+ほかのプロファイルを土台にします。組み込みプロファイルの名前（`html`、`vue`）、継承する側のファイルからの相対パス（CLI のみ）、またはそれらのリストを指定します。
+
+```yaml
+schemaVersion: 1
+name: my-html
+extends: [html, ./bootstrap-data.yaml]
+```
+
+```yaml
+# bootstrap-data.yaml: ミックスインとして使う部分的なプロファイル
+schemaVersion: 1
+name: bootstrap-data
+groups:
+  - name: bootstrap
+    match: [data-bs-toggle, data-bs-target, data-bs-*]
+    sort: listed
+    before: data
+```
+
+プロファイルは順にマージされるので、**後に書いたものが優先**されます。`extends` の各項目はそれより前の項目を上書きし、プロファイル自身はそのすべてを上書きします。
+
+- **マッピング**（`normalize`、`layout`、`stylesheet` など）はキーごとにマージします。
+- **それ以外の値**（スカラー、リスト、`classOrder`）は置き換えます。
+- **`groups` は `name` でマージします。** 継承したグループと同じ名前のグループは、そのグループをキーごとに更新します。`match` は追加ではなく置き換えで、位置はそのままです。新しいグループは末尾に追加します。
+- **`before` / `after`** には、新しいグループや継承したグループを隣に置く先のグループ名を指定します。それより前にマージされたどのプロファイルのグループでも指定できるので、ミックスインは前に書かれたプロファイルのグループの間に自分のグループを置けます。
+
+継承の連鎖は先に平坦化されます。自身も `extends` を持つ土台は、その土台を自分の前に展開します。検証はマージ結果に対して 1 回だけ行うので、土台は部分的（`groups` やフォールバックのグループがない）でも構いません。直接・間接を問わず自分自身を継承するとエラーになります。
+
+JavaScript API にはファイルシステムがないため、`extends` には組み込みプロファイルしか指定できません。
 
 ## `normalize`
 
@@ -1066,6 +1121,8 @@ JSON Schema（draft-07）は `crates/annealer/schema/profile.schema.json` にあ
 | `sort`       | `source` \| `alphabetical` \| `listed` | `source` | グループ内の順序: 書かれた順、キー順、`match` の順                                |
 | `fallback`   | 真偽値                                    | `false`  | どのパターンにも一致しない属性を受け取る                                          |
 | `spreadSafe` | 真偽値                                    | `false`  | このグループの属性は `v-bind="object"` のスプレッドをまたいで移動できる。コンパイル時ディレクティブ専用 |
+| `before`     | 文字列                                    | –        | このグループの直前に置く。[`extends`](#extends) を参照                        |
+| `after`      | 文字列                                    | –        | このグループの直後に置く。[`extends`](#extends) を参照                        |
 
 パターンは**正規化して小文字にしたキー**と照合します。`foo`/`:foo`/`v-bind:foo` は `foo`、`@click` は `v-on:click`、`#name` は `v-slot:name` になり、修飾子は除去されます。完全一致はどのプレフィックスよりも優先され、長いプレフィックスは短いものより優先されます。[属性順](/annealer/ja/guide/concepts/attribute-order.md)を参照してください。
 
@@ -1084,7 +1141,7 @@ JSON Schema（draft-07）は `crates/annealer/schema/profile.schema.json` にあ
 
 ## `classOrder`
 
-静的な `class` 属性内のクラスの並び順です（[クラス順](/annealer/ja/guide/features/class-order.md)を参照）。組み込みのクラス順の名前（`tailwind`）か、インラインで書いた[クラス順プロファイル](#class-order-profiles)を指定します。CLI の `--class-order` と JavaScript の `classOrder` オプションはこれより優先されます。
+静的な `class` 属性内のクラスの並び順です（[クラス順](/annealer/ja/guide/features/class-order.md)を参照）。組み込みのクラス順の名前（`tailwind`、`bootstrap`）か、インラインで書いた[クラス順プロファイル](#class-order-profiles)を指定します。CLI の `--class-order` と JavaScript の `classOrder` オプションはこれより優先されます。
 
 ```yaml
 classOrder: tailwind

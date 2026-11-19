@@ -10,15 +10,15 @@ Formats each file and prints the result. Reads stdin when no file is given.
 
 ## Options
 
-| Option                        | Description                                                                                                                                                            |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-w`, `--write`               | Overwrite files in place. Can't be combined with `--check`.                                                                                                            |
-| `-c`, `--check`               | Print the paths of files that would change, and exit with status 1 if any would.                                                                                       |
-| `-p`, `--profile <PROFILE>`   | A built-in profile name (`html`, `vue`) or the path to a profile YAML file. Defaults to the built-in profile for each file's language.                                 |
-| `--class-order <CLASS_ORDER>` | Order the classes of static `class` attributes: a built-in class order name (`tailwind`) or the path to a class order YAML file. Overrides the profile's `classOrder`. |
-| `-l`, `--language <LANGUAGE>` | Language of stdin input: `html` (default), `vue`, `css`, `scss`, `sass`, `less`.                                                                                       |
-| `-h`, `--help`                | Show help.                                                                                                                                                             |
-| `-V`, `--version`             | Show the version.                                                                                                                                                      |
+| Option                        | Description                                                                                                                                                                         |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-w`, `--write`               | Overwrite files in place. Can't be combined with `--check`.                                                                                                                         |
+| `-c`, `--check`               | Print the paths of files that would change, and exit with status 1 if any would.                                                                                                    |
+| `-p`, `--profile <PROFILE>`   | A built-in profile name (`html`, `vue`) or the path to a profile YAML file. Defaults to the built-in profile for each file's language.                                              |
+| `--class-order <CLASS_ORDER>` | Order the classes of static `class` attributes: a built-in class order name (`tailwind`, `bootstrap`) or the path to a class order YAML file. Overrides the profile's `classOrder`. |
+| `-l`, `--language <LANGUAGE>` | Language of stdin input: `html` (default), `vue`, `css`, `scss`, `sass`, `less`.                                                                                                    |
+| `-h`, `--help`                | Show help.                                                                                                                                                                          |
+| `-V`, `--version`             | Show the version.                                                                                                                                                                   |
 
 ## Languages
 

@@ -39,6 +39,26 @@ annealer 并不运行 Tailwind。该顺序是数据，由 `scripts/generate-tail
 - **重复项会保留。** `eslint-plugin-tailwindcss` 默认会删除重复项（`removeDuplicates`）。删除类属于 lint 的职责，因此内置配置文件会保留它们。设置 `removeDuplicates: true` 的类顺序配置文件会删除重复项。
 - **仅限静态 `class` 属性。** `:class` 绑定和 `clsx()` 风格的调用是表达式，annealer 从不读取它们。
 
+## 内置：`bootstrap` \{#built-in-bootstrap}
+
+内置的 `bootstrap` 类顺序适用于 Bootstrap 6（由 `6.0.0-alpha.1` 生成）。Bootstrap 没有官方的类排序工具，因此该顺序遵循 Bootstrap 自身的层叠顺序：
+
+1. 层叠层 `layout`、`content`、`forms`、`components`、`helpers` 中的类（`row`、`col-6`、`btn`、`card`、`theme-primary` 等），按层排列。同一层内按名称排序，因此基础类排在修饰类之前（`btn btn-solid`）。
+2. 工具类（`d-flex`、`mt-3`、`text-center` 等），按其设置的 CSS 属性排序，属性顺序即 Bootstrap 工具类层中的出现顺序。
+3. 响应式和状态变体（`md:`、`lg-down:`、`hover:`）排在不带变体的类之后。
+
+<!-- prettier-ignore -->
+
+```html
+<!-- Input -->
+<button class="mt-3 theme-primary md:mt-0 btn-solid d-flex btn js-save"></button>
+
+<!-- Output -->
+<button class="js-save btn btn-solid theme-primary d-flex mt-3 md:mt-0"></button>
+```
+
+该顺序是数据，由 `scripts/generate-bootstrap-order.mjs` 从 `bootstrap/dist/css/bootstrap.css` 生成。每个非工具类层是 `propertyOrder` 中的一项（`@layer components`）。项目自行添加的类为未知类。Bootstrap 6 仍处于 alpha 阶段，Bootstrap 更新后请重新生成该配置文件。
+
 ## 类的排序方式 \{#how-classes-are-ordered}
 
 1. 未匹配任何规则的类（`card`、`js-toggle`）排在最前，保持源顺序（`unknown: end` 会将它们放在最后）。

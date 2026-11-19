@@ -531,6 +531,26 @@ Differences from running Tailwind:
 - **Duplicates are kept.** `eslint-plugin-tailwindcss` removes them by default (`removeDuplicates`). Removing classes is a lint concern, so the built-in profile keeps them. A class order with `removeDuplicates: true` removes them.
 - **Only static `class` attributes.** `:class` bindings and `clsx()`-style calls are expressions, and annealer never reads them.
 
+## Built-in: `bootstrap`
+
+The built-in `bootstrap` class order is for Bootstrap 6 (generated from `6.0.0-alpha.1`). Bootstrap has no official class sorter, so the order follows Bootstrap's own cascade:
+
+1. Classes of the `layout`, `content`, `forms`, `components` and `helpers` cascade layers (`row`, `col-6`, `btn`, `card`, `theme-primary`, …), layer by layer. Within a layer, classes go by name, so a base class precedes its modifiers (`btn btn-solid`).
+2. Utilities (`d-flex`, `mt-3`, `text-center`, …), by the CSS property they set, in the order Bootstrap's utilities layer sets them.
+3. Responsive and state variants (`md:`, `lg-down:`, `hover:`) after the classes without them.
+
+<!-- prettier-ignore -->
+
+```html
+<!-- Input -->
+<button class="mt-3 theme-primary md:mt-0 btn-solid d-flex btn js-save"></button>
+
+<!-- Output -->
+<button class="js-save btn btn-solid theme-primary d-flex mt-3 md:mt-0"></button>
+```
+
+The order is data, generated from `bootstrap/dist/css/bootstrap.css` by `scripts/generate-bootstrap-order.mjs`. Each non-utility layer is one `propertyOrder` entry (`@layer components`). Classes your project adds itself are unknown classes. Since Bootstrap 6 is still an alpha, regenerate the profile when Bootstrap changes.
+
 ## How classes are ordered
 
 1. Classes no rule matches (`card`, `js-toggle`) go first, in their source order (`unknown: end` puts them last).
@@ -631,7 +651,7 @@ url: /annealer/guide/design/value-ordering.md
 # Value ordering
 
 :::info Status
-Both are implemented: static `style` attributes (opt-in, see [Stylesheets](/annealer/guide/concepts/stylesheets.md#static-style-attributes-opt-in)) and `class` values with a swappable class order (see [Class order](/annealer/guide/features/class-order.md)), with a built-in `tailwind` order. A Bootstrap profile is not written yet. This page records the principles behind them.
+Both are implemented: static `style` attributes (opt-in, see [Stylesheets](/annealer/guide/concepts/stylesheets.md#static-style-attributes-opt-in)) and `class` values with a swappable class order (see [Class order](/annealer/guide/features/class-order.md)), with a built-in `tailwind` order. A draft `bootstrap` order for Bootstrap 6 (alpha) is built in as well. This page records the principles behind them.
 :::
 
 Attribute order is one axis. The order of the values inside an attribute is another. The need isn't specific to Tailwind: any class-based CSS framework (Bootstrap, Tailwind, a project's own utility set) benefits from a fixed class order, for the same diff-stability reason as attributes.
@@ -826,15 +846,15 @@ Formats each file and prints the result. Reads stdin when no file is given.
 
 ## Options
 
-| Option                        | Description                                                                                                                                                            |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-w`, `--write`               | Overwrite files in place. Can't be combined with `--check`.                                                                                                            |
-| `-c`, `--check`               | Print the paths of files that would change, and exit with status 1 if any would.                                                                                       |
-| `-p`, `--profile <PROFILE>`   | A built-in profile name (`html`, `vue`) or the path to a profile YAML file. Defaults to the built-in profile for each file's language.                                 |
-| `--class-order <CLASS_ORDER>` | Order the classes of static `class` attributes: a built-in class order name (`tailwind`) or the path to a class order YAML file. Overrides the profile's `classOrder`. |
-| `-l`, `--language <LANGUAGE>` | Language of stdin input: `html` (default), `vue`, `css`, `scss`, `sass`, `less`.                                                                                       |
-| `-h`, `--help`                | Show help.                                                                                                                                                             |
-| `-V`, `--version`             | Show the version.                                                                                                                                                      |
+| Option                        | Description                                                                                                                                                                         |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-w`, `--write`               | Overwrite files in place. Can't be combined with `--check`.                                                                                                                         |
+| `-c`, `--check`               | Print the paths of files that would change, and exit with status 1 if any would.                                                                                                    |
+| `-p`, `--profile <PROFILE>`   | A built-in profile name (`html`, `vue`) or the path to a profile YAML file. Defaults to the built-in profile for each file's language.                                              |
+| `--class-order <CLASS_ORDER>` | Order the classes of static `class` attributes: a built-in class order name (`tailwind`, `bootstrap`) or the path to a class order YAML file. Overrides the profile's `classOrder`. |
+| `-l`, `--language <LANGUAGE>` | Language of stdin input: `html` (default), `vue`, `css`, `scss`, `sass`, `less`.                                                                                                    |
+| `-h`, `--help`                | Show help.                                                                                                                                                                          |
+| `-V`, `--version`             | Show the version.                                                                                                                                                                   |
 
 ## Languages
 
@@ -1020,16 +1040,51 @@ Unknown keys are errors everywhere in a profile, so typos never go unnoticed.
 
 ## Top level
 
-| Key             | Type             | Required | Description                                                                        |
-| --------------- | ---------------- | -------- | ---------------------------------------------------------------------------------- |
-| `schemaVersion` | `1`              | yes      | Profile format version.                                                            |
-| `name`          | string           | yes      | Profile name.                                                                      |
-| `description`   | string           |          | Human-readable summary.                                                            |
-| `normalize`     | object           |          | Attribute name rewrites.                                                           |
-| `layout`        | object           |          | Start-tag layout rules.                                                            |
-| `groups`        | array            | yes      | Attribute groups in output order.                                                  |
-| `stylesheet`    | object           |          | Stylesheet formatting. Omit it to leave stylesheets untouched.                     |
-| `classOrder`    | string \| object |          | Class order for static `class` attributes. Omit it to keep classes in their order. |
+| Key             | Type                | Required | Description                                                                        |
+| --------------- | ------------------- | -------- | ---------------------------------------------------------------------------------- |
+| `schemaVersion` | `1`                 | yes      | Profile format version.                                                            |
+| `name`          | string              | yes      | Profile name.                                                                      |
+| `description`   | string              |          | Human-readable summary.                                                            |
+| `extends`       | string \| string\[] |          | Profiles to build on. See [`extends`](#extends).                                   |
+| `normalize`     | object              |          | Attribute name rewrites.                                                           |
+| `layout`        | object              |          | Start-tag layout rules.                                                            |
+| `groups`        | array               | yes¹     | Attribute groups in output order.                                                  |
+| `stylesheet`    | object              |          | Stylesheet formatting. Omit it to leave stylesheets untouched.                     |
+| `classOrder`    | string \| object    |          | Class order for static `class` attributes. Omit it to keep classes in their order. |
+
+¹ Not required with `extends`; the merged profile must have them.
+
+## `extends`
+
+Builds a profile on other profiles: a built-in profile name (`html`, `vue`), a path relative to the extending file (CLI only), or a list of them.
+
+```yaml
+schemaVersion: 1
+name: my-html
+extends: [html, ./bootstrap-data.yaml]
+```
+
+```yaml
+# bootstrap-data.yaml: a partial profile used as a mixin
+schemaVersion: 1
+name: bootstrap-data
+groups:
+  - name: bootstrap
+    match: [data-bs-toggle, data-bs-target, data-bs-*]
+    sort: listed
+    before: data
+```
+
+The profiles are merged in order, so **the later one wins**: each entry of `extends` overrides the ones before it, and the profile itself overrides them all.
+
+- **Mappings** (`normalize`, `layout`, `stylesheet`, …) merge key by key.
+- **Other values** (scalars, lists, `classOrder`) are replaced.
+- **`groups` merge by `name`.** A group named like an inherited group updates it key by key; its `match` list is replaced, not appended to, and it keeps its position. A new group is appended at the end.
+- **`before` / `after`** name a group to place the group next to, new or inherited. They can name a group from any profile merged before, so a mixin can place its group among the groups of the profile listed before it.
+
+The chain is flattened first: a base that has `extends` of its own brings its bases in front of it. Validation runs once, on the merged result, so a base may be partial (no `groups`, no fallback group). A profile that extends itself, directly or not, is an error.
+
+The JavaScript API has no file system: there, `extends` can only name built-in profiles.
 
 ## `normalize`
 
@@ -1066,6 +1121,8 @@ Groups are listed in output order. Exactly one group must be the fallback, and g
 | `sort`       | `source` \| `alphabetical` \| `listed` | `source` | Order within the group: as written, by key, or by the order of `match`.                                |
 | `fallback`   | boolean                                | `false`  | Receives every attribute that matches no pattern.                                                      |
 | `spreadSafe` | boolean                                | `false`  | Attributes in this group may move across a `v-bind="object"` spread. Only for compile-time directives. |
+| `before`     | string                                 | –        | Place the group right before this group. See [`extends`](#extends).                                    |
+| `after`      | string                                 | –        | Place the group right after this group. See [`extends`](#extends).                                     |
 
 Patterns are matched against **normalized, lowercased keys**: `foo` for `foo`/`:foo`/`v-bind:foo`, `v-on:click` for `@click`, `v-slot:name` for `#name`, with modifiers stripped. An exact name beats any prefix, and a longer prefix beats a shorter one. See [Attribute order](/annealer/guide/concepts/attribute-order.md).
 
@@ -1084,7 +1141,7 @@ Only the order of declarations changes; whitespace, quotes and other formatting 
 
 ## `classOrder`
 
-The order of the classes in static `class` attributes (see [Class order](/annealer/guide/features/class-order.md)): a built-in class order name (`tailwind`), or a [class order profile](#class-order-profiles) written inline. The CLI's `--class-order` and the JavaScript `classOrder` option override it.
+The order of the classes in static `class` attributes (see [Class order](/annealer/guide/features/class-order.md)): a built-in class order name (`tailwind`, `bootstrap`), or a [class order profile](#class-order-profiles) written inline. The CLI's `--class-order` and the JavaScript `classOrder` option override it.
 
 ```yaml
 classOrder: tailwind
