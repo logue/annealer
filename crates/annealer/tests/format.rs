@@ -1039,9 +1039,9 @@ mod class_order {
     fn rejects_unknown_builtin_names() {
         assert!(matches!(
             Profile::from_yaml(
-                "schemaVersion: 1\nname: x\ngroups:\n  - name: rest\n    fallback: true\nclassOrder: bootstrap\n"
+                "schemaVersion: 1\nname: x\ngroups:\n  - name: rest\n    fallback: true\nclassOrder: bulma\n"
             ),
-            Err(annealer::ProfileError::UnknownClassOrder(name)) if name == "bootstrap"
+            Err(annealer::ProfileError::UnknownClassOrder(name)) if name == "bulma"
         ));
     }
 }

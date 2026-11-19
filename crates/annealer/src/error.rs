@@ -50,6 +50,12 @@ pub enum ProfileError {
     )]
     Pattern { group: String, pattern: String },
 
+    #[error("unknown profile `{0}`")]
+    UnknownProfile(String),
+
+    #[error("invalid `extends`: {0}")]
+    Extends(String),
+
     #[error("unknown built-in class order `{0}`")]
     UnknownClassOrder(String),
 

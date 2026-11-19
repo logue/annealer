@@ -14,6 +14,7 @@ mod attribute;
 mod class_order;
 mod directive;
 mod error;
+mod extends;
 mod markup;
 mod order;
 mod profile;
@@ -27,6 +28,7 @@ use std::path::Path;
 
 pub use class_order::{ClassOrder, UnknownPosition};
 pub use error::{FormatError, ProfileError};
+pub use extends::Resolver;
 pub use profile::{GroupSort, Profile};
 
 /// Input language.
@@ -84,7 +86,7 @@ impl Config {
         }
     }
 
-    /// Sets the class order (e.g. `ClassOrder::builtin("tailwind")`).
+    /// Sets the class order (e.g. `ClassOrder::builtin("tailwind")` or `ClassOrder::builtin("bootstrap")`).
     #[must_use]
     pub fn with_class_order(mut self, class_order: Option<ClassOrder>) -> Self {
         self.class_order = class_order;

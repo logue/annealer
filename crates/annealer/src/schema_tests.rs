@@ -100,7 +100,8 @@ fn schema_and_loader_agree() {
         ),
         (profile_with("stylesheet:\n  styleAttribute: true\n"), true),
         (profile_with("classOrder: tailwind\n"), true),
-        (profile_with("classOrder: bootstrap\n"), false),
+        (profile_with("classOrder: bootstrap\n"), true),
+        (profile_with("classOrder: bulma\n"), false),
         (
             profile_with(
                 "classOrder:\n  schemaVersion: 1\n  name: own\n  propertyOrder: [display]\n  rules:\n    - match: [d-*]\n      properties: [display]\n",
@@ -152,6 +153,25 @@ fn schema_and_loader_agree() {
             "schemaVersion: 1\nname: x\ngroups:\n  - name: a\n    match: [id]\n".to_owned(),
             false,
         ),
+        ("schemaVersion: 1\nname: x\nextends: html\n".to_owned(), true),
+        ("schemaVersion: 1\nname: x\nextends: [html, vue]\n".to_owned(), true),
+        (
+            "schemaVersion: 1\nname: x\nextends: html\ngroups:\n  - name: bs\n    match: [data-bs-*]\n    before: data\n".to_owned(),
+            true,
+        ),
+        (
+            "schemaVersion: 1\nname: x\nextends: html\ngroups:\n  - name: events\n    after: class\n".to_owned(),
+            true,
+        ),
+        ("schemaVersion: 1\nname: x\nextends: 1\n".to_owned(), false),
+        (
+            "schemaVersion: 1\nname: x\nextends: html\ngroups:\n  - name: bs\n    match: [x]\n    before: data\n    after: data\n".to_owned(),
+            false,
+        ),
+        (
+            "schemaVersion: 1\nname: x\nextends: html\ngroups:\n  - name: bs\n    match: [x]\n    behind: data\n".to_owned(),
+            false,
+        ),
     ];
     for (yaml, valid) in cases {
         assert_eq!(schema_accepts(&yaml), valid, "schema disagrees on:\n{yaml}");
@@ -168,7 +188,12 @@ fn schema_and_loader_agree() {
 fn loader_is_stricter_where_schema_cannot_be() {
     let two_fallbacks = profile_with_groups("  - name: more\n    fallback: true\n");
     let duplicate_names = profile_with_groups("  - name: rest\n    match: [id]\n");
-    for yaml in [two_fallbacks, duplicate_names] {
+    // Only the merged profile shows these.
+    let unknown_base = "schemaVersion: 1\nname: x\nextends: nope\n".to_owned();
+    let unknown_anchor =
+        "schemaVersion: 1\nname: x\nextends: html\ngroups:\n  - name: b\n    match: [x]\n    before: nope\n"
+            .to_owned();
+    for yaml in [two_fallbacks, duplicate_names, unknown_base, unknown_anchor] {
         assert!(schema_accepts(&yaml));
         assert!(Profile::from_yaml(&yaml).is_err());
     }
@@ -176,13 +201,17 @@ fn loader_is_stricter_where_schema_cannot_be() {
 
 #[test]
 fn builtin_class_orders_match_schema() {
-    let instance: Value =
-        yaml_serde::from_str(include_str!("../class-orders/tailwind.yaml")).unwrap();
-    let errors: Vec<String> = class_order_validator()
-        .iter_errors(&instance)
-        .map(|error| format!("{}: {error}", error.instance_path()))
-        .collect();
-    assert!(errors.is_empty(), "{errors:#?}");
+    for yaml in [
+        include_str!("../class-orders/tailwind.yaml"),
+        include_str!("../class-orders/bootstrap.yaml"),
+    ] {
+        let instance: Value = yaml_serde::from_str(yaml).unwrap();
+        let errors: Vec<String> = class_order_validator()
+            .iter_errors(&instance)
+            .map(|error| format!("{}: {error}", error.instance_path()))
+            .collect();
+        assert!(errors.is_empty(), "{errors:#?}");
+    }
 }
 
 #[test]

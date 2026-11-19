@@ -7,6 +7,7 @@ use serde::Deserialize;
 
 use crate::class_order::ClassOrder;
 use crate::error::ProfileError;
+use crate::extends::{self, Builtins, Resolver};
 
 const SCHEMA_VERSION: u32 = 1;
 
@@ -268,9 +269,17 @@ pub struct Profile {
 }
 
 impl Profile {
-    /// Parses and validates a profile from YAML.
+    /// Parses and validates a profile from YAML. `extends` may only name
+    /// built-in profiles; see [`Profile::from_yaml_with`] for others.
     pub fn from_yaml(yaml: &str) -> Result<Self, ProfileError> {
-        let raw: RawProfile = yaml_serde::from_str(yaml)?;
+        Self::from_yaml_with(yaml, &mut Builtins)
+    }
+
+    /// Parses and validates a profile from YAML, loading the profiles its
+    /// `extends` names with `resolver`. Later entries of `extends` override
+    /// earlier ones, and the profile itself overrides them all.
+    pub fn from_yaml_with(yaml: &str, resolver: &mut dyn Resolver) -> Result<Self, ProfileError> {
+        let raw: RawProfile = yaml_serde::from_value(extends::resolve(yaml, resolver)?)?;
         if raw.schema_version != SCHEMA_VERSION {
             return Err(ProfileError::SchemaVersion(raw.schema_version));
         }
@@ -327,6 +336,11 @@ impl Profile {
     pub fn builtin(name: &str) -> Option<Self> {
         let yaml = builtin_yaml(name)?;
         Some(Self::from_yaml(yaml).expect("built-in profiles are valid"))
+    }
+
+    /// The YAML source of a built-in profile (`html` or `vue`).
+    pub fn builtin_yaml(name: &str) -> Option<&'static str> {
+        builtin_yaml(name)
     }
 
     /// The built-in plain HTML profile.
@@ -486,6 +500,148 @@ mod tests {
         assert!(matches!(
             Profile::from_yaml(bad_glob),
             Err(ProfileError::Pattern { .. })
+        ));
+    }
+
+    fn names(profile: &Profile) -> Vec<&str> {
+        profile.group_names().collect()
+    }
+
+    #[test]
+    fn extends_a_builtin_profile() {
+        let yaml = concat!(
+            "schemaVersion: 1\nname: bootstrap\nextends: html\n",
+            "groups:\n",
+            "  - name: bootstrap\n    match: [data-bs-toggle, data-bs-target, data-bs-*]\n",
+            "    sort: listed\n    before: data\n",
+        );
+        let profile = Profile::from_yaml(yaml).unwrap();
+        assert_eq!(profile.name(), "bootstrap");
+        let groups = names(&profile);
+        let data = groups.iter().position(|g| *g == "data").unwrap();
+        assert_eq!(groups[data - 1], "bootstrap");
+        assert_eq!(group_of(&profile, "data-bs-target"), "bootstrap");
+        assert_eq!(group_of(&profile, "data-id"), "data");
+        // Everything else is inherited.
+        assert_eq!(group_of(&profile, "aria-label"), "aria-name");
+        assert!(profile.layout.one_attribute_per_line);
+        assert!(profile.stylesheet.is_some());
+    }
+
+    #[test]
+    fn later_profiles_win() {
+        let mut resolver = |spec: &str, _: Option<&str>| {
+            let yaml = match spec {
+                "a" => {
+                    "schemaVersion: 1\nlayout:\n  oneAttributePerLine: true\n  closingBracketNewline: true\n"
+                }
+                "b" => "schemaVersion: 1\nlayout:\n  oneAttributePerLine: false\n",
+                _ => return crate::extends::builtin(spec),
+            };
+            Some((spec.to_owned(), yaml.to_owned()))
+        };
+        let yaml = "schemaVersion: 1\nname: x\nextends: [html, a, b]\n";
+        let profile = Profile::from_yaml_with(yaml, &mut resolver).unwrap();
+        // `b` overrides `a`; mappings merge key by key.
+        assert!(!profile.layout.one_attribute_per_line);
+        assert!(profile.layout.closing_bracket_newline);
+
+        let yaml = "schemaVersion: 1\nname: x\nextends: [html, b, a]\n";
+        let profile = Profile::from_yaml_with(yaml, &mut resolver).unwrap();
+        assert!(profile.layout.one_attribute_per_line);
+    }
+
+    #[test]
+    fn updates_and_moves_inherited_groups() {
+        let yaml = concat!(
+            "schemaVersion: 1\nname: x\nextends: html\n",
+            "groups:\n",
+            "  - name: dimensions\n    match: [width, height, size]\n",
+            "  - name: events\n    after: class\n",
+        );
+        let profile = Profile::from_yaml(yaml).unwrap();
+        // Updated in place: `match` is replaced, the position kept.
+        let groups = names(&profile);
+        let dimensions = groups.iter().position(|g| *g == "dimensions").unwrap();
+        assert_eq!(groups[dimensions - 1], "key-value");
+        assert_eq!(group_of(&profile, "size"), "dimensions");
+        assert_eq!(&names(&profile)[..3], ["global", "class", "events"]);
+        assert_eq!(group_of(&profile, "onclick"), "events");
+    }
+
+    #[test]
+    fn a_mixin_places_groups_among_earlier_profiles() {
+        // `bs` doesn't extend `html`, yet places its group before `html`'s `data`.
+        let mut resolver = |spec: &str, _: Option<&str>| {
+            match spec {
+            "bs" => Some((
+                spec.to_owned(),
+                "schemaVersion: 1\ngroups:\n  - name: bootstrap\n    match: [data-bs-*]\n    before: data\n"
+                    .to_owned(),
+            )),
+            _ => crate::extends::builtin(spec),
+        }
+        };
+        let yaml = "schemaVersion: 1\nname: x\nextends: [html, bs]\n";
+        let profile = Profile::from_yaml_with(yaml, &mut resolver).unwrap();
+        let groups = names(&profile);
+        let data = groups.iter().position(|g| *g == "data").unwrap();
+        assert_eq!(groups[data - 1], "bootstrap");
+    }
+
+    #[test]
+    fn a_base_may_be_partial() {
+        let mut resolver = |spec: &str, _: Option<&str>| {
+            (spec == "layout").then(|| {
+                (
+                    spec.to_owned(),
+                    "schemaVersion: 1\nlayout:\n  oneAttributePerLine: true\n".to_owned(),
+                )
+            })
+        };
+        let yaml = "schemaVersion: 1\nname: x\nextends: layout\ngroups:\n  - name: a\n    fallback: true\n";
+        let profile = Profile::from_yaml_with(yaml, &mut resolver).unwrap();
+        assert!(profile.layout.one_attribute_per_line);
+    }
+
+    #[test]
+    fn rejects_bad_extends() {
+        let unknown = "schemaVersion: 1\nname: x\nextends: nope\n";
+        assert!(matches!(
+            Profile::from_yaml(unknown),
+            Err(ProfileError::UnknownProfile(name)) if name == "nope"
+        ));
+
+        let anchor = "schemaVersion: 1\nname: x\nextends: html\ngroups:\n  - name: b\n    match: [x]\n    before: nope\n";
+        assert!(matches!(
+            Profile::from_yaml(anchor),
+            Err(ProfileError::Extends(_))
+        ));
+
+        let both = "schemaVersion: 1\nname: x\nextends: html\ngroups:\n  - name: b\n    match: [x]\n    before: data\n    after: data\n";
+        assert!(matches!(
+            Profile::from_yaml(both),
+            Err(ProfileError::Extends(_))
+        ));
+
+        let mut cycle = |spec: &str, _: Option<&str>| {
+            let other = if spec == "a" { "b" } else { "a" };
+            Some((
+                spec.to_owned(),
+                format!("schemaVersion: 1\nextends: {other}\n"),
+            ))
+        };
+        let yaml = "schemaVersion: 1\nname: x\nextends: a\n";
+        assert!(matches!(
+            Profile::from_yaml_with(yaml, &mut cycle),
+            Err(ProfileError::Extends(_))
+        ));
+
+        // A base with two fallback groups after merging is still invalid.
+        let two = "schemaVersion: 1\nname: x\nextends: html\ngroups:\n  - name: rest\n    fallback: true\n";
+        assert!(matches!(
+            Profile::from_yaml(two),
+            Err(ProfileError::Fallback(2))
         ));
     }
 }

@@ -16,7 +16,7 @@ export { Meta } from '@/types/Meta';
 export type BuiltinProfile = 'html' | 'vue';
 
 /** Built-in class order names. */
-export type BuiltinClassOrder = 'tailwind';
+export type BuiltinClassOrder = 'tailwind' | 'bootstrap';
 
 let ready = false;
 

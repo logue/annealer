@@ -26,6 +26,7 @@ use crate::error::ProfileError;
 const SCHEMA_VERSION: u32 = 1;
 
 const TAILWIND: &str = include_str!("../class-orders/tailwind.yaml");
+const BOOTSTRAP: &str = include_str!("../class-orders/bootstrap.yaml");
 
 /// Name of the built-in value set matching a decimal number (`4`, `0.5`).
 const NUMBER_SET: &str = "number";
@@ -256,7 +257,7 @@ impl ClassOrder {
         })
     }
 
-    /// A built-in class order profile by name (`tailwind`).
+    /// A built-in class order profile by name (`tailwind`, `bootstrap`).
     pub fn builtin(name: &str) -> Option<Self> {
         let yaml = builtin_yaml(name)?;
         Some(Self::from_yaml(yaml).expect("built-in class orders are valid"))
@@ -441,6 +442,7 @@ impl ClassOrder {
 pub(crate) fn builtin_yaml(name: &str) -> Option<&'static str> {
     match name {
         "tailwind" => Some(TAILWIND),
+        "bootstrap" => Some(BOOTSTRAP),
         _ => None,
     }
 }
@@ -752,5 +754,41 @@ mod tests {
         let ok =
             format!("{base}rules:\n  - match: [d-*, 'd-{{number}}']\n    properties: [display]\n");
         assert!(ClassOrder::from_yaml(&ok).is_ok());
+    }
+
+    fn bootstrap() -> ClassOrder {
+        ClassOrder::builtin("bootstrap").unwrap()
+    }
+
+    #[test]
+    fn bootstrap_puts_components_before_utilities() {
+        assert_eq!(
+            bootstrap()
+                .sort_value("mt-3 btn-solid text-center btn d-flex")
+                .unwrap(),
+            "btn btn-solid d-flex mt-3 text-center"
+        );
+        // Bootstrap 6 colors components with `theme-*` helpers.
+        assert_eq!(
+            bootstrap()
+                .sort_value("theme-primary btn-solid btn")
+                .unwrap(),
+            "btn btn-solid theme-primary"
+        );
+    }
+
+    #[test]
+    fn bootstrap_orders_layers_and_variants() {
+        // Layout before components; responsive variants after plain classes.
+        assert_eq!(
+            bootstrap()
+                .sort_value("md:d-none card d-block col-6 js-toggle")
+                .unwrap(),
+            "js-toggle col-6 card d-block md:d-none"
+        );
+        assert_eq!(
+            bootstrap().sort_value("lg:p-5 md:p-4 p-3").unwrap(),
+            "p-3 md:p-4 lg:p-5"
+        );
     }
 }

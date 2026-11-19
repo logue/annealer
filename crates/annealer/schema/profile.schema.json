@@ -5,7 +5,7 @@
   "description": "Attribute ordering profile for annealer. Groups are listed in output priority order; each attribute goes to the group whose `match` pattern fits its normalized name most specifically (exact name beats the longest `prefix*`). Unmatched attributes go to the fallback group.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "name", "groups"],
+  "required": ["schemaVersion", "name"],
   "properties": {
     "schemaVersion": {
       "description": "Profile format version.",
@@ -19,6 +19,22 @@
     "description": {
       "description": "Human-readable summary of the profile.",
       "type": "string"
+    },
+    "extends": {
+      "description": "Profiles this profile builds on: a built-in profile name (`html`, `vue`) or a path relative to this file (CLI only), or a list of them. Later entries override earlier ones and this profile overrides them all: mappings merge key by key, lists and other values are replaced, and groups merge by name.",
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ]
     },
     "normalize": {
       "description": "Attribute name rewrites applied before classification.",
@@ -136,21 +152,8 @@
       }
     },
     "groups": {
-      "description": "Attribute groups in output priority order. Exactly one group must be the fallback.",
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "$ref": "#/definitions/group"
-      },
-      "contains": {
-        "type": "object",
-        "required": ["fallback"],
-        "properties": {
-          "fallback": {
-            "const": true
-          }
-        }
-      }
+      "description": "Attribute groups in output priority order. Exactly one group must be the fallback (after merging, with `extends`).",
+      "type": "array"
     },
     "stylesheet": {
       "description": "Declaration ordering for `<style>` blocks and standalone stylesheets. Only the order changes: declarations are moved as written, and whitespace, quotes and other formatting are left to a formatter. Omit this key to leave stylesheets untouched.",
@@ -179,10 +182,10 @@
       }
     },
     "classOrder": {
-      "description": "Order of the classes in static `class` attributes (bound `:class` is never touched): a built-in class order name (`tailwind`) or a class order profile. Omit this key to keep classes in their order.",
+      "description": "Order of the classes in static `class` attributes (bound `:class` is never touched): a built-in class order name (`tailwind`, `bootstrap`) or a class order profile. Omit this key to keep classes in their order.",
       "anyOf": [
         {
-          "enum": ["tailwind"]
+          "enum": ["tailwind", "bootstrap"]
         },
         {
           "$ref": "class-order.schema.json"
@@ -192,6 +195,35 @@
   },
   "definitions": {
     "group": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/groupPatch"
+        }
+      ],
+      "if": {
+        "required": ["fallback"],
+        "properties": {
+          "fallback": {
+            "const": true
+          }
+        }
+      },
+      "then": {},
+      "else": {
+        "required": ["match"],
+        "properties": {
+          "match": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    "selfClosing": {
+      "enum": ["always", "never", "preserve"],
+      "default": "preserve"
+    },
+    "groupPatch": {
+      "description": "A group in a profile with `extends`. A group named like an inherited group updates it key by key (`match` is replaced, not appended to); a new group is appended unless `before`/`after` places it.",
       "type": "object",
       "additionalProperties": false,
       "required": ["name"],
@@ -223,29 +255,53 @@
           "description": "Attributes in this group may be moved across a `v-bind=\"object\"` spread (only for compile-time directives that never merge with the spread object).",
           "type": "boolean",
           "default": false
+        },
+        "before": {
+          "description": "Place the group right before the named group (inherited or listed earlier). Moves an inherited group when it updates one.",
+          "type": "string",
+          "minLength": 1
+        },
+        "after": {
+          "description": "Place the group right after the named group (inherited or listed earlier). Moves an inherited group when it updates one.",
+          "type": "string",
+          "minLength": 1
         }
       },
-      "if": {
-        "required": ["fallback"],
-        "properties": {
-          "fallback": {
-            "const": true
-          }
+      "not": {
+        "required": ["before", "after"]
+      }
+    }
+  },
+  "if": {
+    "required": ["extends"]
+  },
+  "then": {
+    "properties": {
+      "groups": {
+        "items": {
+          "$ref": "#/definitions/groupPatch"
         }
-      },
-      "then": {},
-      "else": {
-        "required": ["match"],
-        "properties": {
-          "match": {
-            "minItems": 1
+      }
+    }
+  },
+  "else": {
+    "required": ["groups"],
+    "properties": {
+      "groups": {
+        "items": {
+          "$ref": "#/definitions/group"
+        },
+        "minItems": 1,
+        "contains": {
+          "type": "object",
+          "required": ["fallback"],
+          "properties": {
+            "fallback": {
+              "const": true
+            }
           }
         }
       }
-    },
-    "selfClosing": {
-      "enum": ["always", "never", "preserve"],
-      "default": "preserve"
     }
   }
 }

@@ -20,7 +20,7 @@ fn language(name: &str) -> Result<Language, JsError> {
 ///
 /// `profile` is a built-in profile name (`html`, `vue`) or a profile's YAML
 /// text; when omitted, the built-in profile for `language` is used.
-/// `class_order` is a built-in class order name (`tailwind`) or a class order
+/// `class_order` is a built-in class order name (`tailwind`, `bootstrap`) or a class order
 /// YAML text; it overrides the profile's `classOrder`.
 #[wasm_bindgen]
 pub fn format(

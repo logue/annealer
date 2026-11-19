@@ -45,16 +45,51 @@ Unknown keys are errors everywhere in a profile, so typos never go unnoticed.
 
 ## Top level
 
-| Key             | Type             | Required | Description                                                                        |
-| --------------- | ---------------- | -------- | ---------------------------------------------------------------------------------- |
-| `schemaVersion` | `1`              | yes      | Profile format version.                                                            |
-| `name`          | string           | yes      | Profile name.                                                                      |
-| `description`   | string           |          | Human-readable summary.                                                            |
-| `normalize`     | object           |          | Attribute name rewrites.                                                           |
-| `layout`        | object           |          | Start-tag layout rules.                                                            |
-| `groups`        | array            | yes      | Attribute groups in output order.                                                  |
-| `stylesheet`    | object           |          | Stylesheet formatting. Omit it to leave stylesheets untouched.                     |
-| `classOrder`    | string \| object |          | Class order for static `class` attributes. Omit it to keep classes in their order. |
+| Key             | Type               | Required | Description                                                                        |
+| --------------- | ------------------ | -------- | ---------------------------------------------------------------------------------- |
+| `schemaVersion` | `1`                | yes      | Profile format version.                                                            |
+| `name`          | string             | yes      | Profile name.                                                                      |
+| `description`   | string             |          | Human-readable summary.                                                            |
+| `extends`       | string \| string[] |          | Profiles to build on. See [`extends`](#extends).                                   |
+| `normalize`     | object             |          | Attribute name rewrites.                                                           |
+| `layout`        | object             |          | Start-tag layout rules.                                                            |
+| `groups`        | array              | yes¹     | Attribute groups in output order.                                                  |
+| `stylesheet`    | object             |          | Stylesheet formatting. Omit it to leave stylesheets untouched.                     |
+| `classOrder`    | string \| object   |          | Class order for static `class` attributes. Omit it to keep classes in their order. |
+
+¹ Not required with `extends`; the merged profile must have them.
+
+## `extends`
+
+Builds a profile on other profiles: a built-in profile name (`html`, `vue`), a path relative to the extending file (CLI only), or a list of them.
+
+```yaml
+schemaVersion: 1
+name: my-html
+extends: [html, ./bootstrap-data.yaml]
+```
+
+```yaml
+# bootstrap-data.yaml: a partial profile used as a mixin
+schemaVersion: 1
+name: bootstrap-data
+groups:
+  - name: bootstrap
+    match: [data-bs-toggle, data-bs-target, data-bs-*]
+    sort: listed
+    before: data
+```
+
+The profiles are merged in order, so **the later one wins**: each entry of `extends` overrides the ones before it, and the profile itself overrides them all.
+
+- **Mappings** (`normalize`, `layout`, `stylesheet`, …) merge key by key.
+- **Other values** (scalars, lists, `classOrder`) are replaced.
+- **`groups` merge by `name`.** A group named like an inherited group updates it key by key; its `match` list is replaced, not appended to, and it keeps its position. A new group is appended at the end.
+- **`before` / `after`** name a group to place the group next to, new or inherited. They can name a group from any profile merged before, so a mixin can place its group among the groups of the profile listed before it.
+
+The chain is flattened first: a base that has `extends` of its own brings its bases in front of it. Validation runs once, on the merged result, so a base may be partial (no `groups`, no fallback group). A profile that extends itself, directly or not, is an error.
+
+The JavaScript API has no file system: there, `extends` can only name built-in profiles.
 
 ## `normalize`
 
@@ -91,6 +126,8 @@ Groups are listed in output order. Exactly one group must be the fallback, and g
 | `sort`       | `source` \| `alphabetical` \| `listed` | `source` | Order within the group: as written, by key, or by the order of `match`.                                |
 | `fallback`   | boolean                                | `false`  | Receives every attribute that matches no pattern.                                                      |
 | `spreadSafe` | boolean                                | `false`  | Attributes in this group may move across a `v-bind="object"` spread. Only for compile-time directives. |
+| `before`     | string                                 | –        | Place the group right before this group. See [`extends`](#extends).                                    |
+| `after`      | string                                 | –        | Place the group right after this group. See [`extends`](#extends).                                     |
 
 Patterns are matched against **normalized, lowercased keys**: `foo` for `foo`/`:foo`/`v-bind:foo`, `v-on:click` for `@click`, `v-slot:name` for `#name`, with modifiers stripped. An exact name beats any prefix, and a longer prefix beats a shorter one. See [Attribute order](../guide/concepts/attribute-order.md).
 
@@ -109,7 +146,7 @@ Only the order of declarations changes; whitespace, quotes and other formatting 
 
 ## `classOrder`
 
-The order of the classes in static `class` attributes (see [Class order](../guide/features/class-order.md)): a built-in class order name (`tailwind`), or a [class order profile](#class-order-profiles) written inline. The CLI's `--class-order` and the JavaScript `classOrder` option override it.
+The order of the classes in static `class` attributes (see [Class order](../guide/features/class-order.md)): a built-in class order name (`tailwind`, `bootstrap`), or a [class order profile](#class-order-profiles) written inline. The CLI's `--class-order` and the JavaScript `classOrder` option override it.
 
 ```yaml
 classOrder: tailwind

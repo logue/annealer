@@ -39,7 +39,7 @@ describe('format', () => {
 
   test('throws on invalid input and profiles', () => {
     expect(() => format('<a title="t')).toThrow(/unterminated/u);
-    expect(() => format('<a>', { profile: 'schemaVersion: 2' })).toThrow(/profile/u);
+    expect(() => format('<a>', { profile: 'schemaVersion: 2' })).toThrow(/schemaVersion/u);
   });
 
   test('orders classes with a class order', () => {

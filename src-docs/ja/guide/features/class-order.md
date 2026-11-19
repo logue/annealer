@@ -40,6 +40,25 @@ Tailwind を実行する場合との違い:
 - **重複は残します。** `eslint-plugin-tailwindcss` は既定で重複を削除します（`removeDuplicates`）。クラスの削除はリンターの役割なので、組み込みプロファイルでは残します。`removeDuplicates: true` のクラス順なら削除します。
 - **静的な `class` 属性のみ。** `:class` のバインドや `clsx()` のような呼び出しは式なので、annealer は読みません。
 
+## 組み込み: `bootstrap`
+
+組み込みの `bootstrap` は Bootstrap 6 用のクラス順です（`6.0.0-alpha.1` から生成）。Bootstrap には公式のクラス並べ替えツールがないため、Bootstrap 自身のカスケード順に従います。
+
+1. カスケードレイヤー `layout`、`content`、`forms`、`components`、`helpers` のクラス（`row`、`col-6`、`btn`、`card`、`theme-primary` など）をレイヤー順に。同じレイヤー内では名前順なので、基底クラスが修飾クラスより前に来ます（`btn btn-solid`）。
+2. ユーティリティ（`d-flex`、`mt-3`、`text-center` など）を、設定する CSS プロパティの順に。プロパティの順序は Bootstrap のユーティリティレイヤーでの出現順です。
+3. レスポンシブ・状態バリアント（`md:`、`lg-down:`、`hover:`）は、バリアントなしのクラスの後に。
+
+<!-- prettier-ignore -->
+```html
+<!-- Input -->
+<button class="mt-3 theme-primary md:mt-0 btn-solid d-flex btn js-save"></button>
+
+<!-- Output -->
+<button class="js-save btn btn-solid theme-primary d-flex mt-3 md:mt-0"></button>
+```
+
+並び順はデータで、`scripts/generate-bootstrap-order.mjs` が `bootstrap/dist/css/bootstrap.css` から生成します。ユーティリティ以外のレイヤーはそれぞれ `propertyOrder` の 1 項目（`@layer components`）です。プロジェクト独自のクラスは未知のクラスになります。Bootstrap 6 はまだアルファ版なので、Bootstrap が更新されたらプロファイルを再生成してください。
+
 ## 並び順の決まり方
 
 1. どのルールにも一致しないクラス（`card`、`js-toggle`）を先頭に、元の順のまま置きます（`unknown: end` なら末尾）。

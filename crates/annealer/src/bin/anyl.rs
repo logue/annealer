@@ -26,7 +26,7 @@ struct Cli {
     profile: Option<String>,
 
     /// Order the classes of static `class` attributes: a built-in class
-    /// order name (`tailwind`) or path to a class order YAML file.
+    /// order name (`tailwind`, `bootstrap`) or path to a class order YAML file.
     #[arg(long)]
     class_order: Option<String>,
 
@@ -63,7 +63,25 @@ fn load_profile(spec: &str) -> Result<Profile, String> {
         return Ok(profile);
     }
     let yaml = std::fs::read_to_string(spec).map_err(|error| format!("{spec}: {error}"))?;
-    Profile::from_yaml(&yaml).map_err(|error| format!("{spec}: {error}"))
+    let id = std::fs::canonicalize(spec)
+        .map_or_else(|_| spec.to_owned(), |path| path.display().to_string());
+    let mut resolver = |name: &str, from: Option<&str>| resolve_profile(name, from.unwrap_or(&id));
+    Profile::from_yaml_with(&yaml, &mut resolver).map_err(|error| format!("{spec}: {error}"))
+}
+
+/// Resolves an `extends` entry: a built-in profile name, or a path relative
+/// to the extending profile file.
+fn resolve_profile(spec: &str, from: &str) -> Option<(String, String)> {
+    if let Some(yaml) = Profile::builtin_yaml(spec) {
+        return Some((format!("builtin:{spec}"), yaml.to_owned()));
+    }
+    let base = Path::new(from)
+        .parent()
+        .filter(|_| !from.starts_with("builtin:"))
+        .unwrap_or(Path::new("."));
+    let path = std::fs::canonicalize(base.join(spec)).ok()?;
+    let yaml = std::fs::read_to_string(&path).ok()?;
+    Some((path.display().to_string(), yaml))
 }
 
 fn load_class_order(spec: &str) -> Result<ClassOrder, String> {
