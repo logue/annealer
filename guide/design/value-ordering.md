@@ -3,7 +3,7 @@
 # Value ordering
 
 :::info Status
-Both are implemented: static `style` attributes (opt-in, see [Stylesheets](/annealer/guide/concepts/stylesheets.md#static-style-attributes-opt-in)) and `class` values with a swappable class order (see [Class order](/annealer/guide/features/class-order.md)), with a built-in `tailwind` order. A draft `bootstrap` order for Bootstrap 6 (alpha) is built in as well. This page records the principles behind them.
+Both are implemented: static `style` attributes (opt-in, see [Stylesheets](/annealer/guide/concepts/stylesheets.md#static-style-attributes-opt-in)) and `class` values with a swappable class order (see [Class order](/annealer/guide/features/class-order.md)), with a built-in `tailwind` order. A draft `bootstrap` order for Bootstrap 6 (alpha) is built in as well; it is experimental and not an official Bootstrap order. This page records the principles behind them.
 :::
 
 Attribute order is one axis. The order of the values inside an attribute is another. The need isn't specific to Tailwind: any class-based CSS framework (Bootstrap, Tailwind, a project's own utility set) benefits from a fixed class order, for the same diff-stability reason as attributes.

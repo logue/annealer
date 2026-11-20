@@ -594,7 +594,11 @@ Differences from running Tailwind:
 - **Duplicates are kept.** `eslint-plugin-tailwindcss` removes them by default (`removeDuplicates`). Removing classes is a lint concern, so the built-in profile keeps them. A class order with `removeDuplicates: true` removes them.
 - **Only static `class` attributes.** `:class` bindings and `clsx()`-style calls are expressions, and annealer never reads them.
 
-## Built-in: `bootstrap`
+## Built-in: `bootstrap` (experimental)
+
+:::warning Experimental and unofficial
+The `bootstrap` class order is **not an official Bootstrap order**. Bootstrap doesn't define a class order; this one is annealer's own proposal, derived from Bootstrap's CSS. It targets Bootstrap 6, which is itself still an alpha, so both the order and the classes it knows may change in any release without notice.
+:::
 
 The built-in `bootstrap` class order is for Bootstrap 6 (generated from `6.0.0-alpha.1`). Bootstrap has no official class sorter, so the order follows Bootstrap's own cascade:
 
@@ -714,7 +718,7 @@ url: /annealer/guide/design/value-ordering.md
 # Value ordering
 
 :::info Status
-Both are implemented: static `style` attributes (opt-in, see [Stylesheets](/annealer/guide/concepts/stylesheets.md#static-style-attributes-opt-in)) and `class` values with a swappable class order (see [Class order](/annealer/guide/features/class-order.md)), with a built-in `tailwind` order. A draft `bootstrap` order for Bootstrap 6 (alpha) is built in as well. This page records the principles behind them.
+Both are implemented: static `style` attributes (opt-in, see [Stylesheets](/annealer/guide/concepts/stylesheets.md#static-style-attributes-opt-in)) and `class` values with a swappable class order (see [Class order](/annealer/guide/features/class-order.md)), with a built-in `tailwind` order. A draft `bootstrap` order for Bootstrap 6 (alpha) is built in as well; it is experimental and not an official Bootstrap order. This page records the principles behind them.
 :::
 
 Attribute order is one axis. The order of the values inside an attribute is another. The need isn't specific to Tailwind: any class-based CSS framework (Bootstrap, Tailwind, a project's own utility set) benefits from a fixed class order, for the same diff-stability reason as attributes.
@@ -999,7 +1003,7 @@ Reorders attributes (HTML, Vue) or declarations (CSS, SCSS, Sass, Less).
 
 - `options.language`: the input language. Default: `'html'`.
 - `options.profile`: a built-in profile name (`'html'`, `'vue'`) or the YAML text of a profile. Default: the built-in profile for `language`.
-- `options.classOrder`: a built-in class order name (`'tailwind'`) or the YAML text of a class order. Orders the classes of static `class` attributes and overrides the profile's `classOrder`. Default: classes keep their order. See [Class order](/annealer/guide/features/class-order.md).
+- `options.classOrder`: a built-in class order name (`'tailwind'`, or the experimental, unofficial `'bootstrap'`) or the YAML text of a class order. Orders the classes of static `class` attributes and overrides the profile's `classOrder`. Default: classes keep their order. See [Class order](/annealer/guide/features/class-order.md).
 
 Throws an `Error` when the input or the profile is invalid.
 
@@ -1047,7 +1051,7 @@ format(source, { language: 'vue', profile: yaml });
 ## `builtinClassOrder(name)`
 
 ```ts
-function builtinClassOrder(name: 'tailwind'): string;
+function builtinClassOrder(name: 'tailwind' | 'bootstrap'): string;
 ```
 
 Returns the YAML text of a built-in class order, as a starting point for a custom one.

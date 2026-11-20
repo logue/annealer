@@ -39,7 +39,11 @@ annealer 并不运行 Tailwind。该顺序是数据，由 `scripts/generate-tail
 - **重复项会保留。** `eslint-plugin-tailwindcss` 默认会删除重复项（`removeDuplicates`）。删除类属于 lint 的职责，因此内置配置文件会保留它们。设置 `removeDuplicates: true` 的类顺序配置文件会删除重复项。
 - **仅限静态 `class` 属性。** `:class` 绑定和 `clsx()` 风格的调用是表达式，annealer 从不读取它们。
 
-## 内置：`bootstrap` \{#built-in-bootstrap}
+## 内置：`bootstrap`（实验性） \{#built-in-bootstrap}
+
+:::warning 实验性、非官方
+`bootstrap` 类顺序**不是 Bootstrap 官方的顺序**。Bootstrap 并未定义类顺序，这是 annealer 根据 Bootstrap 的 CSS 推导出的自有提案。其目标 Bootstrap 6 本身仍处于 alpha 阶段，因此顺序和可识别的类都可能在任何版本中不经通知地变化。
+:::
 
 内置的 `bootstrap` 类顺序适用于 Bootstrap 6（由 `6.0.0-alpha.1` 生成）。Bootstrap 没有官方的类排序工具，因此该顺序遵循 Bootstrap 自身的层叠顺序：
 

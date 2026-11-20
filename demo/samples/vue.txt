@@ -1,6 +1,7 @@
 <template>
   <MyButton @click="submit" :disabled="busy" v-if="visible" class="primary" :class="{ busy }" id="submit" aria-label="Submit"></MyButton>
   <p class="text-sm p-3 hover:bg-gray-100 card flex mt-4 md:p-6 font-bold">Tailwind classes</p>
+  <button class="mt-3 theme-primary md:mt-0 btn-solid d-flex btn" type="button">Bootstrap 6 classes</button>
   <div
     title="Panel" v-for="item in items" :key="item.id">{{ item.name }}</div>
 </template>

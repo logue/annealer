@@ -20,7 +20,7 @@ Reorders attributes (HTML, Vue) or declarations (CSS, SCSS, Sass, Less).
 
 - `options.language`: the input language. Default: `'html'`.
 - `options.profile`: a built-in profile name (`'html'`, `'vue'`) or the YAML text of a profile. Default: the built-in profile for `language`.
-- `options.classOrder`: a built-in class order name (`'tailwind'`) or the YAML text of a class order. Orders the classes of static `class` attributes and overrides the profile's `classOrder`. Default: classes keep their order. See [Class order](/annealer/guide/features/class-order.md).
+- `options.classOrder`: a built-in class order name (`'tailwind'`, or the experimental, unofficial `'bootstrap'`) or the YAML text of a class order. Orders the classes of static `class` attributes and overrides the profile's `classOrder`. Default: classes keep their order. See [Class order](/annealer/guide/features/class-order.md).
 
 Throws an `Error` when the input or the profile is invalid.
 
@@ -68,7 +68,7 @@ format(source, { language: 'vue', profile: yaml });
 ## `builtinClassOrder(name)`
 
 ```ts
-function builtinClassOrder(name: 'tailwind'): string;
+function builtinClassOrder(name: 'tailwind' | 'bootstrap'): string;
 ```
 
 Returns the YAML text of a built-in class order, as a starting point for a custom one.

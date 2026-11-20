@@ -594,7 +594,11 @@ Tailwind を実行する場合との違い:
 - **重複は残します。** `eslint-plugin-tailwindcss` は既定で重複を削除します（`removeDuplicates`）。クラスの削除はリンターの役割なので、組み込みプロファイルでは残します。`removeDuplicates: true` のクラス順なら削除します。
 - **静的な `class` 属性のみ。** `:class` のバインドや `clsx()` のような呼び出しは式なので、annealer は読みません。
 
-## 組み込み: `bootstrap`
+## 組み込み: `bootstrap`（実験的） \{#built-in-bootstrap}
+
+:::warning 実験的・非公式
+`bootstrap` のクラス順は **Bootstrap 公式の並び順ではありません**。Bootstrap はクラス順を定めておらず、これは Bootstrap の CSS から導いた annealer 独自の提案です。対象の Bootstrap 6 自体もまだアルファ版のため、並び順も認識するクラスも、予告なくどのリリースでも変わる可能性があります。
+:::
 
 組み込みの `bootstrap` は Bootstrap 6 用のクラス順です（`6.0.0-alpha.1` から生成）。Bootstrap には公式のクラス並べ替えツールがないため、Bootstrap 自身のカスケード順に従います。
 
@@ -714,7 +718,7 @@ url: /annealer/ja/guide/design/value-ordering.md
 # 値の並べ替え
 
 :::info 状況
-どちらも実装済みです。静的な `style` 属性（オプトイン。[スタイルシート](/annealer/ja/guide/concepts/stylesheets.md#static-style-attributes-opt-in)を参照）と、差し替え可能なクラス順による `class` の値（[クラス順](/annealer/ja/guide/features/class-order.md)を参照）で、組み込みの `tailwind` 順があります。Bootstrap 6（アルファ版）向けの下書き `bootstrap` 順も組み込まれています。このページには、その背景にある原則をまとめます。
+どちらも実装済みです。静的な `style` 属性（オプトイン。[スタイルシート](/annealer/ja/guide/concepts/stylesheets.md#static-style-attributes-opt-in)を参照）と、差し替え可能なクラス順による `class` の値（[クラス順](/annealer/ja/guide/features/class-order.md)を参照）で、組み込みの `tailwind` 順があります。Bootstrap 6（アルファ版）向けの下書き `bootstrap` 順も組み込まれています。これは実験的なもので、Bootstrap 公式の並び順ではありません。このページには、その背景にある原則をまとめます。
 :::
 
 属性の並び順が 1 つの軸だとすれば、属性内の値の並び順はもう 1 つの軸です。これは Tailwind に限った需要ではありません。クラスベースの CSS フレームワーク（Bootstrap、Tailwind、プロジェクト独自のユーティリティ群）なら、属性と同じく差分を安定させるという理由で、決まったクラス順の恩恵を受けます。
@@ -999,7 +1003,7 @@ function format(input: string, options?: FormatOptions): string;
 
 - `options.language`: 入力の言語。既定は `'html'`。
 - `options.profile`: 組み込みプロファイル名（`'html'`、`'vue'`）またはプロファイルの YAML テキスト。既定は `language` に対応する組み込みプロファイル。
-- `options.classOrder`: 組み込みのクラス順の名前（`'tailwind'`）またはクラス順の YAML テキスト。静的な `class` 属性のクラスを並べ替え、プロファイルの `classOrder` より優先されます。既定ではクラスは元の順のままです。[クラス順](/annealer/ja/guide/features/class-order.md)を参照してください。
+- `options.classOrder`: 組み込みのクラス順の名前（`'tailwind'`、または実験的・非公式の `'bootstrap'`）またはクラス順の YAML テキスト。静的な `class` 属性のクラスを並べ替え、プロファイルの `classOrder` より優先されます。既定ではクラスは元の順のままです。[クラス順](/annealer/ja/guide/features/class-order.md)を参照してください。
 
 入力やプロファイルが不正な場合は `Error` を投げます。
 
@@ -1047,7 +1051,7 @@ format(source, { language: 'vue', profile: yaml });
 ## `builtinClassOrder(name)`
 
 ```ts
-function builtinClassOrder(name: 'tailwind'): string;
+function builtinClassOrder(name: 'tailwind' | 'bootstrap'): string;
 ```
 
 組み込みのクラス順の YAML テキストを返します。独自のクラス順の出発点として使えます。

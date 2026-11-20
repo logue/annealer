@@ -20,7 +20,7 @@ function format(input: string, options?: FormatOptions): string;
 
 - `options.language`：输入的语言。默认：`'html'`。
 - `options.profile`：内置配置文件名（`'html'`、`'vue'`）或配置文件的 YAML 文本。默认：与 `language` 对应的内置配置文件。
-- `options.classOrder`：内置类顺序名（`'tailwind'`）或类顺序的 YAML 文本。对静态 `class` 属性中的类排序，并覆盖配置文件中的 `classOrder`。默认：类保持原有顺序。参见[类顺序](/annealer/zh/guide/features/class-order.md)。
+- `options.classOrder`：内置类顺序名（`'tailwind'`，或实验性、非官方的 `'bootstrap'`）或类顺序的 YAML 文本。对静态 `class` 属性中的类排序，并覆盖配置文件中的 `classOrder`。默认：类保持原有顺序。参见[类顺序](/annealer/zh/guide/features/class-order.md)。
 
 当输入或配置文件无效时抛出 `Error`。
 
@@ -68,7 +68,7 @@ format(source, { language: 'vue', profile: yaml });
 ## `builtinClassOrder(name)`
 
 ```ts
-function builtinClassOrder(name: 'tailwind'): string;
+function builtinClassOrder(name: 'tailwind' | 'bootstrap'): string;
 ```
 
 返回内置类顺序的 YAML 文本，可作为自定义类顺序的起点。

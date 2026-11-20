@@ -39,7 +39,11 @@ Tailwind を実行する場合との違い:
 - **重複は残します。** `eslint-plugin-tailwindcss` は既定で重複を削除します（`removeDuplicates`）。クラスの削除はリンターの役割なので、組み込みプロファイルでは残します。`removeDuplicates: true` のクラス順なら削除します。
 - **静的な `class` 属性のみ。** `:class` のバインドや `clsx()` のような呼び出しは式なので、annealer は読みません。
 
-## 組み込み: `bootstrap`
+## 組み込み: `bootstrap`（実験的） \{#built-in-bootstrap}
+
+:::warning 実験的・非公式
+`bootstrap` のクラス順は **Bootstrap 公式の並び順ではありません**。Bootstrap はクラス順を定めておらず、これは Bootstrap の CSS から導いた annealer 独自の提案です。対象の Bootstrap 6 自体もまだアルファ版のため、並び順も認識するクラスも、予告なくどのリリースでも変わる可能性があります。
+:::
 
 組み込みの `bootstrap` は Bootstrap 6 用のクラス順です（`6.0.0-alpha.1` から生成）。Bootstrap には公式のクラス並べ替えツールがないため、Bootstrap 自身のカスケード順に従います。
 
