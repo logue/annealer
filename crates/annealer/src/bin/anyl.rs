@@ -1,16 +1,23 @@
 use std::io::{self, Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::ExitCode;
 
 use annealer::{ClassOrder, Config, Language, Profile, format};
+
+#[path = "anyl/files.rs"]
+mod files;
 use clap::{Parser, ValueEnum};
 
 /// Reorder HTML/Vue attributes by semantic meaning.
 #[derive(Parser)]
 #[command(name = "anyl", version, about)]
 struct Cli {
-    /// Files to format. Reads stdin when omitted.
-    files: Vec<PathBuf>,
+    /// Files, directories or glob patterns to format (`"src/**/*.vue"`;
+    /// `"!pattern"` excludes). Directories and globs skip hidden files,
+    /// `node_modules` and what `.gitignore`/`.anylignore` list. Reads stdin
+    /// when omitted.
+    #[arg(value_name = "FILE/DIR/GLOB")]
+    files: Vec<String>,
 
     /// Overwrite files in place.
     #[arg(short, long, conflicts_with = "check")]
@@ -29,6 +36,10 @@ struct Cli {
     /// order name (`tailwind`, `bootstrap`) or path to a class order YAML file.
     #[arg(long)]
     class_order: Option<String>,
+
+    /// Don't fail when a file, directory or pattern matches no file.
+    #[arg(long)]
+    no_error_on_unmatched_pattern: bool,
 
     /// Language of stdin input.
     #[arg(short, long, value_enum, default_value = "html")]
@@ -161,9 +172,19 @@ fn run(cli: &Cli) -> Result<bool, String> {
         return Ok(output != input);
     }
 
+    let expanded = files::expand(&cli.files)?;
+    if !cli.no_error_on_unmatched_pattern {
+        for pattern in &expanded.unmatched {
+            eprintln!("error: no files matching the pattern were found: {pattern}");
+        }
+        if !expanded.unmatched.is_empty() {
+            return Err("some patterns matched no file".to_owned());
+        }
+    }
+
     let mut any_changed = false;
     let mut failed = false;
-    for path in &cli.files {
+    for path in &expanded.files {
         match process_file(path, cli, &options) {
             Ok(changed) => any_changed |= changed,
             Err(message) => {

@@ -85,7 +85,7 @@ version in both cases.
 
 ```sh
 anyl src/App.vue                 # print the result
-anyl --write src/**/*.vue        # format in place
+anyl --write "src/**/*.vue"      # format in place
 anyl --check index.html          # exit 1 if a file would change
 anyl --profile my-profile.yaml page.html
 ```

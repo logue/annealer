@@ -16,12 +16,14 @@ crate-type = ["cdylib", "rlib"]
 
 [features]
 default = ["cli"]
-cli = ["dep:clap"]
+cli = ["dep:clap", "dep:globset", "dep:ignore"]
 # JavaScript bindings for the npm package (`wasm-pack build --features wasm`).
 wasm = ["dep:wasm-bindgen"]
 
 [dependencies]
 clap = { version = "4", features = ["derive"], optional = true }
+globset = { version = "0.4", optional = true }
+ignore = { version = "0.4", optional = true }
 malva = { version = "0.16", features = ["config_serde"] }
 # Keep in lockstep with the raffia version malva depends on (malva 0.16 → raffia 0.12).
 # The vendor-prefix pass re-parses malva's output, so both must use the same
