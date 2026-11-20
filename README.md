@@ -45,6 +45,8 @@ reasoning and how it relates to `vue/attributes-order`.
   clustering (`class` next to `:class`) and ARIA sub-ordering.
 - **Stylesheets** (CSS, SCSS, Sass, Less) through [malva](https://github.com/g-plane/malva).
 - **Tailwind class order** (opt-in), following Tailwind's own order.
+- **Bootstrap 6 class order** (opt-in, experimental): annealer's own proposal for
+  Bootstrap 6 (alpha), derived from its CSS. Not an official Bootstrap order.
 - **YAML profiles**, validated by a JSON Schema; unknown keys are rejected.
 - **Disable directives** (`annealer-disable`, `annealer-enable`,
   `annealer-disable-next-line`) keep selected code exactly as written.

@@ -40,7 +40,11 @@ Differences from running Tailwind:
 - **Duplicates are kept.** `eslint-plugin-tailwindcss` removes them by default (`removeDuplicates`). Removing classes is a lint concern, so the built-in profile keeps them. A class order with `removeDuplicates: true` removes them.
 - **Only static `class` attributes.** `:class` bindings and `clsx()`-style calls are expressions, and annealer never reads them.
 
-## Built-in: `bootstrap`
+## Built-in: `bootstrap` (experimental)
+
+:::warning Experimental and unofficial
+The `bootstrap` class order is **not an official Bootstrap order**. Bootstrap doesn't define a class order; this one is annealer's own proposal, derived from Bootstrap's CSS. It targets Bootstrap 6, which is itself still an alpha, so both the order and the classes it knows may change in any release without notice.
+:::
 
 The built-in `bootstrap` class order is for Bootstrap 6 (generated from `6.0.0-alpha.1`). Bootstrap has no official class sorter, so the order follows Bootstrap's own cascade:
 

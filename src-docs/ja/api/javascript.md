@@ -22,7 +22,7 @@ function format(input: string, options?: FormatOptions): string;
 
 - `options.language`: 入力の言語。既定は `'html'`。
 - `options.profile`: 組み込みプロファイル名（`'html'`、`'vue'`）またはプロファイルの YAML テキスト。既定は `language` に対応する組み込みプロファイル。
-- `options.classOrder`: 組み込みのクラス順の名前（`'tailwind'`）またはクラス順の YAML テキスト。静的な `class` 属性のクラスを並べ替え、プロファイルの `classOrder` より優先されます。既定ではクラスは元の順のままです。[クラス順](../guide/features/class-order.md)を参照してください。
+- `options.classOrder`: 組み込みのクラス順の名前（`'tailwind'`、または実験的・非公式の `'bootstrap'`）またはクラス順の YAML テキスト。静的な `class` 属性のクラスを並べ替え、プロファイルの `classOrder` より優先されます。既定ではクラスは元の順のままです。[クラス順](../guide/features/class-order.md)を参照してください。
 
 入力やプロファイルが不正な場合は `Error` を投げます。
 
@@ -70,7 +70,7 @@ format(source, { language: 'vue', profile: yaml });
 ## `builtinClassOrder(name)`
 
 ```ts
-function builtinClassOrder(name: 'tailwind'): string;
+function builtinClassOrder(name: 'tailwind' | 'bootstrap'): string;
 ```
 
 組み込みのクラス順の YAML テキストを返します。独自のクラス順の出発点として使えます。

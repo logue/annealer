@@ -5,7 +5,7 @@ description: 使用库专用的类顺序配置文件对静态 class 属性中的
 # 值排序
 
 :::info 状态
-两者均已实现：静态 `style` 属性（可选，参见[样式表](../concepts/stylesheets.md#static-style-attributes-opt-in)）和使用可替换类顺序的 `class` 值（参见[类顺序](../features/class-order.md)），并内置 `tailwind` 顺序。另外还内置了 Bootstrap 6（alpha）的草案 `bootstrap` 顺序。本页记录其背后的原则。
+两者均已实现：静态 `style` 属性（可选，参见[样式表](../concepts/stylesheets.md#static-style-attributes-opt-in)）和使用可替换类顺序的 `class` 值（参见[类顺序](../features/class-order.md)），并内置 `tailwind` 顺序。另外还内置了 Bootstrap 6（alpha）的草案 `bootstrap` 顺序；它是实验性的，并非 Bootstrap 官方顺序。本页记录其背后的原则。
 :::
 
 属性顺序是一个维度，属性内部值的顺序是另一个维度。这一需求并非 Tailwind 所特有：任何基于类的 CSS 框架（Bootstrap、Tailwind、项目自己的工具类集合）都能从固定的类顺序中受益，理由与属性相同——保持 diff 稳定。
